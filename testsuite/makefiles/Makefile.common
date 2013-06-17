@@ -1,0 +1,73 @@
+# $Id: Makefile.common 12551 2012-06-04 11:40:59Z doligez $
+
+TOPDIR=$(BASEDIR)/..
+
+include $(TOPDIR)/config/Makefile
+
+DIFF=diff -q
+BOOTDIR=$(TOPDIR)/boot
+OCAMLRUN=$(BOOTDIR)/ocamlrun$(EXE)
+OCAML=$(OCAMLRUN) $(TOPDIR)/ocaml -I $(TOPDIR)/stdlib
+OCAMLC=$(OCAMLRUN) $(TOPDIR)/ocamlc -I $(TOPDIR)/stdlib
+OCAMLOPT=$(OCAMLRUN) $(TOPDIR)/ocamlopt -I $(TOPDIR)/stdlib
+OCAMLDOC=$(OCAMLRUN) $(TOPDIR)/ocamldoc/ocamldoc
+OCAMLLEX=$(OCAMLRUN) $(TOPDIR)/lex/ocamllex
+OCAMLMKLIB=$(OCAMLRUN) $(TOPDIR)/tools/ocamlmklib
+OCAMLYACC=$(TOPDIR)/yacc/ocamlyacc$(EXE)
+OCAMLBUILD=$(TOPDIR)/_build/ocamlbuild/ocamlbuild.native
+DUMPOBJ=$(OCAMLRUN) $(TOPDIR)/tool/dumpobj
+BYTECODE_ONLY=`if [ "$(ARCH)" = "none" -o "$(ASM)" = "none" ]; then echo 'YES'; else echo ''; fi`
+#COMPFLAGS=
+#FORTRAN_COMPILER=
+#FORTRAN_LIBRARY=
+
+defaultpromote:
+	@for file in *.reference; do \
+	  cp `basename $$file reference`result $$file; \
+	done
+
+defaultclean:
+	@rm -f *.cmo *.cmi *.cmx *.cma *.cmxa *.cmxs *.$(O) *.$(SO) *.$(A)
+	@for dsym in *.dSYM; do \
+	  if [ -d $$dsym ]; then \
+	    rm -fr $$dsym; \
+	  fi \
+	done
+
+.SUFFIXES:
+.SUFFIXES: .mli .ml .mly .mll .cmi .cmo .cmx .cmm .cmxa .s .S .o .so
+
+.mli.cmi:
+	@$(OCAMLC) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+
+.ml.cmi:
+	@$(OCAMLC) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+
+.ml.cmo:
+	@if [ -f $<i ]; then $(OCAMLC) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<i; fi
+	@$(OCAMLC) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+
+.ml.cmx:
+	@$(OCAMLOPT) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+
+.cmx.so:
+	@$(OCAMLOPT) -o $@ -shared $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+
+.cmxa.so:
+	@$(OCAMLOPT) -o $@ -shared -linkall $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+
+.mly.ml:
+	@$(OCAMLYACC) -q $< 2> /dev/null
+
+.mll.ml:
+	@$(OCAMLLEX) -q $< > /dev/null
+
+.cmm.o:
+	@$(OCAMLRUN) ./codegen $*.cmm > $*.s
+	@$(AS) $(ASFLAGS) -o $*.o $*.s
+
+.S.o:
+	@$(ASPP) $(ASPPFLAGS) -DSYS_$(SYSTEM) -o $*.o $*.S
+
+.s.o:
+	@$(ASPP) $(ASPPFLAGS) -DSYS_$(SYSTEM) -o $*.o $*.s

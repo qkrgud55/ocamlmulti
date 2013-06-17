@@ -1,0 +1,1 @@
+LC_ALL=C sort testA.result | diff -q testA.reference -

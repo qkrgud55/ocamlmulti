@@ -17,6 +17,7 @@
 #define CAML_GC_CTRL_H
 
 #include "misc.h"
+#include "context.h"
 
 extern double
      caml_stat_minor_words,
@@ -31,7 +32,7 @@ extern intnat
      caml_stat_compactions,
      caml_stat_heap_chunks;
 
-void caml_init_gc (uintnat, uintnat, uintnat,
+void caml_init_gc (pctxt, uintnat, uintnat, uintnat,
                    uintnat, uintnat);
 
 

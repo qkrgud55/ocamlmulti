@@ -24,6 +24,7 @@
 #include "minor_gc.h"
 #include "misc.h"
 #include "mlvalues.h"
+#include "context.h"
 #ifdef NATIVE_CODE
 #include "stack.h"
 #else
@@ -470,7 +471,8 @@ CAMLprim value caml_gc_compaction(value v)
   return Val_unit;
 }
 
-void caml_init_gc (uintnat minor_size, uintnat major_size,
+void caml_init_gc (pctxt ctxt,
+                   uintnat minor_size, uintnat major_size,
                    uintnat major_incr, uintnat percent_fr,
                    uintnat percent_m)
 {

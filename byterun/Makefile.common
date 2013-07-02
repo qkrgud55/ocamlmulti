@@ -24,17 +24,18 @@ COMMONOBJS=\
   compare.o ints.o floats.o str.o array.o io.o extern.o intern.o \
   hash.o sys.o meta.o parsing.o gc_ctrl.o terminfo.o md5.o obj.o \
   lexing.o callback.o debugger.o weak.o compact.o finalise.o custom.o \
-  dynlink.o
+  dynlink.o context.o
 
 PRIMS=\
   alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c \
   signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c stacks.c \
-  dynlink.c backtrace.c
+  dynlink.c backtrace.c context.o
 
 PUBLIC_INCLUDES=\
   alloc.h callback.h config.h custom.h fail.h hash.h intext.h \
-  memory.h misc.h mlvalues.h printexc.h signals.h compatibility.h
+  memory.h misc.h mlvalues.h printexc.h signals.h compatibility.h \
+  context.h
 
 
 all:: ocamlrun$(EXE) ld.conf libcamlrun.$(A) all-$(RUNTIMED)

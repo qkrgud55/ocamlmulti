@@ -54,6 +54,7 @@
 #include "sys.h"
 #include "startup.h"
 #include "version.h"
+#include "context.h"
 
 #ifndef O_BINARY
 #define O_BINARY 0
@@ -88,7 +89,7 @@ static void fixup_endianness_trailer(uint32 * p)
 #endif
 }
 
-static int read_trailer(int fd, struct exec_trailer *trail)
+static int read_trailer(int fd, struct exec_trailer * trail)
 {
   lseek(fd, (long) -TRAILER_SIZE, SEEK_END);
   if (read(fd, (char *) trail, TRAILER_SIZE) < TRAILER_SIZE)
@@ -100,8 +101,7 @@ static int read_trailer(int fd, struct exec_trailer *trail)
     return BAD_BYTECODE;
 }
 
-int caml_attempt_open(char **name, struct exec_trailer *trail,
-                      int do_open_script)
+int caml_attempt_open(char ** name, struct exec_trailer * trail, int do_open_script)
 {
   char * truename;
   int fd;
@@ -136,7 +136,7 @@ int caml_attempt_open(char **name, struct exec_trailer *trail,
 
 /* Read the section descriptors */
 
-void caml_read_section_descriptors(int fd, struct exec_trailer *trail)
+void caml_read_section_descriptors(int fd, struct exec_trailer * trail)
 {
   int toc_size, i;
 
@@ -154,7 +154,7 @@ void caml_read_section_descriptors(int fd, struct exec_trailer *trail)
    Return the length of the section data in bytes, or -1 if no section
    found with that name. */
 
-int32 caml_seek_optional_section(int fd, struct exec_trailer *trail, char *name)
+int32 caml_seek_optional_section(int fd, struct exec_trailer * trail, char * name)
 {
   long ofs;
   int i;
@@ -173,7 +173,7 @@ int32 caml_seek_optional_section(int fd, struct exec_trailer *trail, char *name)
 /* Position fd at the beginning of the section having the given name.
    Return the length of the section data in bytes. */
 
-int32 caml_seek_section(int fd, struct exec_trailer *trail, char *name)
+int32 caml_seek_section(int fd, struct exec_trailer * trail, char * name)
 {
   int32 len = caml_seek_optional_section(fd, trail, name);
   if (len == -1)
@@ -234,7 +234,7 @@ static uintnat max_stack_init = Max_stack_def;
 
 /* Parse options on the command line */
 
-static int parse_command_line(char **argv)
+static int parse_command_line(char ** argv)
 {
   int i, j;
 
@@ -285,7 +285,7 @@ static int parse_command_line(char **argv)
 
 /* If you change these functions, see also their copy in asmrun/startup.c */
 
-static void scanmult (char *opt, uintnat *var)
+static void scanmult(char * opt, uintnat * var)
 {
   char mult = ' ';
   unsigned int val;
@@ -324,7 +324,7 @@ static void parse_camlrunparam(void)
   }
 }
 
-extern void caml_init_ieee_floats (void);
+extern void caml_init_ieee_floats(void);
 
 #ifdef _WIN32
 extern void caml_signal_thread(void * lpParam);
@@ -332,7 +332,7 @@ extern void caml_signal_thread(void * lpParam);
 
 /* Main entry point when loading code from a file */
 
-CAMLexport void caml_main(char **argv)
+CAMLexport void caml_main(char ** argv)
 {
   int fd, pos;
   struct exec_trailer trail;
@@ -340,6 +340,8 @@ CAMLexport void caml_main(char **argv)
   value res;
   char * shared_lib_path, * shared_libs, * req_prims;
   char * exe_name;
+  pctxt ctxt;
+
 #ifdef __linux__
   static char proc_self_exe[256];
 #endif
@@ -381,8 +383,10 @@ CAMLexport void caml_main(char **argv)
   }
   /* Read the table of contents (section descriptors) */
   caml_read_section_descriptors(fd, &trail);
+
+  ctxt = create_empty_context();
   /* Initialize the abstract machine */
-  caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
+  caml_init_gc (ctxt, minor_heap_init, heap_size_init, heap_chunk_init,
                 percent_free_init, max_percent_free_init);
   caml_init_stack (max_stack_init);
   init_atoms();
@@ -435,15 +439,12 @@ CAMLexport void caml_main(char **argv)
 
 /* Main entry point when code is linked in as initialized data */
 
-CAMLexport void caml_startup_code(
-           code_t code, asize_t code_size,
-           char *data, asize_t data_size,
-           char *section_table, asize_t section_table_size,
-           char **argv)
+CAMLexport void caml_startup_code(code_t code, asize_t code_size, char * data, asize_t data_size, char * section_table, asize_t section_table_size, char ** argv)
 {
   value res;
   char* cds_file;
   char * exe_name;
+  pctxt ctxt;
 #ifdef __linux__
   static char proc_self_exe[256];
 #endif
@@ -466,7 +467,8 @@ CAMLexport void caml_startup_code(
 #endif
   caml_external_raise = NULL;
   /* Initialize the abstract machine */
-  caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
+  ctxt = create_empty_context();
+  caml_init_gc (ctxt, minor_heap_init, heap_size_init, heap_chunk_init,
                 percent_free_init, max_percent_free_init);
   caml_init_stack (max_stack_init);
   init_atoms();

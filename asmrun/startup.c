@@ -34,6 +34,7 @@
 #include "stack.h"
 #include "sys.h"
 #include "natdynlink.h"
+#include "context.h"
 #ifdef HAS_UI
 #include "ui.h"
 #endif
@@ -158,6 +159,7 @@ void caml_main(char **argv)
 #endif
   value res;
   char tos;
+  pctxt ctxt;
 
   caml_init_ieee_floats();
   caml_init_custom_operations();
@@ -166,6 +168,7 @@ void caml_main(char **argv)
 #endif
   caml_top_of_stack = &tos;
   parse_camlrunparam();
+  ctxt = create_empty_context();
   caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
                 percent_free_init, max_percent_free_init);
   init_atoms();

@@ -908,6 +908,50 @@ value caml_interprete(code_t prog, asize_t prog_size)
       pc++;
       Next;
     }
+/*    Instruct(C_CALL1_R):
+      Setup_for_c_call;
+      accu = Primitive(*pc)(0x101);
+      Restore_after_c_call;
+      pc++;
+      Next;
+    Instruct(C_CALL2_R):
+      Setup_for_c_call;
+      accu = Primitive(*pc)(0x101, sp[1]);
+      Restore_after_c_call;
+      sp += 1;
+      pc++;
+      Next;
+    Instruct(C_CALL3_R):
+      Setup_for_c_call;
+      accu = Primitive(*pc)(0x101, sp[1], sp[2]);
+      Restore_after_c_call;
+      sp += 2;
+      pc++;
+      Next;
+    Instruct(C_CALL4_R):
+      Setup_for_c_call;
+      accu = Primitive(*pc)(0x101, sp[1], sp[2], sp[3]);
+      Restore_after_c_call;
+      sp += 3;
+      pc++;
+      Next;
+    Instruct(C_CALL5_R):
+      Setup_for_c_call;
+      accu = Primitive(*pc)(0x101, sp[1], sp[2], sp[3], sp[4]);
+      Restore_after_c_call;
+      sp += 4;
+      pc++;
+      Next;
+    Instruct(C_CALLN_R): {
+      int nargs = *pc++;
+      *--sp = 0x101;
+      Setup_for_c_call;
+      accu = Primitive(*pc)(sp + 1, nargs);
+      Restore_after_c_call;
+      sp += nargs;
+      pc++;
+      Next;
+     } */
 
 /* Integer constants */
 

@@ -117,12 +117,14 @@ void caml_thread_code (code_t code, asize_t len)
   l[GETFLOATFIELD] = l[SETFIELD] = l[SETFLOATFIELD] =
   l[BRANCH] = l[BRANCHIF] = l[BRANCHIFNOT] = l[PUSHTRAP] =
   l[C_CALL1] = l[C_CALL2] = l[C_CALL3] = l[C_CALL4] = l[C_CALL5] =
+//  l[C_CALL1_R] = l[C_CALL2_R] = l[C_CALL3_R] = 
+//  l[C_CALL4_R] = l[C_CALL5_R] =
   l[CONSTINT] = l[PUSHCONSTINT] = l[OFFSETINT] =
   l[OFFSETREF] = l[OFFSETCLOSURE] = l[PUSHOFFSETCLOSURE] = 1;
 
   /* Instructions with two operands */
   l[APPTERM] = l[CLOSURE] = l[PUSHGETGLOBALFIELD] =
-  l[GETGLOBALFIELD] = l[MAKEBLOCK] = l[C_CALLN] =
+  l[GETGLOBALFIELD] = l[MAKEBLOCK] = l[C_CALLN] = // l[C_CALLN_R] =
   l[BEQ] = l[BNEQ] = l[BLTINT] = l[BLEINT] = l[BGTINT] = l[BGEINT] =
   l[BULTINT] = l[BUGEINT] = l[GETPUBMET] = 2;
   len /= sizeof(opcode_t);

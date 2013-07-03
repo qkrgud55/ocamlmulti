@@ -597,9 +597,14 @@ let rec comp_expr env exp sz cont =
       let p = Pintcomp (commute_comparison c)
       and args = [k ; arg] in
       comp_args env args sz (comp_primitive p args :: cont)
+  | Lprim(Pccall prim, args) when prim.prim_ctx -> (* phc ctx *)
+      let args = (Lconst (Const_pointer 0)) :: args in
+      let arity = prim.prim_arity in 
+      let p = Pccall {prim with prim_arity = arity+1} in
+      comp_args env args sz (comp_primitive p args :: cont)
   | Lprim(p, args) ->
       comp_args env args sz (comp_primitive p args :: cont)
-   | Lstaticcatch (body, (i, vars) , handler) ->
+  | Lstaticcatch (body, (i, vars) , handler) ->
       let nvars = List.length vars in
       let branch1, cont1 = make_branch cont in
       let r =

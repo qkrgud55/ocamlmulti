@@ -169,7 +169,7 @@ void caml_main(char **argv)
   caml_top_of_stack = &tos;
   parse_camlrunparam();
   ctxt = create_empty_context();
-  caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
+  caml_init_gc (ctxt, minor_heap_init, heap_size_init, heap_chunk_init,
                 percent_free_init, max_percent_free_init);
   init_atoms();
   caml_init_signals();

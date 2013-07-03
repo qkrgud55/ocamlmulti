@@ -26,7 +26,7 @@ type environment = (Ident.t, Reg.t array) Tbl.t
 
 let oper_result_type = function
     Capply(ty, _) -> ty
-  | Cextcall(s, ty, alloc, _) -> ty
+  | Cextcall(s, ty, alloc, ctx, _) -> ty
   | Cload c ->
       begin match c with
         Word -> typ_addr
@@ -154,7 +154,7 @@ let join_array rs =
 (* Extract debug info contained in a C-- operation *)
 let debuginfo_op = function
   | Capply(_, dbg) -> dbg
-  | Cextcall(_, _, _, dbg) -> dbg
+  | Cextcall(_, _, _, _, dbg) -> dbg
   | Craise dbg -> dbg
   | Ccheckbound dbg -> dbg
   | _ -> Debuginfo.none
@@ -217,7 +217,7 @@ method select_operation op args =
   match (op, args) with
     (Capply(ty, dbg), Cconst_symbol s :: rem) -> (Icall_imm s, rem)
   | (Capply(ty, dbg), _) -> (Icall_ind, args)
-  | (Cextcall(s, ty, alloc, dbg), _) -> (Iextcall(s, alloc, ctx), args)
+  | (Cextcall(s, ty, alloc, ctx, dbg), _) -> (Iextcall(s, alloc, ctx), args)
   | (Cload chunk, [arg]) ->
       let (addr, eloc) = self#select_addressing chunk arg in
       (Iload(chunk, addr), [eloc])

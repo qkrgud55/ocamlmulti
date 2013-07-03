@@ -351,12 +351,6 @@ let op_shapes = [
   opC_CALL4, Primitive;
   opC_CALL5, Primitive;
   opC_CALLN, Uint_Primitive;
-(*  opC_CALL1_R, Primitive;
-  opC_CALL2_R, Primitive;
-  opC_CALL3_R, Primitive;
-  opC_CALL4_R, Primitive;
-  opC_CALL5_R, Primitive;
-  opC_CALLN_R, Uint_Primitive; *)
   opCONST0, Nothing;
   opCONST1, Nothing;
   opCONST2, Nothing;

@@ -253,15 +253,6 @@ let emit_instr = function
       if n <= 5
       then (out (opC_CALL1 + n - 1); slot_for_c_prim name)
       else (out opC_CALLN; out_int n; slot_for_c_prim name)
-(*  | Kccall(name, false, n) ->
-      if n <= 5
-      then (out (opC_CALL1 + n - 1); slot_for_c_prim name)
-      else (out opC_CALLN; out_int n; slot_for_c_prim name)
-  | Kccall(name, true, n) ->
-      print_endline ("emitcode Kccall ctx=true : "^name); (* phc ctx *)
-      if n <= 5
-      then (out (opC_CALL1_R + n - 1); slot_for_c_prim name)
-      else (out opC_CALLN_R; out_int n; slot_for_c_prim name) *)
   | Knegint -> out opNEGINT  | Kaddint -> out opADDINT
   | Ksubint -> out opSUBINT  | Kmulint -> out opMULINT
   | Kdivint -> out opDIVINT  | Kmodint -> out opMODINT

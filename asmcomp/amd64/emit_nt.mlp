@@ -389,7 +389,7 @@ let emit_instr fallthrough i =
           output_epilogue();
           `	jmp	{emit_symbol s}\n`
         end
-    | Lop(Iextcall(s, alloc)) ->
+    | Lop(Iextcall(s, alloc, _)) ->
         add_used_symbol s;
         if alloc then begin
           `	lea	rax, {emit_symbol s}\n`;

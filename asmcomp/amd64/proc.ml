@@ -254,8 +254,8 @@ let destroyed_at_c_call =
        108;109;110;111;112;113;114;115])
 
 let destroyed_at_oper = function
-    Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
-  | Iop(Iextcall(_, false)) -> destroyed_at_c_call
+    Iop(Icall_ind | Icall_imm _ | Iextcall(_, true, _)) -> all_phys_regs
+  | Iop(Iextcall(_, false, _)) -> destroyed_at_c_call
   | Iop(Iintop(Idiv | Imod)) -> [| rax; rdx |]
   | Iop(Istore(Single, _)) -> [| rxmm15 |]
   | Iop(Ialloc _ | Iintop(Icomp _) | Iintop_imm((Idiv|Imod|Icomp _), _))
@@ -268,11 +268,11 @@ let destroyed_at_raise = all_phys_regs
 (* Maximal register pressure *)
 
 let safe_register_pressure = function
-    Iextcall(_,_) -> if win64 then 8 else 0
+    Iextcall(_,_,_) -> if win64 then 8 else 0
   | _ -> 11
 
 let max_register_pressure = function
-    Iextcall(_, _) -> if win64 then [| 8; 10 |] else [| 4; 0 |]
+    Iextcall(_, _, _) -> if win64 then [| 8; 10 |] else [| 4; 0 |]
   | Iintop(Idiv | Imod) -> [| 11; 16 |]
   | Ialloc _ | Iintop(Icomp _) | Iintop_imm((Idiv|Imod|Icomp _), _)
         -> [| 12; 16 |]

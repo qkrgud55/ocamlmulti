@@ -392,7 +392,7 @@ let emit_instr fallthrough i =
           `	{emit_jump s}\n`
           end
         end
-    | Lop(Iextcall(s, alloc)) ->
+    | Lop(Iextcall(s, alloc, _)) ->
         if alloc then begin
           `	{load_symbol_addr s}, %rax\n`;
           `	{emit_call "caml_c_call"}\n`;

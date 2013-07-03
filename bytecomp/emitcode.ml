@@ -247,7 +247,9 @@ let emit_instr = function
   | Kpoptrap -> out opPOPTRAP
   | Kraise -> out opRAISE
   | Kcheck_signals -> out opCHECK_SIGNALS
-  | Kccall(name, n) ->
+  | Kccall(name, ctx, n) ->
+      if ctx then print_endline ("emitcode Kccall ctx=true : "^name)
+             else (); (* phc ctx *)
       if n <= 5
       then (out (opC_CALL1 + n - 1); slot_for_c_prim name)
       else (out opC_CALLN; out_int n; slot_for_c_prim name)

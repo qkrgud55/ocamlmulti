@@ -26,6 +26,12 @@ type description =
 
 let parse_declaration arity decl =
   let _prim_ctx = List.mem "reentrant" decl in
+  let fold_fun e l = if e="reentrant" then l else e::l in
+  let decl = List.fold_right fold_fun decl [] in
+(*  let fold_fun e s = (e ^ " " ^ s) in
+  let _ = begin 
+          print_endline "parse_decl decl : ";
+          print_endline (List.fold_right fold_fun decl "") end in  *)
   match decl with
   | name :: "noalloc" :: name2 :: "float" :: _ ->
       {prim_name = name; prim_arity = arity; prim_alloc = false; prim_ctx = _prim_ctx;

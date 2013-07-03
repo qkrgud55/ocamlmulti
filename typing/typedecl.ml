@@ -917,6 +917,11 @@ let transl_value_decl env loc valdecl =
       if arity = 0 then
         raise(Error(valdecl.pval_type.ptyp_loc, Null_arity_external));
       let prim = Primitive.parse_declaration arity decl in
+      let _ = (* phc ctx *)
+        if prim.prim_name = "reentrant"
+        then print_endline "parse_decl prim_name=reentrant"
+        else ()
+      in
       if !Clflags.native_code
       && prim.prim_arity > 5
       && prim.prim_native_name = ""

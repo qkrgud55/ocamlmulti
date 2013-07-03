@@ -938,7 +938,8 @@ let rec transl = function
               (Cop(Cextcall(prim.prim_native_name, typ_float, false, false, dbg),
                    List.map transl_unbox_float args))
           else
-            Cop(Cextcall(Primitive.native_name prim, typ_addr, prim.prim_alloc, prim.prim_ctx, dbg),
+            Cop(Cextcall(Primitive.native_name prim, typ_addr,
+                         prim.prim_alloc, prim.prim_ctx, dbg),
                 List.map transl args)
       | (Pmakearray kind, []) ->
           transl_constant(Const_block(0, []))

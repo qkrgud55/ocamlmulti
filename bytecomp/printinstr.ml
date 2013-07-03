@@ -71,7 +71,7 @@ let instruction ppf = function
   | Kpoptrap -> fprintf ppf "\tpoptrap"
   | Kraise -> fprintf ppf "\traise"
   | Kcheck_signals -> fprintf ppf "\tcheck_signals"
-  | Kccall(s, n) ->
+  | Kccall(s, ctx, n) ->
       fprintf ppf "\tccall %s, %i" s n
   | Knegint -> fprintf ppf "\tnegint"
   | Kaddint -> fprintf ppf "\taddint"

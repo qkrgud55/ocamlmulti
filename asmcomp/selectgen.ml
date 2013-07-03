@@ -485,6 +485,10 @@ method emit_expr env exp =
               self#insert_move_results loc_res rd stack_ofs;
               Some rd
           | Iextcall(lbl, alloc, ctx) ->
+              begin  (* phc ctx *)
+                if ctx then print_endline ("Iextcall ctx=true : "^lbl)
+                else ()
+              end;
               Proc.contains_calls := true;
               let (loc_arg, stack_ofs) =
                 self#emit_extcall_args env new_args in

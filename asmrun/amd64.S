@@ -407,6 +407,9 @@ LBL(caml_c_call):
 
 /* Start the OCaml program */
 
+FUNCTION(G(caml_start_program_R))  /* phc ctx */
+        movq   %rdi, %r13          /* first arg from caml_main*/
+
 FUNCTION(G(caml_start_program))
         CFI_STARTPROC
     /* Save callee-save registers */
@@ -426,8 +429,8 @@ LBL(caml_start_program):
         LOAD_VAR(caml_young_ptr, %r15)
         LOAD_VAR(caml_exception_pointer, %r14)
     /* Build an exception handler */
-        lea     LBL(108)(%rip), %r13
-        pushq   %r13
+        lea     LBL(108)(%rip), %rdi
+        pushq   %rdi
         pushq   %r14
         CFI_ADJUST(16)
         movq    %rsp, %r14

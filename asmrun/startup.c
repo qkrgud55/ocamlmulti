@@ -42,6 +42,7 @@
 extern int caml_parser_trace;
 CAMLexport header_t caml_atom_table[256];
 char * caml_code_area_start, * caml_code_area_end;
+int is_ctx = 0;
 
 /* Initialize the atom table and the static data and code area limits. */
 
@@ -138,6 +139,7 @@ static void parse_camlrunparam(void)
       case 'b': caml_record_backtrace(Val_true); break;
       case 'p': caml_parser_trace = 1; break;
       case 'a': scanmult (opt, &p); caml_set_allocation_policy (p); break;
+      case 'c': is_ctx = 1; break;
       }
     }
   }
@@ -148,6 +150,7 @@ struct longjmp_buffer caml_termination_jmpbuf;
 void (*caml_termination_hook)(void *) = NULL;
 
 extern value caml_start_program (void);
+extern value caml_start_program_R (pctxt ctx);
 extern void caml_init_ieee_floats (void);
 extern void caml_init_signals (void);
 
@@ -159,7 +162,7 @@ void caml_main(char **argv)
 #endif
   value res;
   char tos;
-  pctxt ctxt;
+  pctxt ctx;
 
   caml_init_ieee_floats();
   caml_init_custom_operations();
@@ -168,8 +171,8 @@ void caml_main(char **argv)
 #endif
   caml_top_of_stack = &tos;
   parse_camlrunparam();
-  ctxt = create_empty_context();
-  caml_init_gc (ctxt, minor_heap_init, heap_size_init, heap_chunk_init,
+  ctx = create_empty_context();
+  caml_init_gc (ctx, minor_heap_init, heap_size_init, heap_chunk_init,
                 percent_free_init, max_percent_free_init);
   init_atoms();
   caml_init_signals();
@@ -189,7 +192,15 @@ void caml_main(char **argv)
     if (caml_termination_hook != NULL) caml_termination_hook(NULL);
     return;
   }
-  res = caml_start_program();
+  if (is_ctx){
+    printf("startup.c start_program_R\n");
+    *(header_t*)ctx = Make_header(1,11,0);
+    ctx = Val_hp(ctx);
+    Field(ctx, 0) = 0x201;
+    res = caml_start_program_R(ctx);
+  }
+  else
+    res = caml_start_program();
   if (Is_exception_result(res))
     caml_fatal_uncaught_exception(Extract_exception(res));
 }

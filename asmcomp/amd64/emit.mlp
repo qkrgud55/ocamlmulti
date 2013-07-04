@@ -394,7 +394,7 @@ let emit_instr fallthrough i =
         end
     | Lop(Iextcall(s, alloc, ctx)) ->
         if ctx then  (* phc ctx *)
-          ` movq    ${emit_int 0x201}, %rdi\n`
+          ` movq    %r13, %rdi\n`
         else 
           ``;
         if alloc then begin

@@ -248,11 +248,11 @@ opt:
 	$(MAKE) ocamlbuildlib.native
 
 # Native-code versions of the tools
+# $(CAMLP4OPT) ocamldoc.opt ocamldoc
 opt.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
-	 $(DEBUGGER) ocamldoc ocamlbuild.byte $(CAMLP4OUT) \
+	 $(DEBUGGER) ocamlbuild.byte $(CAMLP4OUT) \
 	 ocamlopt.opt otherlibrariesopt ocamllex.opt \
-	 ocamltoolsopt ocamltoolsopt.opt ocamldoc.opt ocamlbuild.native \
-	 $(CAMLP4OPT)
+	 ocamltoolsopt ocamltoolsopt.opt ocamlbuild.native \
 
 base.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
 	 ocamlbuild.byte $(CAMLP4OUT) $(DEBUGGER) ocamldoc ocamlopt.opt \

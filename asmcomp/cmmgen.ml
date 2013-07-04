@@ -932,6 +932,18 @@ let rec transl = function
           transl_constant(Const_block(tag, []))
       | (Pmakeblock(tag, mut), args) ->
           make_alloc tag (List.map transl args)
+      | (Pccall prim, args) when prim.prim_ctx -> (* phc ctx *)
+          print_endline ("cmmgen UPrim.Pccal " ^ prim.prim_name);
+          let args = (Uconst (Const_base(Const_int 0),None))::args in
+          if prim.prim_native_float then
+            box_float
+              (Cop(Cextcall(prim.prim_native_name, typ_float,
+                            false, true, dbg),
+                   List.map transl_unbox_float args))
+          else
+            Cop(Cextcall(Primitive.native_name prim, typ_addr,
+                         prim.prim_alloc, true, dbg),
+                List.map transl args)
       | (Pccall prim, args) ->
           if prim.prim_native_float then
             box_float
@@ -939,7 +951,7 @@ let rec transl = function
                    List.map transl_unbox_float args))
           else
             Cop(Cextcall(Primitive.native_name prim, typ_addr,
-                         prim.prim_alloc, prim.prim_ctx, dbg),
+                         prim.prim_alloc, false, dbg),
                 List.map transl args)
       | (Pmakearray kind, []) ->
           transl_constant(Const_block(0, []))

@@ -58,7 +58,7 @@ sp is a local copy of the global variable caml_extern_sp. */
 #    define Next goto next_instr
 #  else
 #    define Next goto *(void *)(jumptbl_base + *pc++) 
-//         if (is_ctx) { char tmp; printf("instr %d\n", *pc); scanf("%c", &tmp); } 
+//         if (debug_mode) { char tmp; printf("instr %d\n", *pc); scanf("%c", &tmp); } 
 #  endif
 #else
 #  define Instruct(name) case name
@@ -221,7 +221,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
   volatile code_t saved_pc = NULL;
   struct longjmp_buffer raise_buf;
   value * modify_dest, modify_newval;
-  int is_ctx;
+  int debug_mode;
+  int no_ctx;
   pctxt ctx = 0x101;
 #ifndef THREADED_CODE
   opcode_t curr_instr;
@@ -234,12 +235,18 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #endif
 
   /* phc ctx */
-  if (getenv("PHC_CTX")) {
+  if (getenv("PHC_DEBUG")) {
     printf("caml_interprete detected env PHC_CTX\n");
-    is_ctx = 1;
+    debug_mode = 1;
   }
   else {
-    is_ctx = 0;
+    debug_mode = 0;
+  }
+  if (getenv("PHC_ignore")){
+    printf("interp.c  PHC_ignore detected\n");
+    no_ctx = 1;
+  }else{
+    no_ctx = 0;
   }
 
   if (prog == NULL) {           /* Interpreter is initializing */
@@ -283,7 +290,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
   Assert(sp >= caml_stack_low);
   Assert(sp <= caml_stack_high);
 #endif
-//  if (is_ctx) printf("instr %d\n", *pc);
+//  if (debug_mode) printf("instr %d\n", *pc);
   goto *(void *)(jumptbl_base + *pc++); /* Jump to the first instruction */
 #else
   while(1) {
@@ -311,70 +318,70 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Basic stack operations */
 
     Instruct(ACC0):
-		if (is_ctx) printf("ACC0 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("ACC0 accu=%p\n", (void*)accu);
       accu = sp[0]; Next;
     Instruct(ACC1):
-		if (is_ctx) printf("ACC1 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("ACC1 accu=%p\n", (void*)accu);
       accu = sp[1]; Next;
     Instruct(ACC2):
-		if (is_ctx) printf("ACC2 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("ACC2 accu=%p\n", (void*)accu);
       accu = sp[2]; Next;
     Instruct(ACC3):
-		if (is_ctx) printf("ACC3 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("ACC3 accu=%p\n", (void*)accu);
       accu = sp[3]; Next;
     Instruct(ACC4):
-		if (is_ctx) printf("ACC4 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("ACC4 accu=%p\n", (void*)accu);
       accu = sp[4]; Next;
     Instruct(ACC5):
-		if (is_ctx) printf("ACC5 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("ACC5 accu=%p\n", (void*)accu);
       accu = sp[5]; Next;
     Instruct(ACC6):
-		if (is_ctx) printf("ACC6 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("ACC6 accu=%p\n", (void*)accu);
       accu = sp[6]; Next;
     Instruct(ACC7):
-		if (is_ctx) printf("ACC7 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("ACC7 accu=%p\n", (void*)accu);
       accu = sp[7]; Next;
 
     Instruct(PUSH): Instruct(PUSHACC0):
-		if (is_ctx) printf("PUSH/PUSHACC0 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSH/PUSHACC0 accu=%p\n", (void*)accu);
       *--sp = accu; Next;
     Instruct(PUSHACC1):
-		if (is_ctx) printf("PUSHACC1 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHACC1 accu=%p\n", (void*)accu);
       *--sp = accu; accu = sp[1]; Next;
     Instruct(PUSHACC2):
-		if (is_ctx) printf("PUSHACC2 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHACC2 accu=%p\n", (void*)accu);
       *--sp = accu; accu = sp[2]; Next;
     Instruct(PUSHACC3):
-		if (is_ctx) printf("PUSHACC3 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHACC3 accu=%p\n", (void*)accu);
       *--sp = accu; accu = sp[3]; Next;
     Instruct(PUSHACC4):
-		if (is_ctx) printf("PUSHACC4 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHACC4 accu=%p\n", (void*)accu);
       *--sp = accu; accu = sp[4]; Next;
     Instruct(PUSHACC5):
-		if (is_ctx) printf("PUSHACC5 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHACC5 accu=%p\n", (void*)accu);
       *--sp = accu; accu = sp[5]; Next;
     Instruct(PUSHACC6):
-		if (is_ctx) printf("PUSHACC6 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHACC6 accu=%p\n", (void*)accu);
       *--sp = accu; accu = sp[6]; Next;
     Instruct(PUSHACC7):
-		if (is_ctx) printf("PUSHACC7 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHACC7 accu=%p\n", (void*)accu);
       *--sp = accu; accu = sp[7]; Next;
 
     Instruct(PUSHACC):
-		if (is_ctx) printf("PUSHACC accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHACC accu=%p\n", (void*)accu);
       *--sp = accu;
       /* Fallthrough */
     Instruct(ACC):
-		if (is_ctx) printf("ACC accu=%p\n", (void*)accu);
+		if (debug_mode) printf("ACC accu=%p\n", (void*)accu);
       accu = sp[*pc++];
       Next;
 
     Instruct(POP):
-		if (is_ctx) printf("POP accu=%p\n", (void*)accu);
+		if (debug_mode) printf("POP accu=%p\n", (void*)accu);
       sp += *pc++;
       Next;
     Instruct(ASSIGN):
-		if (is_ctx) printf("ASSIGN accu=%p\n", (void*)accu);
+		if (debug_mode) printf("ASSIGN accu=%p\n", (void*)accu);
       sp[*pc++] = accu;
       accu = Val_unit;
       Next;
@@ -382,44 +389,44 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Access in heap-allocated environment */
 
     Instruct(ENVACC1):
-		if (is_ctx) printf("ENVACC1 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("ENVACC1 accu=%p\n", (void*)accu);
       accu = Field(env, 1); Next;
     Instruct(ENVACC2):
-		if (is_ctx) printf("ENVACC2 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("ENVACC2 accu=%p\n", (void*)accu);
       accu = Field(env, 2); Next;
     Instruct(ENVACC3):
-		if (is_ctx) printf("ENVACC3 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("ENVACC3 accu=%p\n", (void*)accu);
       accu = Field(env, 3); Next;
     Instruct(ENVACC4):
-		if (is_ctx) printf("ENVACC4 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("ENVACC4 accu=%p\n", (void*)accu);
       accu = Field(env, 4); Next;
 
     Instruct(PUSHENVACC1):
-		if (is_ctx) printf("PUSHENVACC1 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHENVACC1 accu=%p\n", (void*)accu);
       *--sp = accu; accu = Field(env, 1); Next;
     Instruct(PUSHENVACC2):
-		if (is_ctx) printf("PUSHENVACC2 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHENVACC2 accu=%p\n", (void*)accu);
       *--sp = accu; accu = Field(env, 2); Next;
     Instruct(PUSHENVACC3):
-		if (is_ctx) printf("PUSHENVACC3 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHENVACC3 accu=%p\n", (void*)accu);
       *--sp = accu; accu = Field(env, 3); Next;
     Instruct(PUSHENVACC4):
-		if (is_ctx) printf("PUSHENVACC4 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHENVACC4 accu=%p\n", (void*)accu);
       *--sp = accu; accu = Field(env, 4); Next;
 
     Instruct(PUSHENVACC):
-		if (is_ctx) printf("PUSHENVACC accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHENVACC accu=%p\n", (void*)accu);
       *--sp = accu;
       /* Fallthrough */
     Instruct(ENVACC):
-		if (is_ctx) printf("ENVACC accu=%p\n", (void*)accu);
+		if (debug_mode) printf("ENVACC accu=%p\n", (void*)accu);
       accu = Field(env, *pc++);
       Next;
 
 /* Function application */
 
     Instruct(PUSH_RETADDR): {
-		if (is_ctx) printf("PUSH_RETADDR accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSH_RETADDR accu=%p\n", (void*)accu);
       sp -= 3;
       sp[0] = (value) (pc + *pc);
       sp[1] = env;
@@ -428,14 +435,14 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
     }
     Instruct(APPLY): {
-		if (is_ctx) printf("APPLY accu=%p\n", (void*)accu);
+		if (debug_mode) printf("APPLY accu=%p\n", (void*)accu);
       extra_args = *pc - 1;
       pc = Code_val(accu);
       env = accu;
       goto check_stacks;
     }
     Instruct(APPLY1): {
-		if (is_ctx) printf("APPLY1 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("APPLY1 accu=%p\n", (void*)accu);
       value arg1 = sp[0];
       sp -= 3;
       sp[0] = arg1;
@@ -448,7 +455,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       goto check_stacks;
     }
     Instruct(APPLY2): {
-		if (is_ctx) printf("APPLY2 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("APPLY2 accu=%p\n", (void*)accu);
       value arg1 = sp[0];
       value arg2 = sp[1];
       sp -= 3;
@@ -463,7 +470,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       goto check_stacks;
     }
     Instruct(APPLY3): {
-		if (is_ctx) printf("APPLY3 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("APPLY3 accu=%p\n", (void*)accu);
       value arg1 = sp[0];
       value arg2 = sp[1];
       value arg3 = sp[2];
@@ -481,7 +488,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     }
 
     Instruct(APPTERM): {
-		if (is_ctx) printf("APPTERM accu=%p\n", (void*)accu);
+		if (debug_mode) printf("APPTERM accu=%p\n", (void*)accu);
       int nargs = *pc++;
       int slotsize = *pc;
       value * newsp;
@@ -497,7 +504,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       goto check_stacks;
     }
     Instruct(APPTERM1): {
-		if (is_ctx) printf("APPTERM1 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("APPTERM1 accu=%p\n", (void*)accu);
       value arg1 = sp[0];
       sp = sp + *pc - 1;
       sp[0] = arg1;
@@ -506,7 +513,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       goto check_stacks;
     }
     Instruct(APPTERM2): {
-		if (is_ctx) printf("APPTERM2 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("APPTERM2 accu=%p\n", (void*)accu);
       value arg1 = sp[0];
       value arg2 = sp[1];
       sp = sp + *pc - 2;
@@ -518,7 +525,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       goto check_stacks;
     }
     Instruct(APPTERM3): {
-		if (is_ctx) printf("APPTERM3 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("APPTERM3 accu=%p\n", (void*)accu);
       value arg1 = sp[0];
       value arg2 = sp[1];
       value arg3 = sp[2];
@@ -533,7 +540,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     }
 
     Instruct(RETURN): {
-		if (is_ctx) printf("RETURN accu=%p\n", (void*)accu);
+		if (debug_mode) printf("RETURN accu=%p\n", (void*)accu);
       sp += *pc++;
       if (extra_args > 0) {
         extra_args--;
@@ -549,7 +556,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     }
 
     Instruct(RESTART): {
-		if (is_ctx) printf("RESTART accu=%p\n", (void*)accu);
+		if (debug_mode) printf("RESTART accu=%p\n", (void*)accu);
       int num_args = Wosize_val(env) - 2;
       int i;
       sp -= num_args;
@@ -560,7 +567,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     }
 
     Instruct(GRAB): {
-		if (is_ctx) printf("GRAB accu=%p\n", (void*)accu);
+		if (debug_mode) printf("GRAB accu=%p\n", (void*)accu);
       int required = *pc++;
       if (extra_args >= required) {
         extra_args -= required;
@@ -581,7 +588,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     }
 
     Instruct(CLOSURE): {
-		if (is_ctx) printf("CLOSURE accu=%p\n", (void*)accu);
+		if (debug_mode) printf("CLOSURE accu=%p\n", (void*)accu);
       int nvars = *pc++;
       int i;
       if (nvars > 0) *--sp = accu;
@@ -594,7 +601,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     }
 
     Instruct(CLOSUREREC): {
-		if (is_ctx) printf("CLOSUREREC accu=%p\n", (void*)accu);
+		if (debug_mode) printf("CLOSUREREC accu=%p\n", (void*)accu);
       int nfuncs = *pc++;
       int nvars = *pc++;
       int i;
@@ -622,50 +629,50 @@ value caml_interprete(code_t prog, asize_t prog_size)
     }
 
     Instruct(PUSHOFFSETCLOSURE):
-		if (is_ctx) printf("PUSHOFFSETCLOSURE accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHOFFSETCLOSURE accu=%p\n", (void*)accu);
       *--sp = accu; /* fallthrough */
     Instruct(OFFSETCLOSURE):
-		if (is_ctx) printf("OFFSETCLOSURE accu=%p\n", (void*)accu);
+		if (debug_mode) printf("OFFSETCLOSURE accu=%p\n", (void*)accu);
       accu = env + *pc++ * sizeof(value); Next;
 
     Instruct(PUSHOFFSETCLOSUREM2):
-		if (is_ctx) printf("PUSHOFFSETCLOSUREM2 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHOFFSETCLOSUREM2 accu=%p\n", (void*)accu);
       *--sp = accu; /* fallthrough */
     Instruct(OFFSETCLOSUREM2):
-		if (is_ctx) printf("OFFSETCLOSUREM2 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("OFFSETCLOSUREM2 accu=%p\n", (void*)accu);
       accu = env - 2 * sizeof(value); Next;
     Instruct(PUSHOFFSETCLOSURE0):
-		if (is_ctx) printf("PUSHOFFSETCLOSURE0 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHOFFSETCLOSURE0 accu=%p\n", (void*)accu);
       *--sp = accu; /* fallthrough */
     Instruct(OFFSETCLOSURE0):
-		if (is_ctx) printf("OFFSETCLOSURE0 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("OFFSETCLOSURE0 accu=%p\n", (void*)accu);
       accu = env; Next;
     Instruct(PUSHOFFSETCLOSURE2):
-		if (is_ctx) printf("PUSHOFFSETCLOSURE2 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHOFFSETCLOSURE2 accu=%p\n", (void*)accu);
       *--sp = accu; /* fallthrough */
     Instruct(OFFSETCLOSURE2):
-		if (is_ctx) printf("OFFSETCLOSURE2 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("OFFSETCLOSURE2 accu=%p\n", (void*)accu);
       accu = env + 2 * sizeof(value); Next;
 
 
 /* Access to global variables */
 
     Instruct(PUSHGETGLOBAL):
-		if (is_ctx) printf("PUSHGETGLOBAL accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHGETGLOBAL accu=%p\n", (void*)accu);
       *--sp = accu;
       /* Fallthrough */
     Instruct(GETGLOBAL):
-		if (is_ctx) printf("GETGLOBAL accu=%p\n", (void*)accu);
+		if (debug_mode) printf("GETGLOBAL accu=%p\n", (void*)accu);
       accu = Field(caml_global_data, *pc);
       pc++;
       Next;
 
     Instruct(PUSHGETGLOBALFIELD):
-		if (is_ctx) printf("PUSHGETGLOBALFIELD accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHGETGLOBALFIELD accu=%p\n", (void*)accu);
       *--sp = accu;
       /* Fallthrough */
     Instruct(GETGLOBALFIELD): {
-		if (is_ctx) printf("GETGLOBALFIELD accu=%p\n", (void*)accu);
+		if (debug_mode) printf("GETGLOBALFIELD accu=%p\n", (void*)accu);
       accu = Field(caml_global_data, *pc);
       pc++;
       accu = Field(accu, *pc);
@@ -674,7 +681,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     }
 
     Instruct(SETGLOBAL):
-		if (is_ctx) printf("SETGLOBAL accu=%p\n", (void*)accu);
+		if (debug_mode) printf("SETGLOBAL accu=%p\n", (void*)accu);
       caml_modify(&Field(caml_global_data, *pc), accu);
       accu = Val_unit;
       pc++;
@@ -683,23 +690,23 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Allocation of blocks */
 
     Instruct(PUSHATOM0):
-		if (is_ctx) printf("PUSHATOM0 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHATOM0 accu=%p\n", (void*)accu);
       *--sp = accu;
       /* Fallthrough */
     Instruct(ATOM0):
-		if (is_ctx) printf("ATOM0 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("ATOM0 accu=%p\n", (void*)accu);
       accu = Atom(0); Next;
 
     Instruct(PUSHATOM):
-		if (is_ctx) printf("PUSHATOM accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHATOM accu=%p\n", (void*)accu);
       *--sp = accu;
       /* Fallthrough */
     Instruct(ATOM):
-		if (is_ctx) printf("ATOM accu=%p\n", (void*)accu);
+		if (debug_mode) printf("ATOM accu=%p\n", (void*)accu);
       accu = Atom(*pc++); Next;
 
     Instruct(MAKEBLOCK): {
-		if (is_ctx) printf("MAKEBLOCK accu=%p\n", (void*)accu);
+		if (debug_mode) printf("MAKEBLOCK accu=%p\n", (void*)accu);
       mlsize_t wosize = *pc++;
       tag_t tag = *pc++;
       mlsize_t i;
@@ -717,7 +724,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
     }
     Instruct(MAKEBLOCK1): {
-		if (is_ctx) printf("MAKEBLOCK1 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("MAKEBLOCK1 accu=%p\n", (void*)accu);
       tag_t tag = *pc++;
       value block;
       Alloc_small(block, 1, tag);
@@ -726,7 +733,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
     }
     Instruct(MAKEBLOCK2): {
-		if (is_ctx) printf("MAKEBLOCK2 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("MAKEBLOCK2 accu=%p\n", (void*)accu);
       tag_t tag = *pc++;
       value block;
       Alloc_small(block, 2, tag);
@@ -737,7 +744,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
     }
     Instruct(MAKEBLOCK3): {
-		if (is_ctx) printf("MAKEBLOCK3 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("MAKEBLOCK3 accu=%p\n", (void*)accu);
       tag_t tag = *pc++;
       value block;
       Alloc_small(block, 3, tag);
@@ -749,7 +756,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
     }
     Instruct(MAKEFLOATBLOCK): {
-		if (is_ctx) printf("MAKEFLOATBLOCK accu=%p\n", (void*)accu);
+		if (debug_mode) printf("MAKEFLOATBLOCK accu=%p\n", (void*)accu);
       mlsize_t size = *pc++;
       mlsize_t i;
       value block;
@@ -770,22 +777,22 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Access to components of blocks */
 
     Instruct(GETFIELD0):
-		if (is_ctx) printf("GETFIELD0 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("GETFIELD0 accu=%p\n", (void*)accu);
       accu = Field(accu, 0); Next;
     Instruct(GETFIELD1):
-		if (is_ctx) printf("GETFIELD1 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("GETFIELD1 accu=%p\n", (void*)accu);
       accu = Field(accu, 1); Next;
     Instruct(GETFIELD2):
-		if (is_ctx) printf("GETFIELD2 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("GETFIELD2 accu=%p\n", (void*)accu);
       accu = Field(accu, 2); Next;
     Instruct(GETFIELD3):
-		if (is_ctx) printf("GETFIELD3 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("GETFIELD3 accu=%p\n", (void*)accu);
       accu = Field(accu, 3); Next;
     Instruct(GETFIELD):
-		if (is_ctx) printf("GETFIELD accu=%p\n", (void*)accu);
+		if (debug_mode) printf("GETFIELD accu=%p\n", (void*)accu);
       accu = Field(accu, *pc); pc++; Next;
     Instruct(GETFLOATFIELD): {
-		if (is_ctx) printf("GETFLOATFIELD accu=%p\n", (void*)accu);
+		if (debug_mode) printf("GETFLOATFIELD accu=%p\n", (void*)accu);
       double d = Double_field(accu, *pc);
       Alloc_small(accu, Double_wosize, Double_tag);
       Store_double_val(accu, d);
@@ -794,7 +801,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     }
 
     Instruct(SETFIELD0):
-		if (is_ctx) printf("SETFIELD0 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("SETFIELD0 accu=%p\n", (void*)accu);
       modify_dest = &Field(accu, 0);
       modify_newval = *sp++;
     modify:
@@ -802,28 +809,28 @@ value caml_interprete(code_t prog, asize_t prog_size)
       accu = Val_unit;
       Next;
     Instruct(SETFIELD1):
-		if (is_ctx) printf("SETFIELD1 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("SETFIELD1 accu=%p\n", (void*)accu);
       modify_dest = &Field(accu, 1);
       modify_newval = *sp++;
       goto modify;
     Instruct(SETFIELD2):
-		if (is_ctx) printf("SETFIELD2 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("SETFIELD2 accu=%p\n", (void*)accu);
       modify_dest = &Field(accu, 2);
       modify_newval = *sp++;
       goto modify;
     Instruct(SETFIELD3):
-		if (is_ctx) printf("SETFIELD3 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("SETFIELD3 accu=%p\n", (void*)accu);
       modify_dest = &Field(accu, 3);
       modify_newval = *sp++;
       goto modify;
     Instruct(SETFIELD):
-		if (is_ctx) printf("SETFIELD accu=%p\n", (void*)accu);
+		if (debug_mode) printf("SETFIELD accu=%p\n", (void*)accu);
       modify_dest = &Field(accu, *pc);
       pc++;
       modify_newval = *sp++;
       goto modify;
     Instruct(SETFLOATFIELD):
-		if (is_ctx) printf("SETFLOATFIELD accu=%p\n", (void*)accu);
+		if (debug_mode) printf("SETFLOATFIELD accu=%p\n", (void*)accu);
       Store_double_field(accu, *pc, Double_val(*sp));
       accu = Val_unit;
       sp++;
@@ -833,19 +840,19 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Array operations */
 
     Instruct(VECTLENGTH): {
-		if (is_ctx) printf("VECTLENGTH accu=%p\n", (void*)accu);
+		if (debug_mode) printf("VECTLENGTH accu=%p\n", (void*)accu);
       mlsize_t size = Wosize_val(accu);
       if (Tag_val(accu) == Double_array_tag) size = size / Double_wosize;
       accu = Val_long(size);
       Next;
     }
     Instruct(GETVECTITEM):
-		if (is_ctx) printf("GETVECTITEM accu=%p\n", (void*)accu);
+		if (debug_mode) printf("GETVECTITEM accu=%p\n", (void*)accu);
       accu = Field(accu, Long_val(sp[0]));
       sp += 1;
       Next;
     Instruct(SETVECTITEM):
-		if (is_ctx) printf("SETVECTITEM accu=%p\n", (void*)accu);
+		if (debug_mode) printf("SETVECTITEM accu=%p\n", (void*)accu);
       modify_dest = &Field(accu, Long_val(sp[0]));
       modify_newval = sp[1];
       sp += 2;
@@ -854,12 +861,12 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* String operations */
 
     Instruct(GETSTRINGCHAR):
-		if (is_ctx) printf("GETSTRINGCHAR accu=%p\n", (void*)accu);
+		if (debug_mode) printf("GETSTRINGCHAR accu=%p\n", (void*)accu);
       accu = Val_int(Byte_u(accu, Long_val(sp[0])));
       sp += 1;
       Next;
     Instruct(SETSTRINGCHAR):
-		if (is_ctx) printf("SETSTRINGCHAR accu=%p\n", (void*)accu);
+		if (debug_mode) printf("SETSTRINGCHAR accu=%p\n", (void*)accu);
       Byte_u(accu, Long_val(sp[0])) = Int_val(sp[1]);
       sp += 2;
       accu = Val_unit;
@@ -868,19 +875,19 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Branches and conditional branches */
 
     Instruct(BRANCH):
-		if (is_ctx) printf("BRANCH accu=%p\n", (void*)accu);
+		if (debug_mode) printf("BRANCH accu=%p\n", (void*)accu);
       pc += *pc;
       Next;
     Instruct(BRANCHIF):
-		if (is_ctx) printf("BRANCHIF accu=%p\n", (void*)accu);
+		if (debug_mode) printf("BRANCHIF accu=%p\n", (void*)accu);
       if (accu != Val_false) pc += *pc; else pc++;
       Next;
     Instruct(BRANCHIFNOT):
-		if (is_ctx) printf("BRANCHIFNOT accu=%p\n", (void*)accu);
+		if (debug_mode) printf("BRANCHIFNOT accu=%p\n", (void*)accu);
       if (accu == Val_false) pc += *pc; else pc++;
       Next;
     Instruct(SWITCH): {
-		if (is_ctx) printf("SWITCH accu=%p\n", (void*)accu);
+		if (debug_mode) printf("SWITCH accu=%p\n", (void*)accu);
       uint32 sizes = *pc++;
       if (Is_block(accu)) {
         intnat index = Tag_val(accu);
@@ -894,14 +901,14 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
     }
     Instruct(BOOLNOT):
-		if (is_ctx) printf("BOOLNOT accu=%p\n", (void*)accu);
+		if (debug_mode) printf("BOOLNOT accu=%p\n", (void*)accu);
       accu = Val_not(accu);
       Next;
 
 /* Exceptions */
 
     Instruct(PUSHTRAP):
-		if (is_ctx) printf("PUSHTRAP accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHTRAP accu=%p\n", (void*)accu);
       sp -= 4;
       Trap_pc(sp) = pc + *pc;
       Trap_link(sp) = caml_trapsp;
@@ -912,7 +919,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
 
     Instruct(POPTRAP):
-		if (is_ctx) printf("POPTRAP accu=%p\n", (void*)accu);
+		if (debug_mode) printf("POPTRAP accu=%p\n", (void*)accu);
       if (caml_something_to_do) {
         /* We must check here so that if a signal is pending and its
            handler triggers an exception, the exception is trapped
@@ -925,7 +932,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
 
     Instruct(RAISE):
-		if (is_ctx) printf("RAISE accu=%p\n", (void*)accu);
+		if (debug_mode) printf("RAISE accu=%p\n", (void*)accu);
     raise_exception:
       if (caml_trapsp >= caml_trap_barrier) caml_debugger(TRAP_BARRIER);
       if (caml_backtrace_active) caml_stash_backtrace(accu, pc, sp);
@@ -971,14 +978,14 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Calling C functions */
 
     Instruct(C_CALL1):
-		if (is_ctx) printf("C_CALL1 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("C_CALL1 accu=%p\n", (void*)accu);
       Setup_for_c_call;
       accu = Primitive(*pc)(accu);
       Restore_after_c_call;
       pc++;
       Next;
     Instruct(C_CALL2):
-		if (is_ctx) printf("C_CALL2 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("C_CALL2 accu=%p\n", (void*)accu);
       Setup_for_c_call;
       accu = Primitive(*pc)(accu, sp[1]);
       Restore_after_c_call;
@@ -986,7 +993,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       pc++;
       Next;
     Instruct(C_CALL3):
-		if (is_ctx) printf("C_CALL3 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("C_CALL3 accu=%p\n", (void*)accu);
       Setup_for_c_call;
       accu = Primitive(*pc)(accu, sp[1], sp[2]);
       Restore_after_c_call;
@@ -994,7 +1001,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       pc++;
       Next;
     Instruct(C_CALL4):
-		if (is_ctx) printf("C_CALL4 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("C_CALL4 accu=%p\n", (void*)accu);
       Setup_for_c_call;
       accu = Primitive(*pc)(accu, sp[1], sp[2], sp[3]);
       Restore_after_c_call;
@@ -1002,7 +1009,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       pc++;
       Next;
     Instruct(C_CALL5):
-		if (is_ctx) printf("C_CALL5 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("C_CALL5 accu=%p\n", (void*)accu);
       Setup_for_c_call;
       accu = Primitive(*pc)(accu, sp[1], sp[2], sp[3], sp[4]);
       Restore_after_c_call;
@@ -1010,7 +1017,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       pc++;
       Next;
     Instruct(C_CALLN): {
-		if (is_ctx) printf("C_CALLN accu=%p\n", (void*)accu);
+		if (debug_mode) printf("C_CALLN accu=%p\n", (void*)accu);
       int nargs = *pc++;
       *--sp = accu;
       Setup_for_c_call;
@@ -1022,53 +1029,53 @@ value caml_interprete(code_t prog, asize_t prog_size)
     }
 
     Instruct(C_CALL1_R):
-		if (is_ctx) printf("C_CALL1_R accu=%p\n", (void*)accu);
+		if (debug_mode) printf("C_CALL1_R accu=%p\n", (void*)accu);
       Setup_for_c_call;
-      accu = (value)ctx;
+      if (!no_ctx) accu = (value)ctx;
       accu = Primitive(*pc)(accu);
       Restore_after_c_call;
       pc++;
       Next;
     Instruct(C_CALL2_R):
-		if (is_ctx) printf("C_CALL2_R accu=%p\n", (void*)accu);
+		if (debug_mode) printf("C_CALL2_R accu=%p\n", (void*)accu);
       Setup_for_c_call;
-      accu = (value)ctx;
+      if (!no_ctx) accu = (value)ctx;
       accu = Primitive(*pc)(accu, sp[1]);
       Restore_after_c_call;
       sp += 1;
       pc++;
       Next;
     Instruct(C_CALL3_R):
-		if (is_ctx) printf("C_CALL3_R accu=%p\n", (void*)accu);
+		if (debug_mode) printf("C_CALL3_R accu=%p\n", (void*)accu);
       Setup_for_c_call;
-      accu = (value)ctx;
+      if (!no_ctx) accu = (value)ctx;
       accu = Primitive(*pc)(accu, sp[1], sp[2]);
       Restore_after_c_call;
       sp += 2;
       pc++;
       Next;
     Instruct(C_CALL4_R):
-		if (is_ctx) printf("C_CALL4_R accu=%p\n", (void*)accu);
+		if (debug_mode) printf("C_CALL4_R accu=%p\n", (void*)accu);
       Setup_for_c_call;
-      accu = (value)ctx;
+      if (!no_ctx) accu = (value)ctx;
       accu = Primitive(*pc)(accu, sp[1], sp[2], sp[3]);
       Restore_after_c_call;
       sp += 3;
       pc++;
       Next;
     Instruct(C_CALL5_R):
-		if (is_ctx) printf("C_CALL5_R accu=%p\n", (void*)accu);
+		if (debug_mode) printf("C_CALL5_R accu=%p\n", (void*)accu);
       Setup_for_c_call;
-      accu = (value)ctx;
+      if (!no_ctx) accu = (value)ctx;
       accu = Primitive(*pc)(accu, sp[1], sp[2], sp[3], sp[4]);
       Restore_after_c_call;
       sp += 4;
       pc++;
       Next;
     Instruct(C_CALLN_R): {
-		if (is_ctx) printf("C_CALLN_R accu=%p\n", (void*)accu);
+		if (debug_mode) printf("C_CALLN_R accu=%p\n", (void*)accu);
       int nargs = *pc++;
-      accu = (value)ctx;
+      if (!no_ctx) accu = (value)ctx;
       *--sp = accu;
       Setup_for_c_call;
       accu = Primitive(*pc)(sp + 1, nargs);
@@ -1081,37 +1088,37 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Integer constants */
 
     Instruct(CONST0):
-		if (is_ctx) printf("CONST0 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("CONST0 accu=%p\n", (void*)accu);
       accu = Val_int(0); Next;
     Instruct(CONST1):
-		if (is_ctx) printf("CONST1 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("CONST1 accu=%p\n", (void*)accu);
       accu = Val_int(1); Next;
     Instruct(CONST2):
-		if (is_ctx) printf("CONST2 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("CONST2 accu=%p\n", (void*)accu);
       accu = Val_int(2); Next;
     Instruct(CONST3):
-		if (is_ctx) printf("CONST3 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("CONST3 accu=%p\n", (void*)accu);
       accu = Val_int(3); Next;
 
     Instruct(PUSHCONST0):
-		if (is_ctx) printf("PUSHCONST0 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHCONST0 accu=%p\n", (void*)accu);
       *--sp = accu; accu = Val_int(0); Next;
     Instruct(PUSHCONST1):
-		if (is_ctx) printf("PUSHCONST1 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHCONST1 accu=%p\n", (void*)accu);
       *--sp = accu; accu = Val_int(1); Next;
     Instruct(PUSHCONST2):
-		if (is_ctx) printf("PUSHCONST2 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHCONST2 accu=%p\n", (void*)accu);
       *--sp = accu; accu = Val_int(2); Next;
     Instruct(PUSHCONST3):
-		if (is_ctx) printf("PUSHCONST3 accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHCONST3 accu=%p\n", (void*)accu);
       *--sp = accu; accu = Val_int(3); Next;
 
     Instruct(PUSHCONSTINT):
-		if (is_ctx) printf("PUSHCONSTINT accu=%p\n", (void*)accu);
+		if (debug_mode) printf("PUSHCONSTINT accu=%p\n", (void*)accu);
       *--sp = accu;
       /* Fallthrough */
     Instruct(CONSTINT):
-		if (is_ctx) printf("CONSTINT accu=%p\n", (void*)accu);
+		if (debug_mode) printf("CONSTINT accu=%p\n", (void*)accu);
       accu = Val_int(*pc);
       pc++;
       Next;
@@ -1119,20 +1126,20 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Integer arithmetic */
 
     Instruct(NEGINT):
-		if (is_ctx) printf("NEGINT accu=%p\n", (void*)accu);
+		if (debug_mode) printf("NEGINT accu=%p\n", (void*)accu);
       accu = (value)(2 - (intnat)accu); Next;
     Instruct(ADDINT):
-		if (is_ctx) printf("ADDINT accu=%p\n", (void*)accu);
+		if (debug_mode) printf("ADDINT accu=%p\n", (void*)accu);
       accu = (value)((intnat) accu + (intnat) *sp++ - 1); Next;
     Instruct(SUBINT):
-		if (is_ctx) printf("SUBINT accu=%p\n", (void*)accu);
+		if (debug_mode) printf("SUBINT accu=%p\n", (void*)accu);
       accu = (value)((intnat) accu - (intnat) *sp++ + 1); Next;
     Instruct(MULINT):
-		if (is_ctx) printf("MULINT accu=%p\n", (void*)accu);
+		if (debug_mode) printf("MULINT accu=%p\n", (void*)accu);
       accu = Val_long(Long_val(accu) * Long_val(*sp++)); Next;
 
     Instruct(DIVINT): {
-		if (is_ctx) printf("DIVINT accu=%p\n", (void*)accu);
+		if (debug_mode) printf("DIVINT accu=%p\n", (void*)accu);
       intnat divisor = Long_val(*sp++);
       if (divisor == 0) { Setup_for_c_call; caml_raise_zero_divide(); }
 #ifdef NONSTANDARD_DIV_MOD
@@ -1143,7 +1150,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
     }
     Instruct(MODINT): {
-		if (is_ctx) printf("MODINT accu=%p\n", (void*)accu);
+		if (debug_mode) printf("MODINT accu=%p\n", (void*)accu);
       intnat divisor = Long_val(*sp++);
       if (divisor == 0) { Setup_for_c_call; caml_raise_zero_divide(); }
 #ifdef NONSTANDARD_DIV_MOD
@@ -1154,23 +1161,23 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
     }
     Instruct(ANDINT):
-		if (is_ctx) printf("ANDINT accu=%p\n", (void*)accu);
+		if (debug_mode) printf("ANDINT accu=%p\n", (void*)accu);
       accu = (value)((intnat) accu & (intnat) *sp++); Next;
     Instruct(ORINT):
-		if (is_ctx) printf("ORINT accu=%p\n", (void*)accu);
+		if (debug_mode) printf("ORINT accu=%p\n", (void*)accu);
       accu = (value)((intnat) accu | (intnat) *sp++); Next;
     Instruct(XORINT):
-		if (is_ctx) printf("XORINT accu=%p\n", (void*)accu);
+		if (debug_mode) printf("XORINT accu=%p\n", (void*)accu);
       accu = (value)(((intnat) accu ^ (intnat) *sp++) | 1); Next;
     Instruct(LSLINT):
-		if (is_ctx) printf("LSLINT accu=%p\n", (void*)accu);
+		if (debug_mode) printf("LSLINT accu=%p\n", (void*)accu);
       accu = (value)((((intnat) accu - 1) << Long_val(*sp++)) + 1); Next;
     Instruct(LSRINT):
-		if (is_ctx) printf("LSRINT accu=%p\n", (void*)accu);
+		if (debug_mode) printf("LSRINT accu=%p\n", (void*)accu);
       accu = (value)((((uintnat) accu - 1) >> Long_val(*sp++)) | 1);
       Next;
     Instruct(ASRINT):
-		if (is_ctx) printf("ASRINT accu=%p\n", (void*)accu);
+		if (debug_mode) printf("ASRINT accu=%p\n", (void*)accu);
       accu = (value)((((intnat) accu - 1) >> Long_val(*sp++)) | 1); Next;
 
 #define Integer_comparison(typ,opname,tst) \
@@ -1204,18 +1211,18 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Integer_branch_comparison(uintnat,BUGEINT, >=, ">=")
 
     Instruct(OFFSETINT):
-		if (is_ctx) printf("OFFSETINT accu=%p\n", (void*)accu);
+		if (debug_mode) printf("OFFSETINT accu=%p\n", (void*)accu);
       accu += *pc << 1;
       pc++;
       Next;
     Instruct(OFFSETREF):
-		if (is_ctx) printf("OFFSETREF accu=%p\n", (void*)accu);
+		if (debug_mode) printf("OFFSETREF accu=%p\n", (void*)accu);
       Field(accu, 0) += *pc << 1;
       accu = Val_unit;
       pc++;
       Next;
     Instruct(ISINT):
-		if (is_ctx) printf("ISINT accu=%p\n", (void*)accu);
+		if (debug_mode) printf("ISINT accu=%p\n", (void*)accu);
       accu = Val_long(accu & 1);
       Next;
 
@@ -1228,14 +1235,14 @@ value caml_interprete(code_t prog, asize_t prog_size)
          caml_cache_public_method2 in obj.c */
 
     Instruct(GETMETHOD):
-		if (is_ctx) printf("GETMETHOD accu=%p\n", (void*)accu);
+		if (debug_mode) printf("GETMETHOD accu=%p\n", (void*)accu);
       accu = Lookup(sp[0], accu);
       Next;
 
 #define CAML_METHOD_CACHE
 #ifdef CAML_METHOD_CACHE
     Instruct(GETPUBMET): {
-		if (is_ctx) printf("GETPUBMET accu=%p\n", (void*)accu);
+		if (debug_mode) printf("GETPUBMET accu=%p\n", (void*)accu);
       /* accu == object, pc[0] == tag, pc[1] == cache */
       value meths = Field (accu, 0);
       value ofs;
@@ -1272,14 +1279,14 @@ value caml_interprete(code_t prog, asize_t prog_size)
     }
 #else
     Instruct(GETPUBMET):
-		if (is_ctx) printf("GETPUBMET accu=%p\n", (void*)accu);
+		if (debug_mode) printf("GETPUBMET accu=%p\n", (void*)accu);
       *--sp = accu;
       accu = Val_int(*pc);
       pc += 2;
       /* Fallthrough */
 #endif
     Instruct(GETDYNMET): {
-		if (is_ctx) printf("GETDYNMET accu=%p\n", (void*)accu);
+		if (debug_mode) printf("GETDYNMET accu=%p\n", (void*)accu);
       /* accu == tag, sp[0] == object, *pc == cache */
       value meths = Field (sp[0], 0);
       int li = 3, hi = Field(meths,0), mi;
@@ -1295,14 +1302,14 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Debugging and machine control */
 
     Instruct(STOP):
-		if (is_ctx) printf("STOP accu=%p\n", (void*)accu);
+		if (debug_mode) printf("STOP accu=%p\n", (void*)accu);
       caml_external_raise = initial_external_raise;
       caml_extern_sp = sp;
       caml_callback_depth--;
       return accu;
 
     Instruct(EVENT):
-		if (is_ctx) printf("EVENT accu=%p\n", (void*)accu);
+		if (debug_mode) printf("EVENT accu=%p\n", (void*)accu);
       if (--caml_event_count == 0) {
         Setup_for_debugger;
         caml_debugger(EVENT_COUNT);

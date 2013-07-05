@@ -141,7 +141,7 @@ world.opt:
 # Core bootstrapping cycle
 coreboot:
 # Save the original bootstrap compiler
-	$(MAKE) backup
+#	$(MAKE) backup
 # Promote the new compiler but keep the old runtime
 # This compiler runs on boot/ocamlrun and produces bytecode for
 # byterun/ocamlrun

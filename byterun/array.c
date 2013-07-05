@@ -21,6 +21,7 @@
 #include "memory.h"
 #include "misc.h"
 #include "mlvalues.h"
+#include "context.h"
 
 CAMLexport mlsize_t caml_array_length(value array)
 {
@@ -177,6 +178,12 @@ CAMLprim value caml_make_vect(value len, value init)
     }
   }
   CAMLreturn (res);
+}
+
+CAMLprim value caml_make_vect_r(pctxt ctx, value len, value init)
+{
+//  printf("caml_make_vect_r\n");
+  return caml_make_vect(len, init);
 }
 
 CAMLprim value caml_make_array(value init)

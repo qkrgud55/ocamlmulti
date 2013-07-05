@@ -42,7 +42,7 @@
 extern int caml_parser_trace;
 CAMLexport header_t caml_atom_table[256];
 char * caml_code_area_start, * caml_code_area_end;
-int is_ctx = 0;
+int is_ctx = 1;
 
 /* Initialize the atom table and the static data and code area limits. */
 
@@ -139,7 +139,7 @@ static void parse_camlrunparam(void)
       case 'b': caml_record_backtrace(Val_true); break;
       case 'p': caml_parser_trace = 1; break;
       case 'a': scanmult (opt, &p); caml_set_allocation_policy (p); break;
-      case 'c': is_ctx = 1; break;
+      case 'c': is_ctx = 0; break;
       }
     }
   }
@@ -193,7 +193,7 @@ void caml_main(char **argv)
     return;
   }
   if (is_ctx){
-    printf("startup.c start_program_R\n");
+    printf("asmrun/startup.c start_program_R\n");
     *(header_t*)ctx = Make_header(1,11,0);
     ctx = Val_hp(ctx);
     Field(ctx, 0) = 0x201;

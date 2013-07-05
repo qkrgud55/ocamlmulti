@@ -357,7 +357,7 @@ static intnat norm_minsize (intnat s)
   return s;
 }
 
-CAMLprim value caml_gc_set(value v)
+CAMLprim value caml_gc_set(pctxt ctx, value v)
 {
   uintnat newpf, newpm;
   asize_t newheapincr;
@@ -401,7 +401,7 @@ CAMLprim value caml_gc_set(value v)
   if (newminsize != caml_minor_heap_size){
     caml_gc_message (0x20, "New minor heap size: %luk bytes\n",
                      newminsize/1024);
-    caml_set_minor_heap_size (newminsize);
+    caml_set_minor_heap_size (ctx, newminsize);
   }
   return Val_unit;
 }
@@ -471,7 +471,7 @@ CAMLprim value caml_gc_compaction(value v)
   return Val_unit;
 }
 
-void caml_init_gc (pctxt ctxt,
+void caml_init_gc (pctxt ctx,
                    uintnat minor_size, uintnat major_size,
                    uintnat major_incr, uintnat percent_fr,
                    uintnat percent_m)
@@ -481,7 +481,7 @@ void caml_init_gc (pctxt ctxt,
   if (caml_page_table_initialize(Bsize_wsize(minor_size) + major_heap_size)){
     caml_fatal_error ("OCaml runtime error: cannot initialize page table\n");
   }
-  caml_set_minor_heap_size (Bsize_wsize (norm_minsize (minor_size)));
+  caml_set_minor_heap_size (ctx, Bsize_wsize (norm_minsize (minor_size)));
   caml_major_heap_increment = Bsize_wsize (norm_heapincr (major_incr));
   caml_percent_free = norm_pfree (percent_fr);
   caml_percent_max = norm_pmax (percent_m);

@@ -73,7 +73,7 @@ static void clear_table (struct caml_ref_table *tbl)
     tbl->limit = tbl->threshold;
 }
 
-void caml_set_minor_heap_size (asize_t size)
+void caml_set_minor_heap_size (pctxt ctx, asize_t size)
 {
   char *new_heap;
   void *new_heap_base;

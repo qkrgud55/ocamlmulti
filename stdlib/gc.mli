@@ -163,7 +163,7 @@ external counters : unit -> float * float * float = "caml_gc_counters"
 external get : unit -> control = "caml_gc_get"
 (** Return the current values of the GC parameters in a [control] record. *)
 
-external set : control -> unit = "caml_gc_set"
+external set : control -> unit = "caml_gc_set" "reentrant"
 (** [set r] changes the GC parameters according to the [control] record [r].
    The normal usage is: [Gc.set { (Gc.get()) with Gc.verbose = 0x00d }] *)
 

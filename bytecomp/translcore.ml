@@ -280,7 +280,13 @@ let primitives_table = create_hashtable 57 [
 ]
 
 let prim_makearray =
-  { prim_name = "caml_make_vect_r"; prim_arity = 2; prim_alloc = true; prim_ctx = true;
+  if !Clflags.phcr then
+  { prim_name = "caml_make_vect_r"; prim_arity = 2; 
+    prim_alloc = true; prim_ctx = true;
+    prim_native_name = ""; prim_native_float = false }
+  else
+  { prim_name = "caml_make_vect"; prim_arity = 2; 
+    prim_alloc = true; prim_ctx = false;
     prim_native_name = ""; prim_native_float = false }
 
 let prim_obj_dup =

@@ -67,6 +67,7 @@ module type Bytecomp_options =
     val _drawlambda : unit -> unit
     val _dlambda : unit -> unit
     val _dinstr : unit -> unit
+    val _phcr :  unit -> unit
 
     val anonymous : string -> unit
   end
@@ -98,6 +99,7 @@ module type Bytetop_options = sig
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
   val _dinstr : unit -> unit
+  val _phcr :  unit -> unit
 
   val anonymous : string -> unit
 end;;
@@ -169,6 +171,7 @@ module type Optcomp_options = sig
   val _dscheduling :  unit -> unit
   val _dlinear :  unit -> unit
   val _dstartup :  unit -> unit
+  val _phcr :  unit -> unit
 
   val anonymous : string -> unit
 end;;
@@ -215,6 +218,7 @@ module type Opttop_options = sig
   val _dscheduling :  unit -> unit
   val _dlinear :  unit -> unit
   val _dstartup :  unit -> unit
+  val _phcr :  unit -> unit
 
   val anonymous : string -> unit
 end;;

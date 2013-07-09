@@ -408,6 +408,7 @@ LBL(caml_c_call):
 /* Start the OCaml program */
 
 FUNCTION(G(caml_start_program))
+
 FUNCTION(G(caml_start_program_r))  /* phc ctx */
         CFI_STARTPROC
     /* Save callee-save registers */

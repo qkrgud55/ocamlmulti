@@ -11,7 +11,6 @@
 (***********************************************************************)
 
 (* $Id: main_args.ml 12511 2012-05-30 13:29:48Z lefessan $ *)
-
 let mk_a f =
   "-a", Arg.Unit f, " Build a library"
 ;;
@@ -392,6 +391,9 @@ let mk_dstartup f =
   "-dstartup", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_phcr f =
+  "-phcr", Arg.Unit f, "phc use reentrant prim function"
+
 let mk__ f =
   "-", Arg.String f,
   "<file>  Treat <file> as a file name (even if it starts with `-')"
@@ -451,6 +453,7 @@ module type Bytecomp_options = sig
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
   val _dinstr : unit -> unit
+  val _phcr : unit -> unit
 
   val anonymous : string -> unit
 end;;
@@ -481,6 +484,7 @@ module type Bytetop_options = sig
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
   val _dinstr : unit -> unit
+  val _phcr : unit -> unit
 
   val anonymous : string -> unit
 end;;
@@ -552,6 +556,7 @@ module type Optcomp_options = sig
   val _dscheduling :  unit -> unit
   val _dlinear :  unit -> unit
   val _dstartup :  unit -> unit
+  val _phcr :  unit -> unit
 
   val anonymous : string -> unit
 end;;
@@ -598,6 +603,7 @@ module type Opttop_options = sig
   val _dscheduling :  unit -> unit
   val _dlinear :  unit -> unit
   val _dstartup :  unit -> unit
+  val _phcr :  unit -> unit
 
   val anonymous : string -> unit
 end;;
@@ -668,6 +674,7 @@ struct
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
     mk_dinstr F._dinstr;
+    mk_phcr F._phcr;
 
     mk__ F.anonymous;
   ]
@@ -701,6 +708,7 @@ struct
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
     mk_dinstr F._dinstr;
+    mk_phcr F._phcr;
 
     mk__ F.anonymous;
   ]
@@ -776,6 +784,7 @@ struct
     mk_dscheduling F._dscheduling;
     mk_dlinear F._dlinear;
     mk_dstartup F._dstartup;
+    mk_phcr F._phcr;
 
     mk__ F.anonymous;
   ]
@@ -823,6 +832,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dscheduling F._dscheduling;
     mk_dlinear F._dlinear;
     mk_dstartup F._dstartup;
+    mk_phcr F._phcr;
 
     mk__ F.anonymous;
   ]

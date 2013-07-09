@@ -400,6 +400,7 @@ CAMLexport void caml_main(char ** argv)
   /* Build the table of primitives */
   shared_lib_path = read_section(fd, &trail, "DLPT");
   shared_libs = read_section(fd, &trail, "DLLS");
+//  printf("byterun/startup.c shared_libs : %s\n", shared_libs);
   req_prims = read_section(fd, &trail, "PRIM");
   if (req_prims == NULL) caml_fatal_error("Fatal error: no PRIM section\n");
   caml_build_primitive_table(shared_lib_path, shared_libs, req_prims);

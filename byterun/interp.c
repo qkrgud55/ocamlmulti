@@ -223,7 +223,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
   value * modify_dest, modify_newval;
   int debug_mode;
   int no_ctx;
-  pctxt ctx = 0x101;
+  pctxt ctx;
 #ifndef THREADED_CODE
   opcode_t curr_instr;
 #endif
@@ -233,6 +233,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #    include "jumptbl.h"
   };
 #endif
+
+  ctx = create_empty_context();
+  *(int*)ctx = 0x101;
 
   /* phc ctx */
   if (getenv("PHC_DEBUG")) {

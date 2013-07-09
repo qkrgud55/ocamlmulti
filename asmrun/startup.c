@@ -150,7 +150,7 @@ struct longjmp_buffer caml_termination_jmpbuf;
 void (*caml_termination_hook)(void *) = NULL;
 
 extern value caml_start_program (void);
-extern value caml_start_program_R (pctxt ctx);
+extern value caml_start_program_r (pctxt ctx);
 extern void caml_init_ieee_floats (void);
 extern void caml_init_signals (void);
 
@@ -197,7 +197,7 @@ void caml_main(char **argv)
     *(header_t*)ctx = Make_header(1,11,0);
     ctx = Val_hp(ctx);
     Field(ctx, 0) = 0x201;
-    res = caml_start_program_R(ctx);
+    res = caml_start_program_r(ctx);
   }
   else
     res = caml_start_program();

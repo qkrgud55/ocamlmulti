@@ -27,8 +27,10 @@ module Array :
     external length : 'a array -> int = "%array_length"
     external get : 'a array -> int -> 'a = "%array_safe_get"
     external set : 'a array -> int -> 'a -> unit = "%array_safe_set"
-    external make : int -> 'a -> 'a array = "caml_make_vect_r" "reentrant"
-    external create : int -> 'a -> 'a array = "caml_make_vect_r" "reentrant"
+    external make : int -> 'a -> 'a array = "caml_make_vect"
+    external create : int -> 'a -> 'a array = "caml_make_vect"
+    external make_r : int -> 'a -> 'a array = "caml_make_vect_r" "reentrant"
+    external create_r : int -> 'a -> 'a array = "caml_make_vect_r" "reentrant"
     val init : int -> f:(int -> 'a) -> 'a array
     val make_matrix : dimx:int -> dimy:int -> 'a -> 'a array array
     val create_matrix : dimx:int -> dimy:int -> 'a -> 'a array array

@@ -407,16 +407,15 @@ LBL(caml_c_call):
 
 /* Start the OCaml program */
 
-FUNCTION(G(caml_start_program_R))  /* phc ctx */
-        movq   %rdi, %r13          /* first arg from caml_main*/
-
 FUNCTION(G(caml_start_program))
+FUNCTION(G(caml_start_program_r))  /* phc ctx */
         CFI_STARTPROC
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
         CFI_ADJUST(56)
     /* Initial entry point is G(caml_program) */
         leaq    GCALL(caml_program)(%rip), %r12
+        movq   %rdi, %r13          /* first arg from caml_main*/
     /* Common code for caml_start_program and caml_callback* */
 LBL(caml_start_program):
     /* Build a callback link */

@@ -22,6 +22,7 @@
 #include "compatibility.h"
 #endif
 #include "config.h"
+#include "context.h"
 /* <private> */
 #include "gc.h"
 #include "major_gc.h"

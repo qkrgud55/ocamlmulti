@@ -42,7 +42,7 @@
 extern int caml_parser_trace;
 CAMLexport header_t caml_atom_table[256];
 char * caml_code_area_start, * caml_code_area_end;
-int is_ctx = 1;
+int is_ctx = 0;
 
 /* Initialize the atom table and the static data and code area limits. */
 
@@ -139,7 +139,7 @@ static void parse_camlrunparam(void)
       case 'b': caml_record_backtrace(Val_true); break;
       case 'p': caml_parser_trace = 1; break;
       case 'a': scanmult (opt, &p); caml_set_allocation_policy (p); break;
-      case 'c': is_ctx = 0; break;
+      case 'c': is_ctx = 1; break;
       }
     }
   }
@@ -172,8 +172,15 @@ void caml_main(char **argv)
   caml_top_of_stack = &tos;
   parse_camlrunparam();
   ctx = create_empty_context();
-  caml_init_gc (ctx, minor_heap_init, heap_size_init, heap_chunk_init,
-                percent_free_init, max_percent_free_init);
+  if (is_ctx){
+    main_ctx = ctx;
+    caml_init_gc_r (ctx, minor_heap_init, heap_size_init, heap_chunk_init,
+                    percent_free_init, max_percent_free_init);
+  }
+  else
+    caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
+                  percent_free_init, max_percent_free_init);
+
   init_atoms();
   caml_init_signals();
   caml_debugger_init (); /* force debugger.o stub to be linked */
@@ -194,13 +201,15 @@ void caml_main(char **argv)
   }
   if (is_ctx){
     printf("asmrun/startup.c start_program_R\n");
-    *(header_t*)ctx = Make_header(1,11,0);
-    ctx = Val_hp(ctx);
-    Field(ctx, 0) = 0x201;
     res = caml_start_program_r(ctx);
   }
   else
     res = caml_start_program();
+
+  if (is_ctx){
+    if (access_to_non_ctx)
+      printf("access_to_non_ctx! need resolution\n");
+  }
   if (Is_exception_result(res))
     caml_fatal_uncaught_exception(Extract_exception(res));
 }

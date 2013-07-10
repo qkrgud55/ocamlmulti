@@ -32,7 +32,10 @@ extern intnat
      caml_stat_compactions,
      caml_stat_heap_chunks;
 
-void caml_init_gc (pctxt, uintnat, uintnat, uintnat,
+void caml_init_gc (uintnat, uintnat, uintnat,
+                   uintnat, uintnat);
+
+void caml_init_gc_r (pctxt, uintnat, uintnat, uintnat,
                    uintnat, uintnat);
 
 

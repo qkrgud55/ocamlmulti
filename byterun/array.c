@@ -186,7 +186,7 @@ CAMLprim value caml_make_vect_r(pctxt ctx, value len, value init)
   value *ctx1 = ctx;
 
   if (is_first)
-    printf("caml_make_vect_r *ctx = %x %x %x\n", *(ctx1-1), *ctx1, *(ctx1+1)); 
+    printf("caml_make_vect_r *ctx = %x %x %x %x\n", *(ctx1), *(ctx1+1), *(ctx1+2), *(ctx1+3)); 
   if (!getenv("OCAMLVECT"))
     is_first = 0;
 

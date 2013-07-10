@@ -20,7 +20,11 @@ typedef struct phc_global_context {
 
 typedef phc_global_context *pctxt;
 
-extern pctxt the_ctxt;
+// phc - main_ctx valid only in non-parallel mode
+// inited once by startup 
+// use main_ctx to call a reentrant function inside a normal function
+extern int access_to_non_ctx;
+extern pctxt main_ctx;
 
 extern pctxt create_empty_context(void);
 extern void destroy_context(pctxt);

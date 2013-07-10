@@ -357,7 +357,7 @@ static intnat norm_minsize (intnat s)
   return s;
 }
 
-CAMLprim value caml_gc_set(pctxt ctx, value v)
+CAMLprim value caml_gc_set(value v)
 {
   uintnat newpf, newpm;
   asize_t newheapincr;
@@ -401,10 +401,60 @@ CAMLprim value caml_gc_set(pctxt ctx, value v)
   if (newminsize != caml_minor_heap_size){
     caml_gc_message (0x20, "New minor heap size: %luk bytes\n",
                      newminsize/1024);
-    caml_set_minor_heap_size (ctx, newminsize);
+    caml_set_minor_heap_size (newminsize);
   }
   return Val_unit;
 }
+
+CAMLprim value caml_gc_set_r(pctxt ctx, value v)
+{
+  uintnat newpf, newpm;
+  asize_t newheapincr;
+  asize_t newminsize;
+  uintnat oldpolicy;
+
+  caml_verb_gc = Long_val (Field (v, 3));
+
+#ifndef NATIVE_CODE
+  caml_change_max_stack_size (Long_val (Field (v, 5)));
+#endif
+
+  newpf = norm_pfree (Long_val (Field (v, 2)));
+  if (newpf != caml_percent_free){
+    caml_percent_free = newpf;
+    caml_gc_message (0x20, "New space overhead: %d%%\n", caml_percent_free);
+  }
+
+  newpm = norm_pmax (Long_val (Field (v, 4)));
+  if (newpm != caml_percent_max){
+    caml_percent_max = newpm;
+    caml_gc_message (0x20, "New max overhead: %d%%\n", caml_percent_max);
+  }
+
+  newheapincr = Bsize_wsize (norm_heapincr (Long_val (Field (v, 1))));
+  if (newheapincr != caml_major_heap_increment){
+    caml_major_heap_increment = newheapincr;
+    caml_gc_message (0x20, "New heap increment size: %luk bytes\n",
+                     caml_major_heap_increment/1024);
+  }
+  oldpolicy = caml_allocation_policy;
+  caml_set_allocation_policy (Long_val (Field (v, 6)));
+  if (oldpolicy != caml_allocation_policy){
+    caml_gc_message (0x20, "New allocation policy: %d\n",
+                     caml_allocation_policy);
+  }
+
+    /* Minor heap size comes last because it will trigger a minor collection
+       (thus invalidating [v]) and it can raise [Out_of_memory]. */
+  newminsize = norm_minsize (Bsize_wsize (Long_val (Field (v, 0))));
+  if (newminsize != caml_minor_heap_size){
+    caml_gc_message (0x20, "New minor heap size: %luk bytes\n",
+                     newminsize/1024);
+    caml_set_minor_heap_size_r (ctx, newminsize);
+  }
+  return Val_unit;
+}
+
 
 CAMLprim value caml_gc_minor(value v)
 {                                                    Assert (v == Val_unit);
@@ -471,7 +521,33 @@ CAMLprim value caml_gc_compaction(value v)
   return Val_unit;
 }
 
-void caml_init_gc (pctxt ctx,
+void caml_init_gc (uintnat minor_size, uintnat major_size,
+                   uintnat major_incr, uintnat percent_fr,
+                   uintnat percent_m)
+{
+  uintnat major_heap_size = Bsize_wsize (norm_heapincr (major_size));
+
+  if (caml_page_table_initialize(Bsize_wsize(minor_size) + major_heap_size)){
+    caml_fatal_error ("OCaml runtime error: cannot initialize page table\n");
+  }
+  caml_set_minor_heap_size (Bsize_wsize (norm_minsize (minor_size)));
+  caml_major_heap_increment = Bsize_wsize (norm_heapincr (major_incr));
+  caml_percent_free = norm_pfree (percent_fr);
+  caml_percent_max = norm_pmax (percent_m);
+  caml_init_major_heap (major_heap_size);
+  caml_gc_message (0x20, "Initial minor heap size: %luk bytes\n",
+                   caml_minor_heap_size / 1024);
+  caml_gc_message (0x20, "Initial major heap size: %luk bytes\n",
+                   major_heap_size / 1024);
+  caml_gc_message (0x20, "Initial space overhead: %lu%%\n", caml_percent_free);
+  caml_gc_message (0x20, "Initial max overhead: %lu%%\n", caml_percent_max);
+  caml_gc_message (0x20, "Initial heap increment: %luk bytes\n",
+                   caml_major_heap_increment / 1024);
+  caml_gc_message (0x20, "Initial allocation policy: %d\n",
+                   caml_allocation_policy);
+}
+
+void caml_init_gc_r (pctxt ctx,
                    uintnat minor_size, uintnat major_size,
                    uintnat major_incr, uintnat percent_fr,
                    uintnat percent_m)
@@ -481,7 +557,7 @@ void caml_init_gc (pctxt ctx,
   if (caml_page_table_initialize(Bsize_wsize(minor_size) + major_heap_size)){
     caml_fatal_error ("OCaml runtime error: cannot initialize page table\n");
   }
-  caml_set_minor_heap_size (ctx, Bsize_wsize (norm_minsize (minor_size)));
+  caml_set_minor_heap_size_r (ctx, Bsize_wsize (norm_minsize (minor_size)));
   caml_major_heap_increment = Bsize_wsize (norm_heapincr (major_incr));
   caml_percent_free = norm_pfree (percent_fr);
   caml_percent_max = norm_pmax (percent_m);

@@ -28,6 +28,7 @@
 #include "signals.h"
 #include "weak.h"
 
+
 asize_t caml_minor_heap_size;
 static void *caml_young_base = NULL;
 CAMLexport char *caml_young_start = NULL, *caml_young_end = NULL;
@@ -73,10 +74,11 @@ static void clear_table (struct caml_ref_table *tbl)
     tbl->limit = tbl->threshold;
 }
 
-void caml_set_minor_heap_size (pctxt ctx, asize_t size)
+void caml_set_minor_heap_size (asize_t size)
 {
   char *new_heap;
   void *new_heap_base;
+  access_to_non_ctx = 1;
 
   Assert (size >= Minor_heap_min);
   Assert (size <= Minor_heap_max);
@@ -96,6 +98,36 @@ void caml_set_minor_heap_size (pctxt ctx, asize_t size)
   caml_young_start = new_heap;
   caml_young_end = new_heap + size;
   caml_young_limit = caml_young_start;
+  caml_young_ptr = caml_young_end;
+  caml_minor_heap_size = size;
+
+  reset_table (&caml_ref_table);
+  reset_table (&caml_weak_ref_table);
+}
+
+void caml_set_minor_heap_size_r (pctxt ctx, asize_t size)
+{
+  char *new_heap;
+  void *new_heap_base;
+
+  Assert (size >= Minor_heap_min);
+  Assert (size <= Minor_heap_max);
+  Assert (size % sizeof (value) == 0);
+  if (caml_young_ptr != caml_young_end) caml_minor_collection ();
+                                    Assert (caml_young_ptr == caml_young_end);
+  new_heap = caml_aligned_malloc(size, 0, &new_heap_base);
+  if (new_heap == NULL) caml_raise_out_of_memory();
+  if (caml_page_table_add(In_young, new_heap, new_heap + size) != 0)
+    caml_raise_out_of_memory();
+
+  if (ctx->caml_young_start != NULL){
+    caml_page_table_remove(In_young, ctx->caml_young_start, caml_young_end);
+    free (ctx->caml_young_base);
+  }
+  ctx->caml_young_base = new_heap_base;
+  caml_young_start = ctx->caml_young_start = new_heap;
+  caml_young_end = new_heap + size;
+  caml_young_limit = ctx->caml_young_start;
   caml_young_ptr = caml_young_end;
   caml_minor_heap_size = size;
 
@@ -227,6 +259,7 @@ void caml_oldify_mopup (void)
 void caml_empty_minor_heap (void)
 {
   value **r;
+  access_to_non_ctx = 1;
 
   if (caml_young_ptr != caml_young_end){
     caml_in_minor_collection = 1;
@@ -245,7 +278,8 @@ void caml_empty_minor_heap (void)
         }
       }
     }
-    if (caml_young_ptr < caml_young_start) caml_young_ptr = caml_young_start;
+    if (caml_young_ptr < caml_young_start) 
+       caml_young_ptr = caml_young_start;
     caml_stat_minor_words += Wsize_bsize (caml_young_end - caml_young_ptr);
     caml_young_ptr = caml_young_end;
     caml_young_limit = caml_young_start;
@@ -259,6 +293,49 @@ void caml_empty_minor_heap (void)
   {
     value *p;
     for (p = (value *) caml_young_start; p < (value *) caml_young_end; ++p){
+      *p = Debug_free_minor;
+    }
+    ++ minor_gc_counter;
+  }
+#endif
+}
+
+void caml_empty_minor_heap_r (pctxt ctx)
+{
+  value **r;
+
+  if (caml_young_ptr != caml_young_end){
+    caml_in_minor_collection = 1;
+    caml_gc_message (0x02, "<", 0);
+    caml_oldify_local_roots();
+    for (r = caml_ref_table.base; r < caml_ref_table.ptr; r++){
+      caml_oldify_one (**r, *r);
+    }
+    caml_oldify_mopup ();
+    for (r = caml_weak_ref_table.base; r < caml_weak_ref_table.ptr; r++){
+      if (Is_block (**r) && Is_young (**r)){
+        if (Hd_val (**r) == 0){
+          **r = Field (**r, 0);
+        }else{
+          **r = caml_weak_none;
+        }
+      }
+    }
+    if (caml_young_ptr < ctx->caml_young_start) 
+      caml_young_ptr = ctx->caml_young_start;
+    caml_stat_minor_words += Wsize_bsize (caml_young_end - caml_young_ptr);
+    caml_young_ptr = caml_young_end;
+    caml_young_limit = ctx->caml_young_start;
+    clear_table (&caml_ref_table);
+    clear_table (&caml_weak_ref_table);
+    caml_gc_message (0x02, ">", 0);
+    caml_in_minor_collection = 0;
+  }
+  caml_final_empty_young ();
+#ifdef DEBUG
+  {
+    value *p;
+    for (p = (value *) ctx->caml_young_start; p < (value *) caml_young_end; ++p){
       *p = Debug_free_minor;
     }
     ++ minor_gc_counter;

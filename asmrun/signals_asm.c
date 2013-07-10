@@ -27,6 +27,7 @@
 #include "signals_machdep.h"
 #include "signals_osdep.h"
 #include "stack.h"
+#include "context.h"
 
 #ifdef HAS_STACK_OVERFLOW_DETECTION
 #include <sys/time.h>
@@ -72,6 +73,16 @@ void caml_garbage_collection(void)
   }
   caml_process_pending_signals();
 }
+
+void caml_garbage_collection_r(pctxt ctx)
+{
+  caml_young_limit = ctx->caml_young_start;
+  if (caml_young_ptr < ctx->caml_young_start || caml_force_major_slice) {
+    caml_minor_collection();
+  }
+  caml_process_pending_signals();
+}
+
 
 DECLARE_SIGNAL_HANDLER(handle_signal)
 {

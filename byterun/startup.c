@@ -67,6 +67,7 @@
 extern int caml_parser_trace;
 
 CAMLexport header_t caml_atom_table[256];
+int is_ctx = 0;
 
 /* Initialize the atom table */
 
@@ -319,6 +320,7 @@ static void parse_camlrunparam(void)
       case 'b': caml_record_backtrace(Val_true); break;
       case 'p': caml_parser_trace = 1; break;
       case 'a': scanmult (opt, &p); caml_set_allocation_policy (p); break;
+      case 'c': is_ctx = 1; break;
       }
     }
   }
@@ -386,8 +388,15 @@ CAMLexport void caml_main(char ** argv)
 
   ctx = create_empty_context();
   /* Initialize the abstract machine */
-  caml_init_gc (ctx, minor_heap_init, heap_size_init, heap_chunk_init,
-                percent_free_init, max_percent_free_init);
+  if (is_ctx){
+    main_ctx = ctx;
+    caml_init_gc_r (ctx, minor_heap_init, heap_size_init, heap_chunk_init,
+                    percent_free_init, max_percent_free_init);
+  }
+  else
+    caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
+                  percent_free_init, max_percent_free_init);
+
   caml_init_stack (max_stack_init);
   init_atoms();
   /* Initialize the interpreter */
@@ -469,8 +478,13 @@ CAMLexport void caml_startup_code(code_t code, asize_t code_size, char * data, a
   caml_external_raise = NULL;
   /* Initialize the abstract machine */
   ctx = create_empty_context();
-  caml_init_gc (ctx, minor_heap_init, heap_size_init, heap_chunk_init,
-                percent_free_init, max_percent_free_init);
+  if (is_ctx) 
+    caml_init_gc_r (ctx, minor_heap_init, heap_size_init, heap_chunk_init,
+                    percent_free_init, max_percent_free_init);
+  else
+    caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
+                  percent_free_init, max_percent_free_init);
+
   caml_init_stack (max_stack_init);
   init_atoms();
   /* Initialize the interpreter */

@@ -1,0 +1,185 @@
+./Makefile world.opt                                          world.opt
+├── coldstart                                                 coldstart
+│   ├── ./Makefile                                                cd byterun; make all 
+│   │   ├── ./byterun/Makefile.common all                     all:: ocamlrun$(EXE) ld.conf libcamlrun.$(A) all-$(RUNTIMED)                                                                         
+│   │   │   ├── ocamlrun                                      ocamlrun$(EXE): libcamlrun.a prims.o                                                                         
+│   │   │   │   ├── libcamlrun.a                              libcamlrun.a: $(OBJS)                                                                         
+│   │   │   │   │   ├── .depend interp.o                      interp.o : interp.c ... jumptbl.h ...                                                                         
+│   │   │   │   │   │   └── jumptbl.h                         jumptbl.h : instruct.h                                                                         
+│   │   │   │   │   │       └────────────────────                sed ... instruct.h > jumptbl.h                                                                         
+│   │   │   │   │   ├── OBJS                                  *.o : *.c ...                                                                         
+│   │   │   │   │   ├────────────────────────────                 ar rc libcamlrun.a $(OBJS)                                                                         
+│   │   │   │   │   └────────────────────────────                 $(RANLIB) libcamlrun.a                                                                         
+│   │   │   │   └── prims.o                                   prims.o: prims.c mlvalues.h compatibility.h config.h ... prims.h
+│   │   │   │       └── prims.c                               prims.c : primitives
+│   │   │   │           ├── primitives                        primitives : $(PRIMS)
+│   │   │   │           │   └────────────────────                 sed -n -e "s/CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p" .. > primitives                       | collect names of CAMLprim functions in PRIMS(c files)
+│   │   │   │           └────────────────────────                 echo ... ; sed .. primitives; ... > prims.c                                         
+│   │   │   ├── ld.conf                                       ld.conf: ../config/Makefile
+│   │   │   └── libcamlrun.a                                  libcamlrun.a: $(OBJS)                                                                                 | already done 
+│   │   └── ./byterun/Makefile all                            all:: $(SHARED_LIBS_DEPS)                                                                         
+│   │       └── libcamlrun_shared.so                          libcamlrun_shared.so: $(PICOBJS)
+│   │           ├── PICOBJS                                   *.pic.o : *.c ...                                                                         
+│   │           │   └────────────────────────────                 $(CC) -c $(CFLAGS) $(SHAREDCCCOMPOPTS) $*.pic.c
+│   │           └────────────────────────────────                 $(MKDLL) -o libcamlrun_shared.so $(PICOBJS) $(BYTECCLIBS)
+│   │           
+│   ├────────────────────────────────────────────                 cp byterun/ocamlrun$(EXE) boot/ocamlrun$(EXE)                                                     | new boot/ocamlrun
+│   │           
+│   ├────────────────────────────────────────────                 cd yacc; $(MAKE) all
+│   │           
+│   ├───./yacc/Makefile                                           cd stdlib; make COMPILER=../boot/ocamlc all
+│   │   └── all                                               all: ocamlyacc$(EXE)
+│   │       └── ocamlyacc                                     ocamlyacc$(EXE): $(OBJS)
+│   │           ├── OBJS                                          gcc -O -DNDEBUG -fno-defer-pop ...  -c -o closure.o closure.c
+│   │           └────────────────────────────────                 $(CC) $(CFLAGS) $(CCLINKFLAGS) -o ocamlyacc $(OBJS)
+│   │           
+│   ├────────────────────────────────────────────                 cp yacc/ocamlyacc$(EXE) boot/ocamlyacc$(EXE)                                                     | new boot/ocamlyacc
+│   ├───./stdlib/Makefile                                         cd stdlib; $(MAKE) COMPILER=../boot/ocamlc all
+│   │   └── ./stdlib/Makefile.shared                          all: stdlib.cma std_exit.cmo camlheader camlheader_ur
+│   │       ├── stdlib.cma                                    ocamlyacc$(EXE): $(OBJS)
+│   │       │   ├── OBJS (*.cmo)                              .ml.cmo:
+│   │       │   │   └────────────────────────────                 $(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<                                                     | CAMLC = boot/ocamlrun(new) boot/ocamlc(core)
+│   │       │   └────────────────────────────────                 $(CAMLC) -a -o stdlib.cma $(OBJS)
+│   │       ├── std_exit.cmo                                  $(OBJS) std_exit.cmo: pervasives.cmi
+│   │       │   └────────────────────────────────                 $(CAMLC) $(COMPFLAGS) `./Compflags $@` -c std_exit.ml
+│   │       └── camlheader camlheader_ur                      camlheader camlheaderd camlheader_ur: header.c ../config/Makefile
+│   │           └────────────────────────────────                 echo '#!$(BINDIR)/ocamlrun' > camlheader && ... echo '#!' | tr -d '\012' > camlheader_ur
+│   │    
+│   ├────────────────────────────────────────────                 cd stdlib; cp $(LIBFILES) ../boot                                                                 | LIBFILES = stdlib.cma std_exit.cmo *.cmi camlheader
+│   ├────────────────────────────────────────────                 ln -s ../byterun/libcamlrun.a boot/libcamlrun.a; fi
+│   └────────────────────────────────────────────                 ln -s ../byterun stdlib/caml; fi
+└── opt.opt: runtime core ocaml opt-core ocamlc.opt otherlibraries ocamlbuild.byte ocamlopt.opt otherlibrariesopt ocamllex.opt ocamltoolsopt ocamltoolsopt.opt ocamlbuild.native
+  ├── runtime 
+  │   ├──────────────────────────────────────────                cd byterun; $(MAKE) all
+  │   └──────────────────────────────────────────                if ... ln -s ../byterun/libcamlrun.a stdlib/libcamlrun.a; fi
+  ├── core                                                    core: coldstart ocamlc ocamllex ocamlyacc ocamltools library
+  │   ├── coldstart
+  │   ├── ocamlc                                              ocamlc: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
+  │   │   ├── compilerlibs/ocamlcommon.cma                    compilerlibs/ocamlcommon.cma: $(COMMON)
+  │   │   │   ├── $(COMMON)                                   COMMON=$(UTILS) $(PARSING) $(TYPING) $(COMP)                                                          | utils/*.cmo parsing/*.cmo typing/*.cmo bytecomp/*.cmo
+  │   │   │   └──────────────────────────────────                 $(CAMLC) -a -o $@ $(COMMON)                                                                       | CAMLC = boot/ocamlrun boot/ocamlc
+  │   │   ├── compilerlibs/ocamlbytecomp.cma                  compilerlibs/ocamlbytecomp.cma: $(BYTECOMP)                                                       | BYTECOMP=bytecomp/*.cmo(partial) driver/errors.cmo driver/compiler.cmo
+  │   │   │   └──────────────────────────────────                 $(CAMLC) -a -o $@ $(BYTECOMP)
+  │   │   ├── $(BYTESTART)                                    driver/main.mli driver/main.ml
+  │   │   ├──────────────────────────────────────                 $(CAMLC) $(LINKFLAGS) -o ocamlc compilerlibs/ocamlcommon.cma ...                                  | ** new ocamlc ** ocamlcomp.sh - exe boot/ocamlrun (root)/ocamlc  ..
+  │   │   └──────────────────────────────────────                 @sed -e 's|@compiler@|$$topdir/boot/ocamlrun ... > ocamlcomp.sh \ @chmod +x ocamlcomp.sh
+  │   ├── ocamllex                                            ocamllex: ocamlyacc ocamlc
+  │   │   └──────────────────────────────────────                 cd lex; $(MAKE) all
+  │   ├── ocamlyacc                                           ocamlyacc:                                                                                            | already done
+  │   ├── ocamltools                                          ocamltools: ocamlc ocamlyacc ocamllex asmcomp/cmx_format.cmi
+  │   │   ├── asmcomp/cmx_format.cmi
+  │   │   └── tools/Makefile.shared                               cd tools; $(MAKE) all
+  │   │        └── all                                        all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj objinfo read_cmt
+  │   │            ├── ocamldep                               ocamldep: depend.cmi $(CAMLDEP_OBJ)
+  │   │            ├── ocamlprof                              ocamlprof: $(CSLPROF) profiling.cmo
+  │   │            ├── ocamlcp                                ocamlcp: ocamlcp.cmo
+  │   │            ├── ocamloptp                              ocamloptp: ocamloptp.cmo
+  │   │            ├── ocamlmktop                             ocamlmktop: ocamlmktop.tpl ../config/Makefile      
+  │   │            │   └─────────────────────────                  sed ... > ocamlmktop (ocamlmktop = bin/ocamlc ocamlcommon.cma ocamlbytecomp.cma ocamltoplevel.cma)
+  │   │            ├── ocamlmklib                             ocamlmklib: myocamlbuild_config.cmo ocamlmklib.cmo
+  │   │            │   ├── myocamlbuild_config.cmo            
+  │   │            │   ├── ocamlmklib.com
+  │   │            │   │   ├─────────────────────                  sed ... ocamlmklib.mlp >> ocamlmklib.ml
+  │   │            │   │   └─────────────────────                  ../boot/ocamlrun ../boot/ocamlc  ...  ocamlmklib.ml
+  │   │            │   └─────────────────────────                  $(CAMLC) $(LINKFLAGS) -o ocamlmklib myocamlbuild_config.cmo ocamlmklib.cmo
+  │   │            ├── dumpobj                                dumpobj: $(DUMPOBJ)   (DUMPOBJ = opnames.cmo dumpobj.cmo)
+  │   │            │   ├── opnames.cmo
+  │   │            │   │   └─────────────────────                  sed ... ../byterun/instruct.h > opnames.ml ; ../boot/ocamlrun ../boot/ocamlc ... opnames.ml
+  │   │            │   ├── dumpobj.cmo
+  │   │            │   └─────────────────────────                  $(CAMLC) $(LINKFLAGS) -o dumpobj misc.cmo tbl.cmo config.cmo ident.cmo opcodes.cmo bytesections.cmo $(DUMPOBJ)
+  │   │            ├── objinfo                                objinfo: objinfo_helper$(EXE) $(OBJINFO)
+  │   │            └── read_cmt                               read_cmt: $(READ_CMT)
+  │   │     
+  │   └── library                                             library: ocamlc
+  │       └── ./stdlib/Makefile                               cd stdlib; make all                                                                                     | with new ocamlc
+  │           └── ./stdlib/Makefile                                ../boot/ocamlrun ../ocamlc ....  -nostdlib `./Compflags stdLabels.cmo` -c stdLabels.ml
+  ├── ocaml                                                   ocaml: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma compilerlibs/ocamltoplevel.cma $(TOPLEVELSTART) expunge
+  │   ├── compilerlibs/ocamlcommon.cma                        compilerlibs/ocamlcommon.cma: $(COMMON)
+  │   │   │   └── $(COMMON)                                   COMMON=$(UTILS) $(PARSING) $(TYPING) $(COMP)                                                            | already done in core
+  │   │   └──────────────────────────────────────                 $(CAMLC) -a -o $@ $(COMMON)
+  │   ├── compilerlibs/ocamlbytecomp.cma                      compilerlibs/ocamlbytecomp.cma: $(BYTECOMP)                                                             | already done in core
+  │   │   └──────────────────────────────────────                 $(CAMLC) -a -o $@ $(BYTECOMP)
+  │   │                                                                          BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
+  │   │                                                                            bytecomp/printinstr.cmo bytecomp/opcodes.cmo bytecomp/emitcode.cmo \
+  │   │                                                                            bytecomp/bytesections.cmo bytecomp/dll.cmo bytecomp/symtable.cmo \
+  │   │                                                                            bytecomp/bytelink.cmo bytecomp/bytelibrarian.cmo bytecomp/bytepackager.cmo \
+  │   │                                                                            driver/errors.cmo driver/compile.cmo
+  │   │  
+  │   ├── compilerlibs/ocamltoplevel.cma                      compilerlibs/ocamltoplevel.cma: $(TOPLEVEL)
+  │   │   └──────────────────────────────────────                 $(CAMLC) -a -o $@ $(TOPLEVEL)
+  │   │                                                                          TOPLEVEL=toplevel/genprintval.cmo toplevel/toploop.cmo \
+  │   │                                                                            toplevel/trace.cmo toplevel/topdirs.cmo toplevel/topmain.cmo
+  │   │                                                                          
+  │   ├── TOPLEVELSTART=toplevel/topstart.cmo
+  │   ├── expunge                                             expunge: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma toplevel/expunge.cmo
+  │   │   └──────────────────────────────────────                 $(CAMLC) $(LINKFLAGS) -o expunge compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma toplevel/expunge.cmo
+  │   ├──────────────────────────────────────────                 boot/ocamlrun boot/ocamlc -nostdlib -I boot  -linkall -o ocaml.tmp \
+  │   │                                                             compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
+  │   │                                                             compilerlibs/ocamltoplevel.cma toplevel/topstart.cmo
+  │   ├──────────────────────────────────────────                 byterun/ocamlrun ./expunge ocaml.tmp ocaml arg array arrayLabels buffer callback camlinternalLazy camlinternalMod \
+  │   │                                                             camlinternalOO char complex digest filename format gc genlex hashtbl int32 int64 lazy lexing list listLabels map \
+  │   │                                                             marshal moreLabels nativeint obj oo parsing pervasives printexc printf queue random scanf set sort stack stdLabels \
+  │   │                                                             stream string stringLabels sys weak outcometree topdirs toploop
+  │   └──────────────────────────────────────────                 rm -f ocaml.tmp
+  ├── opt-core
+  │   ├── $(MAKE) runtimeopt
+  │   │   └── runtimeopt                                      runtimeopt: makeruntimeopt
+  │   │       ├── makeruntimeopt
+  │   │       │   └── cd asmrun; $(MAKE) all
+  │   │       │       ├── libasmrun.a: $(OBJS)
+  │   │       │       │   ├── $(OBJS)                             gcc -I../byterun -DCAML_NAME_SPACE -DNATIVE_CODE -DTARGET_amd64 -DSYS_linux -O -Wall -D_FILE_OFFSET_BITS=64 -D_REENTRANT -c -o natdynlink.o natdynlink.c
+  │   │       │       │   ├──────────────────────                 rm -f libasmrun.a
+  │   │       │       │   ├──────────────────────                 ar rc libasmrun.a $(OBJS)
+  │   │       │       │   └──────────────────────                 $(RANLIB) libasmrun.a
+  │   │       │       └── libasmrunp.a: $(POBJS)
+  │   │       └──────────────────────────────────                 cp asmrun/libasmrun.a stdlib/libasmrun.a
+  │   ├── $(MAKE) ocamlopt                                    ocamlopt: compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma $(OPTSTART)
+  │   │   ├── compilerlibs/ocamlcommon.cma                        
+  │   │   ├── compilerlibs/ocamloptcomp.cma                   compilerlibs/ocamloptcomp.cma: $(ASMCOMP)
+  │   │   │   ├── $(ASMCOMP)
+  │   │   │   │   └──────────────────────────────                 boot/ocamlrun boot/ocamlc -nostdlib -I boot -strict-sequence -warn-error A -I utils \
+  │   │   │   │                                                     -I parsing -I typing -I bytecomp -I asmcomp -I driver -I toplevel -c asmcomp/arch.ml
+  │   │   │   └──────────────────────────────────                 $(CAMLC) -a -o $@ $(ASMCOMP)
+  │   │   ├── $(OPTSTART)                                     OPTSTART=driver/optmain.cmo
+  │   │   └──────────────────────────────────────                 $(CAMLC) $(LINKFLAGS) -o ocamlopt compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma $(OPTSTART)        | ocamlopt
+  │   └── $(MAKE) libraryopt
+  │       └── cd stdlib; $(MAKE) allopt                       allopt: stdlib.cmxa std_exit.cmx allopt-$(PROFILING)
+  │           ├── stdlib.cmxa                                 stdlib.cmxa: $(OBJS:.cmo=.cmx)
+  │           │   ├──$(OBJS)                                      ../boot/ocamlrun ../ocamlopt -warn-error A -nostdlib -g `./Compflags array.cmx` -c array.ml
+  │           │   └──────────────────────────────                 $(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
+  │           ├── std_exit.cmx
+  │           ├── stdlib.p.cmxa                               
+  │           └── std_exit.p.cmx
+  ├── ocamlc.opt                                              ocamlc.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlbytecomp.cmxa $(BYTESTART:.cmo=.cmx)
+  │   ├── compilerlibs/ocamlcommon.cmxa                       compilerlibs/ocamlcommon.cmxa: $(COMMON:.cmo=.cmx)
+  │   │   ├── $(COMMON:.cmo=.cmx)                             COMMON=$(UTILS) $(PARSING) $(TYPING) $(COMP)                                                                 | utils/*.cmx parsing/*.cmx typing/*.cmx bytecomp/*.cmx
+  │   │   └──────────────────────────────────────                 $(CAMLOPT) -a -o $@ $(COMMON:.cmo=.cmx)
+  │   ├── compilerlibs/ocamlbytecomp.cmxa                     compilerlibs/ocamlbytecomp.cmxa: $(BYTECOMP:.cmo=.cmx)
+  │   │   ├── $(BYTECOMP:.cmo=.cmx)                           bytecomp/*.ml driver/errros.ml driver/compile.ml
+  │   │   └──────────────────────────────────────                 $(CAMLOPT) -a -o $@ $(BYTECOMP:.cmo=.cmx)
+  │   ├── $(BYTESTART:.cmo=.cmx)                              driver/main.mli driver/main.ml
+  │   └──────────────────────────────────────────                 $(CAMLOPT) $(LINKFLAGS) -ccopt "$(BYTECCLINKOPTS)" -o ocamlc.opt \
+  │                                                                 compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlbytecomp.cmxa \
+  │                                                                 $(BYTESTART:.cmo=.cmx) -cclib "$(BYTECCLIBS)"
+  ├── otherlibraries                                          otherlibraries: ocamltools
+  │   ├── ocamltools
+  │   └── $(OTHERLIBRARIES)                                       for i in $(OTHERLIBRARIES); do \                                              | $(OTHERLIBRARIES) = unix str num dynlink bigarray systhreads threads graph
+  │       │                                                         (cd otherlibs/$$i; $(MAKE) RUNTIME=$(RUNTIME) all) || exit $$?; \
+  │       │                                                       done
+  │       └── cd otherlibs/$$i; make all                      all: lib$(CLIBNAME).$(A) $(LIBNAME).cma $(CMIFILES)
+  │           ├── lib$(CLIBNAME).$(A): $(COBJS)
+  │           │   ├── $(COBJS)
+  │           │   └─────────────────────────────                  $(MKLIB) -oc $(CLIBNAME) $(COBJS) $(LDOPTS)
+  │           └── $(LIBNAME).cma: $(CAMLOBJS)
+  │               ├── $(CAMLOBJS)
+  │               └─────────────────────────────                  $(MKLIB) -o $(LIBNAME) -oc $(CLIBNAME) -ocamlc '$(CAMLC)' -linkall $(CAMLOBJS) $(LINKOPTS)
+  │                                                       ** systhreads,threads have different make scenarios
+  ├── ocamldebugger
+  ├── ocamlbuild.byte
+  ├── ocamlopt.opt
+  ├── otherlibrariesopt
+  ├── ocamllex.opt
+  ├── ocamltoolsopt
+  ├── ocamltoolsopt.opt
+  └── ocamlbuild.native
+

@@ -386,10 +386,9 @@ CAMLexport void caml_main(char ** argv)
   /* Read the table of contents (section descriptors) */
   caml_read_section_descriptors(fd, &trail);
 
-  ctx = create_empty_context();
   /* Initialize the abstract machine */
   if (is_ctx){
-    main_ctx = ctx;
+    ctx = create_empty_context();
     caml_init_gc_r (ctx, minor_heap_init, heap_size_init, heap_chunk_init,
                     percent_free_init, max_percent_free_init);
   }
@@ -477,10 +476,11 @@ CAMLexport void caml_startup_code(code_t code, asize_t code_size, char * data, a
 #endif
   caml_external_raise = NULL;
   /* Initialize the abstract machine */
-  ctx = create_empty_context();
-  if (is_ctx) 
+  if (is_ctx) {
+    ctx = create_empty_context();
     caml_init_gc_r (ctx, minor_heap_init, heap_size_init, heap_chunk_init,
                     percent_free_init, max_percent_free_init);
+  }
   else
     caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
                   percent_free_init, max_percent_free_init);

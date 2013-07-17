@@ -76,7 +76,14 @@ void caml_garbage_collection(void)
 
 void caml_garbage_collection_r(pctxt ctx)
 {
+  printf("caml_garbage_collection_r\n");
+  printf("ctx=%p caml_young_ptr=%p ctx->caml_young_ptr=%p\n", 
+         (void*)ctx, (void*)caml_young_ptr, (void*)ctx->caml_young_ptr);
+  // phc sync  
+  caml_young_ptr = ctx->caml_young_ptr;
+
   caml_young_limit = ctx->caml_young_start;
+  ctx->caml_young_limit = ctx->caml_young_start;
   if (caml_young_ptr < ctx->caml_young_start || caml_force_major_slice) {
     caml_minor_collection();
   }

@@ -190,8 +190,13 @@ type gc_call =
 let call_gc_sites = ref ([] : gc_call list)
 
 let emit_call_gc gc =
-  `{emit_label gc.gc_lbl}:	{emit_call "caml_call_gc"}\n`;
-  `{emit_label gc.gc_frame}:	jmp	{emit_label gc.gc_return_lbl}\n`
+  if !Clflags.phcr then begin
+    `{emit_label gc.gc_lbl}:	{emit_call "caml_call_gc_r"}\n`;
+    `{emit_label gc.gc_frame}:	jmp	{emit_label gc.gc_return_lbl}\n`
+  end else begin
+    `{emit_label gc.gc_lbl}:	{emit_call "caml_call_gc"}\n`;
+    `{emit_label gc.gc_frame}:	jmp	{emit_label gc.gc_return_lbl}\n`
+  end
 
 (* Record calls to caml_ml_array_bound_error.
    In -g mode, we maintain one call to caml_ml_array_bound_error

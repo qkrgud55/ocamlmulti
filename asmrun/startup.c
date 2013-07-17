@@ -171,9 +171,9 @@ void caml_main(char **argv)
 #endif
   caml_top_of_stack = &tos;
   parse_camlrunparam();
-  ctx = create_empty_context();
   if (is_ctx){
-    main_ctx = ctx;
+    ctx = create_empty_context();
+    printf("asmrun/startup.c ctx = %p\n", (void*)ctx);
     caml_init_gc_r (ctx, minor_heap_init, heap_size_init, heap_chunk_init,
                     percent_free_init, max_percent_free_init);
   }
@@ -200,7 +200,6 @@ void caml_main(char **argv)
     return;
   }
   if (is_ctx){
-    printf("asmrun/startup.c start_program_R\n");
     res = caml_start_program_r(ctx);
   }
   else

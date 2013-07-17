@@ -55,6 +55,7 @@ extern void caml_alloc_table (struct caml_ref_table *, asize_t, asize_t);
 extern void caml_oldify_one (value, value *);
 extern void caml_oldify_one_r (pctxt, value, value *);
 extern void caml_oldify_mopup (void);
+extern void caml_oldify_mopup_r (pctxt);
 
 #define Oldify(p) do{ \
     value __oldify__v__ = *p; \

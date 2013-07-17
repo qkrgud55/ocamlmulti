@@ -382,7 +382,8 @@ LBL(caml_call_gc_r):
         call    GCALL(caml_garbage_collection_r)
         CLEANUP_AFTER_C_CALL
     /* Restore caml_young_ptr, caml_exception_pointer */
-        LOAD_VAR(caml_young_ptr, %r15)
+    /*  LOAD_VAR(caml_young_ptr, %r15) */
+        movq    (%r13), %r15
         LOAD_VAR(caml_exception_pointer, %r14)
     /* Restore all regs used by the code generator */
         movsd   0*8(%rsp), %xmm0

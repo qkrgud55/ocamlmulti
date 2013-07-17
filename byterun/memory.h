@@ -120,6 +120,24 @@ int caml_page_table_initialize(mlsize_t bytesize);
   DEBUG_clear ((result), (wosize));                                         \
 }while(0)
 
+#define Alloc_small_r(ctx, result, wosize, tag) do{                         \
+                                                CAMLassert ((wosize) >= 1); \
+                                          CAMLassert ((tag_t) (tag) < 256); \
+                                 CAMLassert ((wosize) <= Max_young_wosize); \
+  caml_young_ptr -= Bhsize_wosize (wosize);                                 \
+  if (ctx->caml_young_ptr < caml_young_start){                              \
+    ctx->caml_young_ptr += Bhsize_wosize (wosize);                          \
+    Setup_for_gc;                                                           \
+    caml_minor_collection_r (ctx);                                          \
+    Restore_after_gc;                                                       \
+    ctx->caml_young_ptr -= Bhsize_wosize (wosize);                          \
+  }                                                                         \
+  Hd_hp (ctx->caml_young_ptr) = Make_header ((wosize), (tag), Caml_black);  \
+  (result) = Val_hp (ctx->caml_young_ptr);                                  \
+  DEBUG_clear ((result), (wosize));                                         \
+}while(0)
+
+
 /* You must use [Modify] to change a field of an existing shared block,
    unless you are sure the value being overwritten is not a shared block and
    the value being written is not a young block. */

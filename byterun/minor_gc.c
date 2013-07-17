@@ -337,6 +337,32 @@ void caml_oldify_mopup (void)
   }
 }
 
+void caml_oldify_mopup_r (pctxt ctx)
+{
+  value v, new_v, f;
+  mlsize_t i;
+
+  while (oldify_todo_list != 0){
+    v = oldify_todo_list;                /* Get the head. */
+    Assert (Hd_val (v) == 0);            /* It must be forwarded. */
+    new_v = Field (v, 0);                /* Follow forward pointer. */
+    oldify_todo_list = Field (new_v, 1); /* Remove from list. */
+
+    f = Field (new_v, 0);
+    if (Is_block (f) && Is_young (f)){
+      caml_oldify_one_r (ctx, f, &Field (new_v, 0));
+    }
+    for (i = 1; i < Wosize_val (new_v); i++){
+      f = Field (v, i);
+      if (Is_block (f) && Is_young (f)){
+        caml_oldify_one_r (ctx, f, &Field (new_v, i));
+      }else{
+        Field (new_v, i) = f;
+      }
+    }
+  }
+}
+
 /* Make sure the minor heap is empty by performing a minor collection
    if needed.
 */
@@ -393,9 +419,9 @@ void caml_empty_minor_heap_r (pctxt ctx)
     caml_gc_message (0x02, "<", 0);
     caml_oldify_local_roots_r(ctx);
     for (r = caml_ref_table.base; r < caml_ref_table.ptr; r++){
-      caml_oldify_one (**r, *r);
+      caml_oldify_one_r (ctx, **r, *r);
     }
-    caml_oldify_mopup ();
+    caml_oldify_mopup_r (ctx);
     for (r = caml_weak_ref_table.base; r < caml_weak_ref_table.ptr; r++){
       if (Is_block (**r) && Is_young (**r)){
         if (Hd_val (**r) == 0){
@@ -463,13 +489,20 @@ CAMLexport void caml_minor_collection_r (pctxt ctx)
 
   caml_final_do_calls ();
 
-  caml_empty_minor_heap ();
+  caml_empty_minor_heap_r (ctx);
 }
 
 CAMLexport value caml_check_urgent_gc (value extra_root)
 {
   CAMLparam1 (extra_root);
   if (caml_force_major_slice) caml_minor_collection();
+  CAMLreturn (extra_root);
+}
+
+CAMLexport value caml_check_urgent_gc_r (pctxt ctx, value extra_root)
+{
+  CAMLparam1 (extra_root);
+  if (caml_force_major_slice) caml_minor_collection_r(ctx);
   CAMLreturn (extra_root);
 }
 

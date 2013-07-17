@@ -182,15 +182,44 @@ CAMLprim value caml_make_vect(value len, value init)
 
 CAMLprim value caml_make_vect_r(pctxt ctx, value len, value init)
 {
-  static int is_first = 1;
-  value *ctx1 = ctx;
+  CAMLparam2 (len, init);
+  CAMLlocal1 (res);
+  mlsize_t size, wsize, i;
+  double d;
 
-  if (is_first)
-    printf("caml_make_vect_r *ctx = %x %x %x %x\n", *(ctx1), *(ctx1+1), *(ctx1+2), *(ctx1+3)); 
-  if (!getenv("OCAMLVECT"))
-    is_first = 0;
-
-  return caml_make_vect(len, init);
+  size = Long_val(len);
+  if (size == 0) {
+    res = Atom(0);
+  }
+  else if (Is_block(init)
+           && Is_in_value_area(init)
+           && Tag_val(init) == Double_tag) {
+    d = Double_val(init);
+    wsize = size * Double_wosize;
+    if (wsize > Max_wosize) caml_invalid_argument("Array.make");
+    res = caml_alloc(wsize, Double_array_tag);
+    for (i = 0; i < size; i++) {
+      Store_double_field(res, i, d);
+    }
+  } else {
+    if (size > Max_wosize) caml_invalid_argument("Array.make");
+    if (size < Max_young_wosize) {
+      res = caml_alloc_small_r(ctx, size, 0);
+      for (i = 0; i < size; i++) Field(res, i) = init;
+    }
+    else if (Is_block(init) && Is_young_r(ctx, init)) {
+      caml_minor_collection_r(ctx);
+      res = caml_alloc_shr(size, 0);
+      for (i = 0; i < size; i++) Field(res, i) = init;
+      res = caml_check_urgent_gc (res);
+    }
+    else {
+      res = caml_alloc_shr(size, 0);
+      for (i = 0; i < size; i++) caml_initialize(&Field(res, i), init);
+      res = caml_check_urgent_gc (res);
+    }
+  }
+  CAMLreturn (res);
 }
 
 CAMLprim value caml_make_array(value init)

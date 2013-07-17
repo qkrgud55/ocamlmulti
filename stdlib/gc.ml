@@ -54,6 +54,8 @@ external major : unit -> unit = "caml_gc_major";;
 external full_major : unit -> unit = "caml_gc_full_major";;
 external compact : unit -> unit = "caml_gc_compaction";;
 
+external phc_context : unit -> unit = "caml_print_context" "reentrant";;
+
 open Printf;;
 
 let print_stat c =

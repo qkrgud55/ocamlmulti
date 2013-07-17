@@ -406,8 +406,10 @@ let emit_instr fallthrough i =
           `	{load_symbol_addr s}, %rax\n`;
           `	{emit_call "caml_c_call"}\n`;
           record_frame i.live i.dbg;
-          `	{load_symbol_addr "caml_young_ptr"}, %r11\n`;
-          `	movq    (%r11), %r15\n`;
+          if !Clflags.phcr && ctx then `	movq (%r13), %r15\n`
+          else begin
+            `	{load_symbol_addr "caml_young_ptr"}, %r11\n`;
+            `	movq    (%r11), %r15\n` end
         end else begin
           `	{emit_call s}\n`
         end

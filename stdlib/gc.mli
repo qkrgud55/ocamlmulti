@@ -188,6 +188,8 @@ external compact : unit -> unit = "caml_gc_compaction"
 (** Perform a full major collection and compact the heap.  Note that heap
    compaction is a lengthy operation. *)
 
+external phc_context : unit -> unit = "caml_print_context" "reentrant";;
+
 val print_stat : out_channel -> unit
 (** Print the current values of the memory management counters (in
    human-readable form) into the channel argument. *)

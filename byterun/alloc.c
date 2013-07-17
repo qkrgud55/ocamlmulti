@@ -51,6 +51,30 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
   return result;
 }
 
+CAMLexport value caml_alloc_r (pctxt ctx, mlsize_t wosize, tag_t tag)
+{
+  value result;
+  mlsize_t i;
+
+  Assert (tag < 256);
+  Assert (tag != Infix_tag);
+  if (wosize == 0){
+    result = Atom (tag);
+  }else if (wosize <= Max_young_wosize){
+    Alloc_small_r (ctx, result, wosize, tag);
+    if (tag < No_scan_tag){
+      for (i = 0; i < wosize; i++) Field (result, i) = 0;
+    }
+  }else{
+    result = caml_alloc_shr (wosize, tag);
+    if (tag < No_scan_tag) memset (Bp_val (result), 0, Bsize_wsize (wosize));
+    result = caml_check_urgent_gc_r (result);
+  }
+  // phc sync
+  caml_young_ptr = ctx->caml_young_ptr;
+  return result;
+}
+
 CAMLexport value caml_alloc_small (mlsize_t wosize, tag_t tag)
 {
   value result;
@@ -59,6 +83,16 @@ CAMLexport value caml_alloc_small (mlsize_t wosize, tag_t tag)
   Assert (wosize <= Max_young_wosize);
   Assert (tag < 256);
   Alloc_small (result, wosize, tag);
+  return result;
+}
+
+CAMLexport value caml_alloc_small_r (pctxt ctx, mlsize_t wosize, tag_t tag) {
+  value result;
+
+  Assert (wosize > 0);
+  Assert (wosize <= Max_young_wosize);
+  Assert (tag < 256);
+  Alloc_small_r (ctx, result, wosize, tag);
   return result;
 }
 

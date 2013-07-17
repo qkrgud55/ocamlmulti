@@ -85,7 +85,7 @@ void caml_garbage_collection_r(pctxt ctx)
   caml_young_limit = ctx->caml_young_start;
   ctx->caml_young_limit = ctx->caml_young_start;
   if (caml_young_ptr < ctx->caml_young_start || caml_force_major_slice) {
-    caml_minor_collection();
+    caml_minor_collection_r(ctx);
   }
   caml_process_pending_signals();
 }

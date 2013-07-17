@@ -223,6 +223,90 @@ void caml_oldify_one (value v, value *p)
   }
 }
 
+void caml_oldify_one_r (pctxt ctx, value v, value *p)
+{
+  value result;
+  header_t hd;
+  mlsize_t sz, i;
+  tag_t tag;
+
+ tail_call:
+  if (Is_block (v) && Is_young_r (ctx, v)){
+    Assert (Hp_val (v) >= ctx->caml_young_ptr);
+    hd = Hd_val (v);
+    if (hd == 0){         /* If already forwarded */
+      *p = Field (v, 0);  /*  then forward pointer is first field. */
+    }else{
+      tag = Tag_hd (hd);
+      if (tag < Infix_tag){
+        value field0;
+
+        sz = Wosize_hd (hd);
+        result = caml_alloc_shr (sz, tag);
+        *p = result;
+        field0 = Field (v, 0);
+        Hd_val (v) = 0;            /* Set forward flag */
+        Field (v, 0) = result;     /*  and forward pointer. */
+        if (sz > 1){
+          Field (result, 0) = field0;
+          Field (result, 1) = oldify_todo_list;    /* Add this block */
+          oldify_todo_list = v;                    /*  to the "to do" list. */
+        }else{
+          Assert (sz == 1);
+          p = &Field (result, 0);
+          v = field0;
+          goto tail_call;
+        }
+      }else if (tag >= No_scan_tag){
+        sz = Wosize_hd (hd);
+        result = caml_alloc_shr (sz, tag);
+        for (i = 0; i < sz; i++) Field (result, i) = Field (v, i);
+        Hd_val (v) = 0;            /* Set forward flag */
+        Field (v, 0) = result;     /*  and forward pointer. */
+        *p = result;
+      }else if (tag == Infix_tag){
+        mlsize_t offset = Infix_offset_hd (hd);
+        caml_oldify_one (v - offset, p);   /* Cannot recurse deeper than 1. */
+        *p += offset;
+      }else{
+        value f = Forward_val (v);
+        tag_t ft = 0;
+        int vv = 1;
+
+        Assert (tag == Forward_tag);
+        if (Is_block (f)){
+          if (Is_young_r (ctx, f)){
+            vv = 1;
+            ft = Tag_val (Hd_val (f) == 0 ? Field (f, 0) : f);
+          }else{
+            vv = Is_in_value_area(f);
+            if (vv){
+              ft = Tag_val (f);
+            }
+          }
+        }
+        if (!vv || ft == Forward_tag || ft == Lazy_tag || ft == Double_tag){
+          /* Do not short-circuit the pointer.  Copy as a normal block. */
+          Assert (Wosize_hd (hd) == 1);
+          result = caml_alloc_shr (1, Forward_tag);
+          *p = result;
+          Hd_val (v) = 0;             /* Set (GC) forward flag */
+          Field (v, 0) = result;      /*  and forward pointer. */
+          p = &Field (result, 0);
+          v = f;
+          goto tail_call;
+        }else{
+          v = f;                        /* Follow the forwarding */
+          goto tail_call;               /*  then oldify. */
+        }
+      }
+    }
+  }else{
+    *p = v;
+  }
+}
+
+
 /* Finish the work that was put off by [caml_oldify_one].
    Note that [caml_oldify_one] itself is called by oldify_mopup, so we
    have to be careful to remove the first entry from the list before
@@ -307,7 +391,7 @@ void caml_empty_minor_heap_r (pctxt ctx)
   if (ctx->caml_young_ptr != caml_young_end){
     caml_in_minor_collection = 1;
     caml_gc_message (0x02, "<", 0);
-    caml_oldify_local_roots();
+    caml_oldify_local_roots_r(ctx);
     for (r = caml_ref_table.base; r < caml_ref_table.ptr; r++){
       caml_oldify_one (**r, *r);
     }

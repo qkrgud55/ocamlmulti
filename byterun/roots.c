@@ -60,6 +60,38 @@ void caml_oldify_local_roots (void)
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(&caml_oldify_one);
 }
 
+// dummy reentrant version. the same code as non-reentrant one 
+// refer to asmrun/root.c : caml_oldify_local_roots_r
+void caml_oldify_local_roots_r (pctxt ctx)
+{
+  register value * sp;
+  struct caml__roots_block *lr;
+  intnat i, j;
+
+  printf ("caml_oldify_local_roots_r\n");
+
+  /* The stack */
+  for (sp = caml_extern_sp; sp < caml_stack_high; sp++) {
+    caml_oldify_one (*sp, sp);
+  }
+  /* Local C roots */  /* FIXME do the old-frame trick ? */
+  for (lr = caml_local_roots; lr != NULL; lr = lr->next) {
+    for (i = 0; i < lr->ntables; i++){
+      for (j = 0; j < lr->nitems; j++){
+        sp = &(lr->tables[i][j]);
+        caml_oldify_one (*sp, sp);
+      }
+    }
+  }
+  /* Global C roots */
+  caml_scan_global_young_roots(&caml_oldify_one);
+  /* Finalised values */
+  caml_final_do_young_roots (&caml_oldify_one);
+  /* Hook */
+  if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(&caml_oldify_one);
+}
+
+
 /* Call [caml_darken] on all roots */
 
 void caml_darken_all_roots (void)

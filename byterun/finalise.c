@@ -150,6 +150,7 @@ void caml_final_do_calls (void)
 
 /* Call a scanning_action [f] on [x]. */
 #define Call_action(f,x) (*(f)) ((x), &(x))
+#define Call_action_r(ctx, f,x) (*(f)) ((ctx), (x), &(x))
 
 /* Call [*f] on the closures of the finalisable set and
    the closures and values of the finalising set.
@@ -198,7 +199,16 @@ void caml_final_do_young_roots (scanning_action f)
     Call_action (f, final_table[i].val);
   }
 }
+void caml_final_do_young_roots_r (pctxt ctx, scanning_action_r f)
+{
+  uintnat i;
 
+  Assert (old <= young);
+  for (i = old; i < young; i++){
+    Call_action_r (ctx, f, final_table[i].fun);
+    Call_action_r (ctx, f, final_table[i].val);
+  }
+}
 /* Empty the recent set into the finalisable set.
    This is called at the end of each minor collection.
    The minor heap must be empty when this is called.

@@ -17,12 +17,14 @@
 #define CAML_FINALISE_H
 
 #include "roots.h"
+#include "context.h"
 
 void caml_final_update (void);
 void caml_final_do_calls (void);
 void caml_final_do_strong_roots (scanning_action f);
 void caml_final_do_weak_roots (scanning_action f);
 void caml_final_do_young_roots (scanning_action f);
+void caml_final_do_young_roots_r (pctxt ctx, scanning_action_r f);
 void caml_final_empty_young (void);
 value caml_final_register (value f, value v);
 

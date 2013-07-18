@@ -169,6 +169,7 @@ external set_r : control -> unit = "caml_gc_set_r" "reentrant"
    The normal usage is: [Gc.set { (Gc.get()) with Gc.verbose = 0x00d }] *)
 
 external minor : unit -> unit = "caml_gc_minor"
+external minor_r : unit -> unit = "caml_gc_minor_r" "reentrant";;
 (** Trigger a minor collection. *)
 
 external major_slice : int -> int = "caml_gc_major_slice";;

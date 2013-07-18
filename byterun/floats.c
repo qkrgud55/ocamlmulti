@@ -58,13 +58,32 @@ CAMLexport void caml_Store_double_val(value val, double dbl)
 
 #endif
 
+// phc common
 CAMLexport value caml_copy_double(double d)
 {
   value res;
 
 #define Setup_for_gc
 #define Restore_after_gc
-  Alloc_small(res, Double_wosize, Double_tag);
+  if (main_ctx){
+    Alloc_small_r(main_ctx, res, Double_wosize, Double_tag);
+    sync_with_context(main_ctx);
+  }
+  else
+    Alloc_small(res, Double_wosize, Double_tag);
+#undef Setup_for_gc
+#undef Restore_after_gc
+  Store_double_val(res, d);
+  return res;
+}
+
+CAMLexport value caml_copy_double_r(pctxt ctx, double d)
+{
+  value res;
+
+#define Setup_for_gc
+#define Restore_after_gc
+  Alloc_small_r(ctx, res, Double_wosize, Double_tag);
 #undef Setup_for_gc
 #undef Restore_after_gc
   Store_double_val(res, d);

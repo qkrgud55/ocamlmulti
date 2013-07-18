@@ -126,6 +126,7 @@ world:
 world.opt:
 	$(MAKE) coldstart
 	$(MAKE) opt.opt
+	echo -e '\a'
 
 # Hard bootstrap how-to:
 # (only necessary in some cases, for example if you remove some primitive)

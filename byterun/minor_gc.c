@@ -78,7 +78,7 @@ void caml_set_minor_heap_size (asize_t size)
 {
   char *new_heap;
   void *new_heap_base;
-  access_to_non_ctx = 1;
+  access_to_non_ctx = 2;
 
   Assert (size >= Minor_heap_min);
   Assert (size <= Minor_heap_max);

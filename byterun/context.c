@@ -10,6 +10,7 @@
 
 int access_to_non_ctx = 0;
 pctxt main_ctx = NULL;
+int num_th = 0;
 
 pctxt create_empty_context(void){
   phc_global_context* res = NULL;

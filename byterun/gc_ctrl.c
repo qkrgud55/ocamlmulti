@@ -475,6 +475,14 @@ CAMLprim value caml_gc_minor(value v)
   return Val_unit;
 }
 
+CAMLprim value caml_gc_minor_r(pctxt ctx, value v)
+{                                                    Assert (v == Val_unit);
+  sync_with_global_vars(ctx);
+  caml_minor_collection_r (ctx);
+  sync_with_context(ctx);
+  return Val_unit;
+}
+
 static void test_and_compact (void)
 {
   float fp;

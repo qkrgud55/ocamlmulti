@@ -392,9 +392,11 @@ CAMLexport void caml_main(char ** argv)
     caml_init_gc_r (ctx, minor_heap_init, heap_size_init, heap_chunk_init,
                     percent_free_init, max_percent_free_init);
   }
-  else
+  else{
+    main_ctx = NULL;
     caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
                   percent_free_init, max_percent_free_init);
+  }
 
   caml_init_stack (max_stack_init);
   init_atoms();
@@ -481,9 +483,11 @@ CAMLexport void caml_startup_code(code_t code, asize_t code_size, char * data, a
     caml_init_gc_r (ctx, minor_heap_init, heap_size_init, heap_chunk_init,
                     percent_free_init, max_percent_free_init);
   }
-  else
+  else{
+    main_ctx = NULL;
     caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
                   percent_free_init, max_percent_free_init);
+  }
 
   caml_init_stack (max_stack_init);
   init_atoms();

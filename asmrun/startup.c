@@ -140,6 +140,7 @@ static void parse_camlrunparam(void)
       case 'p': caml_parser_trace = 1; break;
       case 'a': scanmult (opt, &p); caml_set_allocation_policy (p); break;
       case 'c': is_ctx = 1; break;
+      case 'm': scanmult (opt, &num_th); break;
       }
     }
   }
@@ -210,7 +211,7 @@ void caml_main(char **argv)
 
   if (is_ctx){
     if (access_to_non_ctx)
-      printf("access_to_non_ctx! need resolution\n");
+      printf("access_to_non_ctx=%d need resolution\n", access_to_non_ctx);
   }
   if (Is_exception_result(res))
     caml_fatal_uncaught_exception(Extract_exception(res));

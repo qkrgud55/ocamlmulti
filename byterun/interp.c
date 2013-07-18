@@ -235,6 +235,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #endif
 
   ctx = create_empty_context();
+  main_ctx = NULL;
   *(int*)ctx = 0x101;
 
   /* phc ctx */

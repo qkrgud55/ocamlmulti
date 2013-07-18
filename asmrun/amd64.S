@@ -498,6 +498,29 @@ LBL(caml_c_call):
        reserved the stack space if needed (cf. amd64/proc.ml) */
         jmp    *%rax
 
+FUNCTION(G(caml_c_call_r))
+LBL(caml_c_call_r):
+    /* Record lowest stack address and return address */
+        popq    %r12
+        STORE_VAR(%r12, caml_last_return_address)
+        STORE_VAR(%rsp, caml_bottom_of_stack)
+        pushq    %r12
+#ifndef SYS_mingw64
+    /* Touch the stack to trigger a recoverable segfault
+       if insufficient space remains */
+        subq    $32768, %rsp
+        movq    %rax, 0(%rsp)
+        addq    $32768, %rsp
+#endif
+    /* Make the exception handler and alloc ptr available to the C code */
+        STORE_VAR(%r15, caml_young_ptr)
+    /*    movq    %r15, (%r13)  */
+        STORE_VAR(%r14, caml_exception_pointer)
+    /* Call the function (address in %rax) */
+    /* No need to PREPARE_FOR_C_CALL since the caller already
+       reserved the stack space if needed (cf. amd64/proc.ml) */
+        jmp    *%rax
+
 /* Start the OCaml program */
 
 FUNCTION(G(caml_start_program))

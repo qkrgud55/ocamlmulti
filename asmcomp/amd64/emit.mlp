@@ -404,7 +404,8 @@ let emit_instr fallthrough i =
           ``;
         if alloc then begin
           `	{load_symbol_addr s}, %rax\n`;
-          `	{emit_call "caml_c_call"}\n`;
+          if !Clflags.phcr && ctx then   `	{emit_call "caml_c_call_r"}\n` 
+          else     `	{emit_call "caml_c_call"}\n`;
           record_frame i.live i.dbg;
           if !Clflags.phcr && ctx then `	movq (%r13), %r15\n`
           else begin

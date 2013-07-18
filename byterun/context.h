@@ -28,5 +28,7 @@ extern pctxt main_ctx;
 
 extern pctxt create_empty_context(void);
 extern void destroy_context(pctxt);
+extern void sync_with_global_vars(pctxt ctx);
+extern void sync_with_context(pctxt ctx);
 
 #endif

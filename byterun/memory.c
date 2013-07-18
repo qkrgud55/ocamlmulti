@@ -515,6 +515,17 @@ void caml_initialize (value *fp, value val)
   }
 }
 
+void caml_initialize_r (pctxt ctx, value *fp, value val)
+{
+  *fp = val;
+  if (Is_block (val) && Is_young_r (ctx, val) && Is_in_heap (fp)){
+    if (caml_ref_table.ptr >= caml_ref_table.limit){
+      caml_realloc_ref_table (&caml_ref_table);
+    }
+    *caml_ref_table.ptr++ = fp;
+  }
+}
+
 /* You must use [caml_modify] to change a field of an existing shared block,
    unless you are sure the value being overwritten is not a shared block and
    the value being written is not a young block. */

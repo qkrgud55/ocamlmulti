@@ -68,10 +68,8 @@ CAMLexport value caml_alloc_r (pctxt ctx, mlsize_t wosize, tag_t tag)
   }else{
     result = caml_alloc_shr (wosize, tag);
     if (tag < No_scan_tag) memset (Bp_val (result), 0, Bsize_wsize (wosize));
-    result = caml_check_urgent_gc_r (result);
+    result = caml_check_urgent_gc_r (ctx, result);
   }
-  // phc sync
-  caml_young_ptr = ctx->caml_young_ptr;
   return result;
 }
 

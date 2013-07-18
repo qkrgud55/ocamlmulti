@@ -174,8 +174,11 @@ void caml_main(char **argv)
   if (is_ctx){
     ctx = create_empty_context();
     printf("asmrun/startup.c ctx = %p\n", (void*)ctx);
+
+    sync_with_global_vars (ctx);
     caml_init_gc_r (ctx, minor_heap_init, heap_size_init, heap_chunk_init,
                     percent_free_init, max_percent_free_init);
+    sync_with_context (ctx);
   }
   else
     caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,

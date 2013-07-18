@@ -187,7 +187,6 @@ CAMLprim value caml_make_vect_r(pctxt ctx, value len, value init)
   mlsize_t size, wsize, i;
   double d;
 
-  printf("caml_make_vect_r ctx=%p\n", ctx);
   sync_with_global_vars(ctx);
 
   size = Long_val(len);
@@ -211,21 +210,23 @@ CAMLprim value caml_make_vect_r(pctxt ctx, value len, value init)
       for (i = 0; i < size; i++) Field(res, i) = init;
     }
     else if (Is_block(init) && Is_young_r(ctx, init)) {
-      printf("caml_make_vect_r before caml_minor_collection_r\n");
       caml_minor_collection_r(ctx);
       res = caml_alloc_shr(size, 0);
       for (i = 0; i < size; i++) Field(res, i) = init;
-      res = caml_check_urgent_gc_r (ctx, res);
+      // phc FIXED the following line cause cltq amd64 instruction which change the address(res)
+      // res = caml_check_urgent_gc_r (ctx, res);
+      caml_check_urgent_gc_r (ctx, res);
     }
     else {
-      printf("the last branch will call caml_initialize_r\n");
       res = caml_alloc_shr(size, 0);
       for (i = 0; i < size; i++) caml_initialize_r(ctx, &Field(res, i), init);
-      res = caml_check_urgent_gc_r (ctx, res);
+      // phc FIXED the following line cause cltq amd64 instruction which change the address(res)
+      // res = caml_check_urgent_gc_r (ctx, res);
+      caml_check_urgent_gc_r (ctx, res);
     }
   }
-
   sync_with_context(ctx);
+
   CAMLreturn (res);
 }
 

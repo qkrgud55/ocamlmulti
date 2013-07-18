@@ -72,6 +72,17 @@ void caml_record_signal(int signal_number)
 #endif
 }
 
+void caml_record_signal_r(pctxt ctx, int signal_number)
+{
+  printf("unexpected caml_record_signal_r\n");
+  caml_pending_signals[signal_number] = 1;
+  caml_signals_are_pending = 1;
+#ifndef NATIVE_CODE
+  caml_something_to_do = 1;
+#else
+  ctx->caml_young_limit = ctx->caml_young_end;
+#endif
+}
 /* Management of blocking sections. */
 
 static intnat volatile caml_async_signal_mode = 0;
@@ -156,13 +167,15 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
 
 int volatile caml_force_major_slice = 0;
 
+// phc common
 void caml_urge_major_slice (void)
 {
   caml_force_major_slice = 1;
 #ifndef NATIVE_CODE
   caml_something_to_do = 1;
 #else
-  caml_young_limit = caml_young_end;
+  if (main_ctx) main_ctx->caml_young_limit = main_ctx->caml_young_end;
+  else caml_young_limit = caml_young_end;
   /* This is only moderately effective on ports that cache [caml_young_limit]
      in a register, since [caml_modify] is called directly, not through
      [caml_c_call], so it may take a while before the register is reloaded

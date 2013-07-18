@@ -76,10 +76,6 @@ void caml_garbage_collection(void)
 
 void caml_garbage_collection_r(pctxt ctx)
 {
-  printf("caml_garbage_collection_r\n");
-//  printf("ctx=%p caml_young_ptr=%p ctx->caml_young_ptr=%p\n", 
-//        (void*)ctx, (void*)caml_young_ptr, (void*)ctx->caml_young_ptr);
-  caml_young_limit = ctx->caml_young_start;
   ctx->caml_young_limit = ctx->caml_young_start;
   if (caml_young_ptr < ctx->caml_young_start || caml_force_major_slice) {
     caml_minor_collection_r(ctx);
@@ -98,13 +94,19 @@ DECLARE_SIGNAL_HANDLER(handle_signal)
     caml_execute_signal(sig, 1);
     caml_enter_blocking_section_hook();
   } else {
-    caml_record_signal(sig);
+    // phc 
+    if (main_ctx) caml_record_signal_r(main_ctx, sig);
+    else caml_record_signal(sig);
   /* Some ports cache [caml_young_limit] in a register.
      Use the signal context to modify that register too, but only if
      we are inside OCaml code (not inside C code). */
 #if defined(CONTEXT_PC) && defined(CONTEXT_YOUNG_LIMIT)
-    if (Is_in_code_area(CONTEXT_PC))
-      CONTEXT_YOUNG_LIMIT = (context_reg) caml_young_limit;
+    if (Is_in_code_area(CONTEXT_PC)){
+      if (main_ctx)
+        CONTEXT_YOUNG_LIMIT = (context_reg) main_ctx->caml_young_limit;
+      else
+        CONTEXT_YOUNG_LIMIT = (context_reg) caml_young_limit;
+    }
 #endif
   }
 }

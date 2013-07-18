@@ -462,11 +462,17 @@ let emit_instr fallthrough i =
         if !fastcode_flag then begin
           let lbl_redo = new_label() in
           `{emit_label lbl_redo}:	subq	${emit_int n}, %r15\n`;
-          if !Clflags.dlcode then begin
-            `	{load_symbol_addr "caml_young_limit"}, %rax\n`;
-            `	cmpq	(%rax), %r15\n`;
-          end else
-            `	cmpq	{emit_symbol "caml_young_limit"}(%rip), %r15\n`;
+          if !Clflags.dlcode then
+            (if !Clflags.phcr then
+            `	cmpq	0x8(%r13), %r15\n`
+            else
+            (`	{load_symbol_addr "caml_young_limit"}, %rax\n`;    
+            `	cmpq	(%rax), %r15\n`))
+          else 
+            (if !Clflags.phcr then  
+            `	cmpq	0x8(%r13), %r15\n`
+            else
+            `	cmpq	{emit_symbol "caml_young_limit"}(%rip), %r15\n`);
           let lbl_call_gc = new_label() in
           let lbl_frame = record_frame_label i.live Debuginfo.none in
           `	jb	{emit_label lbl_call_gc}\n`;

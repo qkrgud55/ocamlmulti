@@ -474,6 +474,60 @@ LBL(103):
         popq    %rax                      /* recover desired size */
         jmp     LBL(caml_allocN)
 
+
+FUNCTION(G(caml_alloc1_r))
+LBL(caml_alloc1_r):
+        subq    $16, %r15
+        cmpq    0x8(%r13), %r15
+        jb      LBL(200)
+        ret
+LBL(200):
+        RECORD_STACK_FRAME(0)
+        subq    $8, %rsp
+        call    LBL(caml_call_gc_r)
+        addq    $8, %rsp
+        jmp     LBL(caml_alloc1_r)
+
+FUNCTION(G(caml_alloc2_r))
+LBL(caml_alloc2_r):
+        subq    $24, %r15
+        cmpq    0x8(%r13), %r15
+        jb      LBL(201)
+        ret
+LBL(201):
+        RECORD_STACK_FRAME(0)
+        subq    $8, %rsp
+        call    LBL(caml_call_gc_r)
+        addq    $8, %rsp
+        jmp     LBL(caml_alloc2_r)
+
+FUNCTION(G(caml_alloc3_r))
+LBL(caml_alloc3_r):
+        subq    $32, %r15
+        cmpq    0x8(%r13), %r15
+        jb      LBL(202)
+        ret
+LBL(202):
+        RECORD_STACK_FRAME(0)
+        subq    $8, %rsp
+        call    LBL(caml_call_gc_r)
+        addq    $8, %rsp
+        jmp     LBL(caml_alloc3_r)
+
+FUNCTION(G(caml_allocN_r))
+LBL(caml_allocN_r):
+        pushq   %rax                       /* save desired size */
+        subq    %rax, %r15
+        cmpq    0x8(%r13), %r15
+        jb      LBL(203)
+        addq    $8, %rsp                  /* drop desired size */
+        ret
+LBL(203):
+        RECORD_STACK_FRAME(8)
+        call    LBL(caml_call_gc_r)
+        popq    %rax                      /* recover desired size */
+        jmp     LBL(caml_allocN_r)
+
 /* Call a C function from OCaml */
 
 FUNCTION(G(caml_c_call))

@@ -22,6 +22,7 @@
 #endif
 #include "misc.h"
 #include "mlvalues.h"
+#include "context.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,6 +31,7 @@ extern "C" {
 CAMLextern value caml_alloc (mlsize_t, tag_t);
 CAMLextern value caml_alloc_small (mlsize_t, tag_t);
 CAMLextern value caml_alloc_tuple (mlsize_t);
+CAMLextern value caml_alloc_tuple_r (pctxt, mlsize_t);
 CAMLextern value caml_alloc_string (mlsize_t);  /* size in bytes */
 CAMLextern value caml_copy_string (char const *);
 CAMLextern value caml_copy_string_array (char const **);

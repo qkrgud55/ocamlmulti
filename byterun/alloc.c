@@ -99,6 +99,11 @@ CAMLexport value caml_alloc_tuple(mlsize_t n)
   return caml_alloc(n, 0);
 }
 
+CAMLexport value caml_alloc_tuple_r(pctxt ctx, mlsize_t n)
+{
+  return caml_alloc_r(ctx, n, 0);
+}
+
 CAMLexport value caml_alloc_string (mlsize_t len)
 {
   value result;

@@ -260,18 +260,14 @@ CAMLprim value caml_gc_stat(value v)
   return heap_stats (1);
 }
 
+// TODO phc temp shared
 CAMLprim value caml_gc_quick_stat(value v)
 {
   CAMLparam0 ();
   CAMLlocal1 (res);
 
   /* get a copy of these before allocating anything... */
-  double minwords = caml_stat_minor_words
-                    + (double) Wsize_bsize (caml_young_end - caml_young_ptr);
-  if (main_ctx){
-    minwords = caml_stat_minor_words
-               + (double) Wsize_bsize (main_ctx->caml_young_end - main_ctx->caml_young_ptr);
-  }
+  double minwords;
   double prowords = caml_stat_promoted_words;
   double majwords = caml_stat_major_words + (double) caml_allocated_words;
   intnat mincoll = caml_stat_minor_collections;
@@ -281,10 +277,26 @@ CAMLprim value caml_gc_quick_stat(value v)
   intnat cpct = caml_stat_compactions;
   intnat heap_chunks = caml_stat_heap_chunks;
 
-  res = caml_alloc_tuple (16);
-  Store_field (res, 0, caml_copy_double (minwords));
-  Store_field (res, 1, caml_copy_double (prowords));
-  Store_field (res, 2, caml_copy_double (majwords));
+  if (main_ctx){
+    sync_with_global_vars(main_ctx);
+    minwords = caml_stat_minor_words
+               + (double) Wsize_bsize (main_ctx->caml_young_end - main_ctx->caml_young_ptr);
+  }else{
+    minwords  = caml_stat_minor_words
+                    + (double) Wsize_bsize (caml_young_end - caml_young_ptr);
+  }
+
+  if (main_ctx){
+    res = caml_alloc_tuple_r (main_ctx, 16);
+    Store_field (res, 0, caml_copy_double_r (main_ctx, minwords));
+    Store_field (res, 1, caml_copy_double_r (main_ctx, prowords));
+    Store_field (res, 2, caml_copy_double_r (main_ctx, majwords)); 
+  }else{
+    res = caml_alloc_tuple (16);
+    Store_field (res, 0, caml_copy_double (minwords));
+    Store_field (res, 1, caml_copy_double (prowords));
+    Store_field (res, 2, caml_copy_double (majwords)); 
+  }
   Store_field (res, 3, Val_long (mincoll));
   Store_field (res, 4, Val_long (majcoll));
   Store_field (res, 5, Val_long (heap_words));
@@ -298,6 +310,8 @@ CAMLprim value caml_gc_quick_stat(value v)
   Store_field (res, 13, Val_long (cpct));
   Store_field (res, 14, Val_long (top_heap_words));
   Store_field (res, 15, Val_long (caml_stack_usage()));
+
+  sync_with_context(main_ctx);
   CAMLreturn (res);
 }
 

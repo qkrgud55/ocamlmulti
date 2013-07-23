@@ -494,26 +494,46 @@ CAMLprim value caml_ml_open_descriptor_out(value fd)
 
 #define Pair_tag 0
 
+// phc shared
 CAMLprim value caml_ml_out_channels_list (value unit)
 {
   CAMLparam0 ();
   CAMLlocal3 (res, tail, chan);
   struct channel * channel;
-
-  res = Val_emptylist;
-  for (channel = caml_all_opened_channels;
-       channel != NULL;
-       channel = channel->next)
-    /* Testing channel->fd >= 0 looks unnecessary, as
-       caml_ml_close_channel changes max when setting fd to -1. */
-    if (channel->max == NULL) {
-      chan = caml_alloc_channel (channel);
-      tail = res;
-      res = caml_alloc_small (2, Pair_tag);
-      Field (res, 0) = chan;
-      Field (res, 1) = tail;
-    }
-  CAMLreturn (res);
+  
+  if (main_ctx){
+    sync_with_global_vars(main_ctx);
+    res = Val_emptylist;
+    for (channel = caml_all_opened_channels;
+         channel != NULL;
+         channel = channel->next)
+      /* Testing channel->fd >= 0 looks unnecessary, as
+         caml_ml_close_channel changes max when setting fd to -1. */
+      if (channel->max == NULL) {
+        chan = caml_alloc_channel_r (main_ctx, channel);
+        tail = res;
+        res = caml_alloc_small_r (main_ctx, 2, Pair_tag);
+        Field (res, 0) = chan;
+        Field (res, 1) = tail;
+      } 
+    sync_with_context(main_ctx);
+    CAMLreturn (res);
+  } else {
+    res = Val_emptylist;
+    for (channel = caml_all_opened_channels;
+         channel != NULL;
+         channel = channel->next)
+      /* Testing channel->fd >= 0 looks unnecessary, as
+         caml_ml_close_channel changes max when setting fd to -1. */
+      if (channel->max == NULL) {
+        chan = caml_alloc_channel (channel);
+        tail = res;
+        res = caml_alloc_small (2, Pair_tag);
+        Field (res, 0) = chan;
+        Field (res, 1) = tail;
+      }
+    CAMLreturn (res);
+  }
 }
 
 CAMLprim value caml_channel_descriptor(value vchannel)

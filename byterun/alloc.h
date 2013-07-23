@@ -30,10 +30,13 @@ extern "C" {
 
 CAMLextern value caml_alloc (mlsize_t, tag_t);
 CAMLextern value caml_alloc_small (mlsize_t, tag_t);
+CAMLextern value caml_alloc_small_r (pctxt, mlsize_t, tag_t);
 CAMLextern value caml_alloc_tuple (mlsize_t);
 CAMLextern value caml_alloc_tuple_r (pctxt, mlsize_t);
 CAMLextern value caml_alloc_string (mlsize_t);  /* size in bytes */
+CAMLextern value caml_alloc_string_r (pctxt, mlsize_t);  /* size in bytes */
 CAMLextern value caml_copy_string (char const *);
+CAMLextern value caml_copy_string_r (pctxt, char const *);
 CAMLextern value caml_copy_string_array (char const **);
 CAMLextern value caml_copy_double (double);
 CAMLextern value caml_copy_int32 (int32);       /* defined in [ints.c] */

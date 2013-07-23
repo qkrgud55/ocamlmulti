@@ -122,6 +122,24 @@ CAMLexport value caml_alloc_string (mlsize_t len)
   return result;
 }
 
+CAMLexport value caml_alloc_string_r (pctxt ctx, mlsize_t len)
+{
+  value result;
+  mlsize_t offset_index;
+  mlsize_t wosize = (len + sizeof (value)) / sizeof (value);
+
+  if (wosize <= Max_young_wosize) {
+    Alloc_small_r (ctx, result, wosize, String_tag);
+  }else{
+    result = caml_alloc_shr (wosize, String_tag);
+    result = caml_check_urgent_gc (result);
+  }
+  Field (result, wosize - 1) = 0;
+  offset_index = Bsize_wsize (wosize) - 1;
+  Byte (result, offset_index) = offset_index - len;
+  return result;
+}
+
 CAMLexport value caml_alloc_final (mlsize_t len, final_fun fun,
                                    mlsize_t mem, mlsize_t max)
 {
@@ -136,6 +154,17 @@ CAMLexport value caml_copy_string(char const *s)
 
   len = strlen(s);
   res = caml_alloc_string(len);
+  memmove(String_val(res), s, len);
+  return res;
+}
+
+CAMLexport value caml_copy_string_r(pctxt ctx, char const *s)
+{
+  int len;
+  value res;
+
+  len = strlen(s);
+  res = caml_alloc_string_r(ctx, len);
   memmove(String_val(res), s, len);
   return res;
 }

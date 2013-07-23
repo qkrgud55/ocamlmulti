@@ -214,6 +214,7 @@ static unsigned int hash_value_name(char const *name)
   return h % Named_value_size;
 }
 
+// phc shared
 CAMLprim value caml_register_named_value(value vname, value val)
 {
   struct named_value * nv;

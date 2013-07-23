@@ -591,14 +591,28 @@ CAMLprim value caml_int64_bits_of_float(value vd)
   return caml_copy_int64(u.i);
 }
 
+// phc shared
+// TODO replace main_ctx with tls context in multi runtime mode
 CAMLprim value caml_int64_float_of_bits(value vi)
 {
-  union { double d; int64 i; int32 h[2]; } u;
-  u.i = Int64_val(vi);
-#if defined(__arm__) && !defined(__ARM_EABI__)
-  { int32 t = u.h[0]; u.h[0] = u.h[1]; u.h[1] = t; }
-#endif
-  return caml_copy_double(u.d);
+  if (main_ctx){
+    value res;
+    union { double d; int64 i; int32 h[2]; } u;
+    u.i = Int64_val(vi);
+  #if defined(__arm__) && !defined(__ARM_EABI__)
+    { int32 t = u.h[0]; u.h[0] = u.h[1]; u.h[1] = t; }
+  #endif
+    res = caml_copy_double_r(main_ctx, u.d);
+    sync_with_context(main_ctx);
+    return res;
+  }else{
+    union { double d; int64 i; int32 h[2]; } u;
+    u.i = Int64_val(vi);
+  #if defined(__arm__) && !defined(__ARM_EABI__)
+    { int32 t = u.h[0]; u.h[0] = u.h[1]; u.h[1] = t; }
+  #endif
+    return caml_copy_double(u.d);
+  }
 }
 
 /* Native integers */

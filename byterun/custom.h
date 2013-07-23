@@ -21,6 +21,7 @@
 #include "compatibility.h"
 #endif
 #include "mlvalues.h"
+#include "context.h"
 
 struct custom_operations {
   char *identifier;
@@ -52,6 +53,11 @@ CAMLextern value caml_alloc_custom(struct custom_operations * ops,
                                    uintnat size, /*size in bytes*/
                                    mlsize_t mem, /*resources consumed*/
                                    mlsize_t max  /*max resources*/);
+CAMLextern value caml_alloc_custom_r(pctxt ctx, struct custom_operations * ops,
+                                   uintnat size, /*size in bytes*/
+                                   mlsize_t mem, /*resources consumed*/
+                                   mlsize_t max  /*max resources*/);
+
 
 CAMLextern void caml_register_custom_operations(struct custom_operations * ops);
 

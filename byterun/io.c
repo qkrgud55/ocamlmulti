@@ -461,14 +461,35 @@ CAMLexport value caml_alloc_channel(struct channel *chan)
   return res;
 }
 
+CAMLexport value caml_alloc_channel_r(pctxt ctx, struct channel *chan)
+{
+  value res;
+  chan->refcount++;             /* prevent finalization during next alloc */
+  res = caml_alloc_custom_r(ctx, &channel_operations,
+                          sizeof(struct channel *), 1, 1000);
+  Channel(res) = chan;
+  return res;
+}
+
+ 
+// phc shared
+// TODO replace main_ctx with tls context in multi runtime mode
 CAMLprim value caml_ml_open_descriptor_in(value fd)
 {
-  return caml_alloc_channel(caml_open_descriptor_in(Int_val(fd)));
+  if (main_ctx){
+    value res = caml_alloc_channel_r(main_ctx, caml_open_descriptor_in(Int_val(fd)));
+    sync_with_context(main_ctx);
+    return res;
+  }else
+    return caml_alloc_channel(caml_open_descriptor_in(Int_val(fd)));
 }
 
 CAMLprim value caml_ml_open_descriptor_out(value fd)
 {
-  return caml_alloc_channel(caml_open_descriptor_out(Int_val(fd)));
+  if (main_ctx){
+    return caml_alloc_channel_r(main_ctx, caml_open_descriptor_out(Int_val(fd)));
+  }else
+    return caml_alloc_channel(caml_open_descriptor_out(Int_val(fd)));
 }
 
 #define Pair_tag 0

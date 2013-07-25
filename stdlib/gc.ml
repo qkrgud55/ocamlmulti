@@ -56,6 +56,8 @@ external full_major : unit -> unit = "caml_gc_full_major";;
 external compact : unit -> unit = "caml_gc_compaction";;
 
 external phc_context : unit -> unit = "caml_print_context" "reentrant";;
+external lock_phc_mutex : unit -> unit = "caml_lock_phc_mutex" "reentrant";;
+external unlock_phc_mutex : unit -> unit = "caml_unlock_phc_mutex" "reentrant";;
 
 open Printf;;
 

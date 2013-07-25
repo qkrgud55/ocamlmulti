@@ -190,6 +190,8 @@ external compact : unit -> unit = "caml_gc_compaction"
    compaction is a lengthy operation. *)
 
 external phc_context : unit -> unit = "caml_print_context" "reentrant";;
+external lock_phc_mutex : unit -> unit = "caml_lock_phc_mutex" "reentrant";;
+external unlock_phc_mutex : unit -> unit = "caml_unlock_phc_mutex" "reentrant";;
 
 val print_stat : out_channel -> unit
 (** Print the current values of the memory management counters (in

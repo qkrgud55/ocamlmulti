@@ -134,6 +134,14 @@ static void st_masterlock_init(st_masterlock * m)
   m->waiters = 0;
 }
 
+static void st_lock_mutex(pthread_mutex_t *m){
+  pthread_mutex_lock(m);
+}
+
+static void st_unlock_mutex(pthread_mutex_t *m){
+  pthread_mutex_unlock(m);
+}
+
 static void st_masterlock_acquire(st_masterlock * m)
 {
   pthread_mutex_lock(&m->lock);

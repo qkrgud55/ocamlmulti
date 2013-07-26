@@ -12,7 +12,9 @@
 int access_to_non_ctx = 0;
 pctxt main_ctx = NULL;
 int num_th = 0;
-pthread_mutex_t *phc_mutex = NULL;
+
+CAMLexport void (*caml_lock_phc_mutex_fptr)(void) = NULL;
+CAMLexport void (*caml_unlock_phc_mutex_fptr)(void) = NULL;
 
 pctxt create_empty_context(void){
   phc_global_context* res = NULL;
@@ -28,27 +30,20 @@ pctxt create_empty_context(void){
 
   main_ctx = res;
 
-  if (phc_mutex==NULL){
-    int tmp;
-    phc_mutex = malloc(sizeof(pthread_mutex_t));
-    tmp = pthread_mutex_init(phc_mutex, NULL);
-//  printf("create_empty_context %d\n", tmp);
-  }
-
   return res;
 }
 
 CAMLprim value caml_lock_phc_mutex(pctxt ctx, value v){
   int res;
-  res = pthread_mutex_lock(phc_mutex);
-  printf("caml_lock_phc_mutex %p %d\n", phc_mutex, res);
+  printf("caml_lock_phc_mutex\n");
+  caml_lock_phc_mutex_fptr();
   return Val_unit;
 }
 
 CAMLprim value caml_unlock_phc_mutex(pctxt ctx, value v){
   int res;
-  res = pthread_mutex_unlock(phc_mutex);
-  printf("caml_unlock_phc_mutex %p %d\n", phc_mutex, res);
+  printf("caml_unlock_phc_mutex\n");
+  caml_unlock_phc_mutex_fptr();
   return Val_unit;
 }
 

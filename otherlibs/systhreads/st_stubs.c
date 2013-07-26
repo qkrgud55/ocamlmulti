@@ -32,6 +32,7 @@
 #endif
 #include "sys.h"
 #include "threads.h"
+#include "context.h"
 
 /* Initial size of bytecode stack when a thread is created (4 Ko) */
 #define Thread_stack_size (Stack_size / 4)
@@ -118,11 +119,19 @@ static value caml_threadstatus_new (void);
 static void caml_threadstatus_terminate (value);
 static st_retcode caml_threadstatus_wait (value);
 
+// phc mutex
+static pthread_mutex_t phc_mutex;
+
 /* Imports from the native-code runtime system */
 #ifdef NATIVE_CODE
 extern struct longjmp_buffer caml_termination_jmpbuf;
 extern void (*caml_termination_hook)(void);
 #endif
+
+// phc mutex
+// extern void (*caml_lock_phc_mutex_fptr)(void) = NULL;
+// extern void (*caml_unlock_phc_mutex_fptr)(void) = NULL;
+
 
 /* Hook for scanning the stacks of the other threads */
 
@@ -260,6 +269,16 @@ static void caml_io_mutex_unlock_exn(void)
 {
   struct channel * chan = st_tls_get(last_channel_locked_key);
   if (chan != NULL) caml_io_mutex_unlock(chan);
+}
+
+// phc mutex
+
+static void st_lock_phc_mutex(void){
+  st_lock_mutex(&phc_mutex);
+}
+
+static void st_unlock_phc_mutex(void){
+  st_unlock_mutex(&phc_mutex);
 }
 
 /* Hook for estimating stack usage */
@@ -430,6 +449,11 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
 #ifdef NATIVE_CODE
   caml_termination_hook = st_thread_exit;
 #endif
+  // phc mutex
+  pthread_mutex_init(&phc_mutex, NULL);
+  caml_lock_phc_mutex_fptr = st_lock_phc_mutex;
+  caml_unlock_phc_mutex_fptr = st_unlock_phc_mutex;
+
   caml_channel_mutex_free = caml_io_mutex_free;
   caml_channel_mutex_lock = caml_io_mutex_lock;
   caml_channel_mutex_unlock = caml_io_mutex_unlock;

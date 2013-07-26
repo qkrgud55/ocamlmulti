@@ -5,6 +5,7 @@
 #ifndef PHC_CONTEXT_H
 #define PHC_CONTEXT_H
 
+#include "misc.h"
 
 #define NULL_CTX 0
 
@@ -31,5 +32,9 @@ extern pctxt create_empty_context(void);
 extern void destroy_context(pctxt);
 extern void sync_with_global_vars(pctxt ctx);
 extern void sync_with_context(pctxt ctx);
+
+CAMLextern void (*caml_lock_phc_mutex_fptr)(void);
+CAMLextern void (*caml_unlock_phc_mutex_fptr)(void);
+
 
 #endif

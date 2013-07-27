@@ -466,7 +466,7 @@ ocamlc.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlbytecomp.cmxa $(BYTE
 	$(CAMLOPT) $(LINKFLAGS) -ccopt "$(BYTECCLINKOPTS)" -o ocamlc.opt \
           compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlbytecomp.cmxa \
           $(BYTESTART:.cmo=.cmx) -cclib "$(BYTECCLIBS)"
-	@sed -e 's|@compiler@|$$topdir/ocamlc.opt|' \
+	@sed -e 's|@compiler@|$$topdir/ocamlc|' \
 	  driver/ocamlcomp.sh.in > ocamlcomp.sh
 	@chmod +x ocamlcomp.sh
 
@@ -484,7 +484,7 @@ ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa $(OPT
 	$(CAMLOPT) $(LINKFLAGS) -o ocamlopt.opt \
            compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
            $(OPTSTART:.cmo=.cmx)
-	@sed -e 's|@compiler@|$$topdir/ocamlopt.opt|' \
+	@sed -e 's|@compiler@|$$topdir/ocamlopt|' \
 	  driver/ocamlcomp_phc.sh.in > ocamlcompopt.sh
 	@chmod +x ocamlcompopt.sh
 

@@ -568,7 +568,7 @@ LBL(caml_c_call_r):
 #endif
     /* Make the exception handler and alloc ptr available to the C code */
         STORE_VAR(%r15, caml_young_ptr)
-    /*    movq    %r15, (%r13)  */
+        movq    %r15, (%r13) 
         STORE_VAR(%r14, caml_exception_pointer)
     /* Call the function (address in %rax) */
     /* No need to PREPARE_FOR_C_CALL since the caller already

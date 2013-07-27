@@ -86,19 +86,19 @@ void sync_with_global_vars(pctxt ctx){
 
 void sync_with_context(pctxt ctx){
   if (ctx->caml_young_ptr!=caml_young_ptr)
-    print_inconsis("sync_with_global_vars caml_young_ptr",
+    print_inconsis("sync_with_context caml_young_ptr",
            ctx->caml_young_ptr, caml_young_ptr);
   if (ctx->caml_young_limit!=caml_young_limit)
-    print_inconsis("sync_with_global_vars caml_young_limit",
+    print_inconsis("sync_with_context caml_young_limit",
            ctx->caml_young_limit, caml_young_limit);
   if (ctx->caml_young_base!=caml_young_base)
-    print_inconsis("sync_with_global_vars caml_young_base",
+    print_inconsis("sync_with_context caml_young_base",
            ctx->caml_young_base, caml_young_base);
   if (ctx->caml_young_start!=caml_young_start)
-    print_inconsis("sync_with_global_vars caml_young_start",
+    print_inconsis("sync_with_context caml_young_start",
            ctx->caml_young_start, caml_young_start);
   if (ctx->caml_young_end!=caml_young_end)
-    print_inconsis("sync_with_global_vars caml_young_end",
+    print_inconsis("sync_with_context caml_young_end",
            ctx->caml_young_end, caml_young_end);
 
   caml_young_ptr     = ctx->caml_young_ptr; 

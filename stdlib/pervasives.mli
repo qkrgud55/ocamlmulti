@@ -471,6 +471,8 @@ val bool_of_string : string -> bool
    ["true"] or ["false"]. *)
 
 val string_of_int : int -> string
+
+(* val string_of_int_r : int -> string *)
 (** Return the string representation of an integer, in decimal. *)
 
 external int_of_string : string -> int = "caml_int_of_string"
@@ -483,6 +485,7 @@ external int_of_string : string -> int = "caml_int_of_string"
    exceeds the range of integers representable in type [int]. *)
 
 val string_of_float : float -> string
+val string_of_float_r : float -> string
 (** Return the string representation of a floating-point number. *)
 
 external float_of_string : string -> float = "caml_float_of_string"

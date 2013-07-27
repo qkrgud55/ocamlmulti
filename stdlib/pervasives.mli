@@ -472,7 +472,7 @@ val bool_of_string : string -> bool
 
 val string_of_int : int -> string
 
-(* val string_of_int_r : int -> string *)
+val string_of_int_r : int -> string
 (** Return the string representation of an integer, in decimal. *)
 
 external int_of_string : string -> int = "caml_int_of_string"

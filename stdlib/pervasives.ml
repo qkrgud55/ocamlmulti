@@ -170,7 +170,7 @@ external snd : 'a * 'b -> 'b = "%field1"
 (* String conversion functions *)
 
 external format_int : string -> int -> string = "caml_format_int"
-external format_int_r : string -> int -> string = "caml_format_int" "reentrant"
+external format_int_r : string -> int -> string = "caml_format_int_r" "reentrant"
 external format_float : string -> float -> string = "caml_format_float"
 external format_float_r : string -> float -> string = "caml_format_float_r" "reentrant"
 
@@ -184,8 +184,8 @@ let bool_of_string = function
 let string_of_int n =
   format_int "%d" n;;
 
-(* let string_of_int_r n = *)
-(*   format_int_r "%d" n *)
+let string_of_int_r n =
+  format_int_r "%d" n;;
 
 external int_of_string : string -> int = "caml_int_of_string"
 

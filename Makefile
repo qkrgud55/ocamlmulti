@@ -485,7 +485,7 @@ ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa $(OPT
            compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
            $(OPTSTART:.cmo=.cmx)
 	@sed -e 's|@compiler@|$$topdir/ocamlopt.opt|' \
-	  driver/ocamlcomp.sh.in > ocamlcompopt.sh
+	  driver/ocamlcomp_phc.sh.in > ocamlcompopt.sh
 	@chmod +x ocamlcompopt.sh
 
 partialclean::

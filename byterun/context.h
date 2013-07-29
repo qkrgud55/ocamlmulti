@@ -17,6 +17,8 @@ typedef struct phc_global_context {
   char *caml_young_base;
   char *caml_young_start;
   char *caml_young_end;
+
+  int count_id;
 } phc_global_context;
 
 typedef phc_global_context *pctxt;

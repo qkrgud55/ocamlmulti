@@ -58,6 +58,8 @@ external compact : unit -> unit = "caml_gc_compaction";;
 external phc_context : unit -> unit = "caml_print_context" "reentrant";;
 external lock_phc_mutex : unit -> unit = "caml_lock_phc_mutex" "reentrant";;
 external unlock_phc_mutex : unit -> unit = "caml_unlock_phc_mutex" "reentrant";;
+external get_th_id : unit -> int = "caml_context_id" "reentrant";;
+external get_th_num : unit -> int = "caml_context_num" "reentrant";;
 
 open Printf;;
 

@@ -12,6 +12,7 @@
 int access_to_non_ctx = 0;
 pctxt main_ctx = NULL;
 int num_th = 0;
+static int count_th = 0;
 
 CAMLexport void (*caml_lock_phc_mutex_fptr)(void) = NULL;
 CAMLexport void (*caml_unlock_phc_mutex_fptr)(void) = NULL;
@@ -27,6 +28,8 @@ pctxt create_empty_context(void){
   res->caml_young_base    = NULL;
   res->caml_young_start   = NULL;
   res->caml_young_end     = NULL;
+
+  res->count_id = count_th++;
 
   main_ctx = res;
 
@@ -45,6 +48,14 @@ CAMLprim value caml_unlock_phc_mutex(pctxt ctx, value v){
   printf("caml_unlock_phc_mutex\n");
   caml_unlock_phc_mutex_fptr();
   return Val_unit;
+}
+
+CAMLprim value caml_context_id(pctxt ctx, value v){
+  return Val_int(ctx->count_id);
+}
+
+CAMLprim value caml_context_num(pctxt ctx, value v){
+  return Val_int(count_th);
 }
 
 CAMLprim value caml_print_context(pctxt ctx){

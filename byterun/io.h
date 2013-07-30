@@ -22,35 +22,22 @@
 #include "mlvalues.h"
 #include "context.h"
 
-#ifndef IO_BUFFER_SIZE
-#define IO_BUFFER_SIZE 65536
-#endif
-
-#if defined(_WIN32)
-typedef __int64 file_offset;
-extern __int64 _lseeki64(int, __int64, int);
-#define lseek(fd,d,m) _lseeki64(fd,d,m)
-#elif defined(HAS_OFF_T)
-#include <sys/types.h>
-typedef off_t file_offset;
-#else
-typedef long file_offset;
-#endif
-
+/*
 struct channel {
-  int fd;                       /* Unix file descriptor */
-  file_offset offset;           /* Absolute position of fd in the file */
-  char * end;                   /* Physical end of the buffer */
-  char * curr;                  /* Current position in the buffer */
-  char * max;                   /* Logical end of the buffer (for input) */
-  void * mutex;                 /* Placeholder for mutex (for systhreads) */
-  struct channel * next, * prev;/* Double chaining of channels (flush_all) */
-  int revealed;                 /* For Cash only */
-  int old_revealed;             /* For Cash only */
-  int refcount;                 /* For flush_all and for Cash */
-  int flags;                    /* Bitfield */
-  char buff[IO_BUFFER_SIZE];    /* The buffer itself */
+  int fd;                       
+  file_offset offset;           
+  char * end;                   
+  char * curr;                  
+  char * max;                   
+  void * mutex;                 
+  struct channel * next, * prev;
+  int revealed;                 
+  int old_revealed;             
+  int refcount;                 
+  int flags;                    
+  char buff[IO_BUFFER_SIZE];    
 };
+*/
 
 enum {
   CHANNEL_FLAG_FROM_SOCKET = 1  /* For Windows */
@@ -77,6 +64,8 @@ enum {
 
 CAMLextern struct channel * caml_open_descriptor_in (int);
 CAMLextern struct channel * caml_open_descriptor_out (int);
+CAMLextern struct channel * caml_open_descriptor_in_r (pctxt, int);
+CAMLextern struct channel * caml_open_descriptor_out_r (pctxt, int);
 CAMLextern void caml_close_channel (struct channel *);
 CAMLextern int caml_channel_binary_mode (struct channel *);
 CAMLextern value caml_alloc_channel(struct channel *chan);

@@ -132,8 +132,8 @@ void caml_set_minor_heap_size_r (pctxt ctx, asize_t size)
   ctx->caml_young_ptr = ctx->caml_young_end;
   caml_minor_heap_size = size;
 
-  reset_table (&caml_ref_table);
-  reset_table (&caml_weak_ref_table);
+  reset_table (&(ctx->caml_ref_table));
+  reset_table (&(ctx->caml_weak_ref_table));
 }
 
 static value oldify_todo_list = 0;
@@ -416,14 +416,14 @@ void caml_empty_minor_heap_r (pctxt ctx)
   value **r;
 
   if (ctx->caml_young_ptr != ctx->caml_young_end){
-    caml_in_minor_collection = 1;
+    ctx->caml_in_minor_collection = 1;
     caml_gc_message (0x02, "<", 0);
     caml_oldify_local_roots_r(ctx);
-    for (r = caml_ref_table.base; r < caml_ref_table.ptr; r++){
+    for (r = ctx->caml_ref_table.base; r < ctx->caml_ref_table.ptr; r++){
       caml_oldify_one_r (ctx, **r, *r);
     }
     caml_oldify_mopup_r (ctx);
-    for (r = caml_weak_ref_table.base; r < caml_weak_ref_table.ptr; r++){
+    for (r = ctx->caml_weak_ref_table.base; r < ctx->caml_weak_ref_table.ptr; r++){
       if (Is_block (**r) && Is_young (**r)){
         if (Hd_val (**r) == 0){
           **r = Field (**r, 0);
@@ -437,10 +437,10 @@ void caml_empty_minor_heap_r (pctxt ctx)
     caml_stat_minor_words += Wsize_bsize (ctx->caml_young_end - ctx->caml_young_ptr);
     ctx->caml_young_ptr = ctx->caml_young_end;
     ctx->caml_young_limit = ctx->caml_young_start;
-    clear_table (&caml_ref_table);
-    clear_table (&caml_weak_ref_table);
+    clear_table (&(ctx->caml_ref_table));
+    clear_table (&(ctx->caml_weak_ref_table));
     caml_gc_message (0x02, ">", 0);
-    caml_in_minor_collection = 0;
+    ctx->caml_in_minor_collection = 0;
   }
   caml_final_empty_young ();
 
@@ -520,6 +520,38 @@ void caml_realloc_ref_table (struct caml_ref_table *tbl)
     caml_gc_message (0x08, "ref_table threshold crossed\n", 0);
     tbl->limit = tbl->end;
     caml_urge_major_slice ();
+  }else{ /* This will almost never happen with the bytecode interpreter. */
+    asize_t sz;
+    asize_t cur_ptr = tbl->ptr - tbl->base;
+                                             Assert (caml_force_major_slice);
+
+    tbl->size *= 2;
+    sz = (tbl->size + tbl->reserve) * sizeof (value *);
+    caml_gc_message (0x08, "Growing ref_table to %"
+                           ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
+                     (intnat) sz/1024);
+    tbl->base = (value **) realloc ((char *) tbl->base, sz);
+    if (tbl->base == NULL){
+      caml_fatal_error ("Fatal error: ref_table overflow\n");
+    }
+    tbl->end = tbl->base + tbl->size + tbl->reserve;
+    tbl->threshold = tbl->base + tbl->size;
+    tbl->ptr = tbl->base + cur_ptr;
+    tbl->limit = tbl->end;
+  }
+}
+
+void caml_realloc_ref_table_r (pctxt ctx, struct caml_ref_table *tbl)
+{                                           Assert (tbl->ptr == tbl->limit);
+                                            Assert (tbl->limit <= tbl->end);
+                                      Assert (tbl->limit >= tbl->threshold);
+
+  if (tbl->base == NULL){
+    caml_alloc_table (tbl, caml_minor_heap_size / sizeof (value) / 8, 256);
+  }else if (tbl->limit == tbl->threshold){
+    caml_gc_message (0x08, "ref_table threshold crossed\n", 0);
+    tbl->limit = tbl->end;
+    caml_urge_major_slice_r (ctx);
   }else{ /* This will almost never happen with the bytecode interpreter. */
     asize_t sz;
     asize_t cur_ptr = tbl->ptr - tbl->base;

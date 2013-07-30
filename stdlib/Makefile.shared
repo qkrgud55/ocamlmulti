@@ -19,7 +19,7 @@ COMPILER=../ocamlc
 CAMLC=$(RUNTIME) $(COMPILER)
 COMPFLAGS=-strict-sequence -g -warn-error A -nostdlib
 OPTCOMPILER=../bin/ocamlopt
-CAMLOPT=$(OPTCOMPILER) -phcr
+CAMLOPT=$(OPTCOMPILER)
 OPTCOMPFLAGS=-warn-error A -nostdlib -g
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 

@@ -63,6 +63,24 @@ static void do_set (value ar, mlsize_t offset, value v)
   }
 }
 
+static void do_set_r (pctxt ctx, value ar, mlsize_t offset, value v)
+{
+  if (Is_block (v) && Is_young_r (ctx, v)){
+    /* modified version of Modify */
+    value old = Field (ar, offset);
+    Field (ar, offset) = v;
+    if (!(Is_block (old) && Is_young_r (ctx, old))){
+      if (ctx->caml_weak_ref_table.ptr >= ctx->caml_weak_ref_table.limit){
+        CAMLassert (ctx->caml_weak_ref_table.ptr == ctx->caml_weak_ref_table.limit);
+        caml_realloc_ref_table_r (&(ctx->caml_weak_ref_table));
+      }
+      *(ctx->caml_weak_ref_table.ptr++) = &Field (ar, offset);
+    }
+  }else{
+    Field (ar, offset) = v;
+  }
+}
+
 CAMLprim value caml_weak_set (value ar, value n, value el)
 {
   mlsize_t offset = Long_val (n) + 1;

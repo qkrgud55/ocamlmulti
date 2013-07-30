@@ -266,15 +266,18 @@ void caml_oldify_local_roots_r (pctxt ctx)
   printf("asmrun/roots.c : caml_oldify_local_roots_r\n");
 
   /* The global roots */
-  for (i = caml_globals_scanned;
-       i <= caml_globals_inited && caml_globals[i] != 0;
+  for (i = ctx->caml_globals_scanned;
+       i <= ctx->caml_globals_inited && caml_globals[i] != 0;
        i++) {
     glob = caml_globals[i];
     for (j = 0; j < Wosize_val(glob); j++){
+      // phc test
+      if (Is_young_r(ctx, Field (glob, j)))
+        printf("caml_globals[%d][%d] - in young heap\n", i, j);
       Oldify_r (ctx, &Field (glob, j));
     }
   }
-  caml_globals_scanned = caml_globals_inited;
+  ctx->caml_globals_scanned = ctx->caml_globals_inited;
 
   /* Dynamic global roots */
   iter_list(caml_dyn_globals, lnk) {
@@ -390,6 +393,40 @@ void caml_do_roots (scanning_action f)
   /* Hook */
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f);
 }
+
+void caml_do_roots_r (pctxt ctx, scanning_action f)
+{
+  int i, j;
+  value glob;
+  link *lnk;
+
+  /* The global roots */
+  for (i = 0; caml_globals[i] != 0; i++) {
+    glob = caml_globals[i];
+    for (j = 0; j < Wosize_val(glob); j++)
+      f (Field (glob, j), &Field (glob, j));
+  }
+
+  /* Dynamic global roots */
+  iter_list(caml_dyn_globals, lnk) {
+    glob = (value) lnk->data;
+    for (j = 0; j < Wosize_val(glob); j++){
+      f (Field (glob, j), &Field (glob, j));
+    }
+  }
+
+  /* The stack and local roots */
+  if (caml_frame_descriptors == NULL) caml_init_frame_descriptors();
+  caml_do_local_roots(f, caml_bottom_of_stack, caml_last_return_address,
+                      caml_gc_regs, caml_local_roots);
+  /* Global C roots */
+  caml_scan_global_roots(f);
+  /* Finalised values */
+  caml_final_do_strong_roots (f);
+  /* Hook */
+  if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f);
+}
+
 
 void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
                          uintnat last_retaddr, value * gc_regs,

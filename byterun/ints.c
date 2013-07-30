@@ -660,6 +660,19 @@ CAMLprim value caml_int64_float_of_bits(value vi)
 //  }
 }
 
+CAMLprim value caml_int64_float_of_bits_r(pctxt ctx, value vi)
+{
+  value res;
+  union { double d; int64 i; int32 h[2]; } u;
+  u.i = Int64_val(vi);
+#if defined(__arm__) && !defined(__ARM_EABI__)
+  { int32 t = u.h[0]; u.h[0] = u.h[1]; u.h[1] = t; }
+#endif
+  res = caml_copy_double_r(ctx, u.d);
+  sync_with_context(ctx);
+  return res;
+}
+
 /* Native integers */
 
 static int nativeint_cmp(value v1, value v2)

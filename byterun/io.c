@@ -33,6 +33,7 @@
 #include "mlvalues.h"
 #include "signals.h"
 #include "sys.h"
+#include "context.h"
 
 #ifndef SEEK_SET
 #define SEEK_SET 0
@@ -85,6 +86,39 @@ CAMLexport struct channel * caml_open_descriptor_out(int fd)
   struct channel * channel;
 
   channel = caml_open_descriptor_in(fd);
+  channel->max = NULL;
+  return channel;
+}
+
+CAMLexport struct channel * caml_open_descriptor_in_r(pctxt ctx, int fd)
+{
+  struct channel * channel;
+
+  channel = (struct channel *) caml_stat_alloc(sizeof(struct channel));
+  channel->fd = fd;
+  caml_lock_phc_mutex(ctx, Val_unit);
+  channel->offset = lseek(fd, 0, SEEK_CUR);
+  caml_unlock_phc_mutex(ctx, Val_unit);
+  channel->curr = channel->max = channel->buff;
+  channel->end = channel->buff + IO_BUFFER_SIZE;
+  channel->mutex = NULL;
+  channel->revealed = 0;
+  channel->old_revealed = 0;
+  channel->refcount = 0;
+  channel->flags = 0;
+  channel->next = ctx->caml_all_opened_channels;
+  channel->prev = NULL;
+  if (ctx->caml_all_opened_channels != NULL)
+    ctx->caml_all_opened_channels->prev = channel;
+  ctx->caml_all_opened_channels = channel;
+  return channel;
+}
+
+CAMLexport struct channel * caml_open_descriptor_out_r(pctxt ctx, int fd)
+{
+  struct channel * channel;
+
+  channel = caml_open_descriptor_in_r(ctx, fd);
   channel->max = NULL;
   return channel;
 }
@@ -471,67 +505,71 @@ CAMLexport value caml_alloc_channel_r(pctxt ctx, struct channel *chan)
   return res;
 }
 
- 
-// phc shared
-// TODO replace main_ctx with tls context in multi runtime mode
 CAMLprim value caml_ml_open_descriptor_in(value fd)
 {
-/*  if (main_ctx){
-    value res = caml_alloc_channel_r(main_ctx, caml_open_descriptor_in(Int_val(fd)));
-    sync_with_context(main_ctx);
-    return res;
-  }else */
-    return caml_alloc_channel(caml_open_descriptor_in(Int_val(fd)));
+  return caml_alloc_channel(caml_open_descriptor_in(Int_val(fd)));
 }
 
 CAMLprim value caml_ml_open_descriptor_out(value fd)
 {
-/*  if (main_ctx){
-    return caml_alloc_channel_r(main_ctx, caml_open_descriptor_out(Int_val(fd)));
-  }else */
-    return caml_alloc_channel(caml_open_descriptor_out(Int_val(fd)));
+  return caml_alloc_channel(caml_open_descriptor_out(Int_val(fd)));
+}
+
+
+CAMLprim value caml_ml_open_descriptor_in_r(pctxt ctx, value fd)
+{
+  return caml_alloc_channel_r(ctx, caml_open_descriptor_in_r(ctx, Int_val(fd)));
+}
+
+CAMLprim value caml_ml_open_descriptor_out_r(pctxt ctx, value fd)
+{
+  return caml_alloc_channel_r(ctx, caml_open_descriptor_out_r(ctx, Int_val(fd)));
 }
 
 #define Pair_tag 0
 
-// phc shared
 CAMLprim value caml_ml_out_channels_list (value unit)
 {
   CAMLparam0 ();
   CAMLlocal3 (res, tail, chan);
   struct channel * channel;
   
-/*  if (main_ctx){
-    sync_with_global_vars(main_ctx);
-    res = Val_emptylist;
-    for (channel = caml_all_opened_channels;
-         channel != NULL;
-         channel = channel->next)
-      if (channel->max == NULL) {
-        chan = caml_alloc_channel_r (main_ctx, channel);
-        tail = res;
-        res = caml_alloc_small_r (main_ctx, 2, Pair_tag);
-        Field (res, 0) = chan;
-        Field (res, 1) = tail;
-      } 
-    sync_with_context(main_ctx);
-    CAMLreturn (res);
-  } else { */
-    res = Val_emptylist;
-    for (channel = caml_all_opened_channels;
-         channel != NULL;
-         channel = channel->next)
-      /* Testing channel->fd >= 0 looks unnecessary, as
-         caml_ml_close_channel changes max when setting fd to -1. */
-      if (channel->max == NULL) {
-        chan = caml_alloc_channel (channel);
-        tail = res;
-        res = caml_alloc_small (2, Pair_tag);
-        Field (res, 0) = chan;
-        Field (res, 1) = tail;
-      }
-    CAMLreturn (res);
-//  }
+  res = Val_emptylist;
+  for (channel = caml_all_opened_channels;
+       channel != NULL;
+       channel = channel->next)
+    /* Testing channel->fd >= 0 looks unnecessary, as
+       caml_ml_close_channel changes max when setting fd to -1. */
+    if (channel->max == NULL) {
+      chan = caml_alloc_channel (channel);
+      tail = res;
+      res = caml_alloc_small (2, Pair_tag);
+      Field (res, 0) = chan;
+      Field (res, 1) = tail;
+    }
+  CAMLreturn (res);
+}
+
+CAMLprim value caml_ml_out_channels_list_r (pctxt ctx, value unit)
+{
+  CAMLparam0 ();
+  CAMLlocal3 (res, tail, chan);
+  struct channel * channel;
+  
+  res = Val_emptylist;
+  for (channel = ctx->caml_all_opened_channels;
+       channel != NULL;
+       channel = channel->next)
+    /* Testing channel->fd >= 0 looks unnecessary, as
+       caml_ml_close_channel changes max when setting fd to -1. */
+    if (channel->max == NULL) {
+      chan = caml_alloc_channel_r (ctx, channel);
+      tail = res;
+      res = caml_alloc_small_r (ctx, 2, Pair_tag);
+      Field (res, 0) = chan;
+      Field (res, 1) = tail;
+    }
+  CAMLreturn (res);
 }
 
 CAMLprim value caml_channel_descriptor(value vchannel)

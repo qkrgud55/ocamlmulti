@@ -209,7 +209,7 @@ void caml_main(char **argv)
 
     for (i=0; i<num_th; i++){
       // caml_phc_create_thread(&caml_start_program_r, ctxl[i]);
-      caml_lock_phc_mutex(ctxl[i]);
+      caml_enter_cond_lock(ctxl[i]);
       printf("thread %d acquired phc lock\n", i);
       pthread_create(thl+i, NULL, &caml_start_program_r_wrapper, ctxl[i]);
     }

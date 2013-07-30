@@ -13,9 +13,14 @@ int access_to_non_ctx = 0;
 pctxt main_ctx = NULL;
 int num_th = 0;
 static int count_th = 0;
+static int count_start = 0;
+static pthread_mutex_t phc_mutex_;
+static pthread_mutex_t phc_cond_lock;
+static pthread_cond_t phc_cond_;
 
 CAMLexport void (*caml_lock_phc_mutex_fptr)(void) = NULL;
 CAMLexport void (*caml_unlock_phc_mutex_fptr)(void) = NULL;
+CAMLexport void (*caml_phc_create_thread)(void *(*fn)(void*), void *arg) = NULL;
 
 pctxt create_empty_context(void){
   phc_global_context* res = NULL;
@@ -30,24 +35,47 @@ pctxt create_empty_context(void){
   res->caml_young_end     = NULL;
 
   res->count_id = count_th++;
-
-  main_ctx = res;
+  
+  if (main_ctx==NULL){
+    main_ctx = res;
+    pthread_mutex_init(&phc_mutex_, NULL);
+    pthread_mutex_init(&phc_cond_lock, NULL);
+    pthread_cond_init(&phc_cond_, NULL);
+  }
 
   return res;
 }
 
 CAMLprim value caml_lock_phc_mutex(pctxt ctx, value v){
-  int res;
-  printf("caml_lock_phc_mutex\n");
-  caml_lock_phc_mutex_fptr();
+//  int res;
+//  printf("caml_lock_phc_mutex\n");
+//  caml_lock_phc_mutex_fptr();
+  pthread_mutex_lock(&phc_mutex_);
+  main_ctx = ctx;
+  sync_with_context(ctx); 
   return Val_unit;
 }
 
 CAMLprim value caml_unlock_phc_mutex(pctxt ctx, value v){
-  int res;
-  printf("caml_unlock_phc_mutex\n");
-  caml_unlock_phc_mutex_fptr();
+//  int res;
+//  printf("caml_unlock_phc_mutex\n");
+//  caml_unlock_phc_mutex_fptr();
+  pthread_mutex_unlock(&phc_mutex_);
   return Val_unit;
+}
+
+CAMLprim value caml_wait_counter(pctxt ctx, value v){
+// increase phc_count and wait for it to reach num_th 
+// thus this fun blocks until it is OK to start parallel threading
+// assumption :  pthread_mutex_lock(phc_mutex_);
+  count_start++;
+  pthread_mutex_unlock(&phc_mutex_);
+
+  pthread_mutex_lock(&phc_cond_lock);
+  while (count_start < num_th)
+    pthread_cond_wait(&phc_cond_, &phc_cond_lock);
+  pthread_cond_signal(&phc_cond_);
+  pthread_mutex_unlock(&phc_cond_lock);
 }
 
 CAMLprim value caml_context_id(pctxt ctx, value v){
@@ -72,6 +100,8 @@ void print_inconsis(char *name, value v1, value v2){
 }
 
 void sync_with_global_vars(pctxt ctx){
+  if (num_th==0 || count_start < num_th){
+
   if (ctx->caml_young_ptr!=caml_young_ptr)
     print_inconsis("sync_with_global_vars caml_young_ptr",
            ctx->caml_young_ptr, caml_young_ptr);
@@ -93,9 +123,13 @@ void sync_with_global_vars(pctxt ctx){
   ctx->caml_young_base    = caml_young_base;
   ctx->caml_young_start   = caml_young_start;
   ctx->caml_young_end     = caml_young_end;
+
+  }
 }
 
 void sync_with_context(pctxt ctx){
+  if (num_th==0 || count_start < num_th){
+
   if (ctx->caml_young_ptr!=caml_young_ptr)
     print_inconsis("sync_with_context caml_young_ptr",
            ctx->caml_young_ptr, caml_young_ptr);
@@ -117,6 +151,8 @@ void sync_with_context(pctxt ctx){
   caml_young_base    = ctx->caml_young_base;
   caml_young_start   = ctx->caml_young_start;  
   caml_young_end     = ctx->caml_young_end;
+
+  }
 }
 
 void destroy_context(pctxt ctxt){

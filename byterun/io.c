@@ -476,19 +476,19 @@ CAMLexport value caml_alloc_channel_r(pctxt ctx, struct channel *chan)
 // TODO replace main_ctx with tls context in multi runtime mode
 CAMLprim value caml_ml_open_descriptor_in(value fd)
 {
-  if (main_ctx){
+/*  if (main_ctx){
     value res = caml_alloc_channel_r(main_ctx, caml_open_descriptor_in(Int_val(fd)));
     sync_with_context(main_ctx);
     return res;
-  }else
+  }else */
     return caml_alloc_channel(caml_open_descriptor_in(Int_val(fd)));
 }
 
 CAMLprim value caml_ml_open_descriptor_out(value fd)
 {
-  if (main_ctx){
+/*  if (main_ctx){
     return caml_alloc_channel_r(main_ctx, caml_open_descriptor_out(Int_val(fd)));
-  }else
+  }else */
     return caml_alloc_channel(caml_open_descriptor_out(Int_val(fd)));
 }
 
@@ -501,14 +501,12 @@ CAMLprim value caml_ml_out_channels_list (value unit)
   CAMLlocal3 (res, tail, chan);
   struct channel * channel;
   
-  if (main_ctx){
+/*  if (main_ctx){
     sync_with_global_vars(main_ctx);
     res = Val_emptylist;
     for (channel = caml_all_opened_channels;
          channel != NULL;
          channel = channel->next)
-      /* Testing channel->fd >= 0 looks unnecessary, as
-         caml_ml_close_channel changes max when setting fd to -1. */
       if (channel->max == NULL) {
         chan = caml_alloc_channel_r (main_ctx, channel);
         tail = res;
@@ -518,7 +516,7 @@ CAMLprim value caml_ml_out_channels_list (value unit)
       } 
     sync_with_context(main_ctx);
     CAMLreturn (res);
-  } else {
+  } else { */
     res = Val_emptylist;
     for (channel = caml_all_opened_channels;
          channel != NULL;
@@ -533,7 +531,7 @@ CAMLprim value caml_ml_out_channels_list (value unit)
         Field (res, 1) = tail;
       }
     CAMLreturn (res);
-  }
+//  }
 }
 
 CAMLprim value caml_channel_descriptor(value vchannel)

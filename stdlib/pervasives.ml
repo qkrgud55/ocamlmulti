@@ -170,9 +170,9 @@ external snd : 'a * 'b -> 'b = "%field1"
 (* String conversion functions *)
 
 external format_int : string -> int -> string = "caml_format_int"
-external format_int_r : string -> int -> string = "caml_format_int_r" "reentrant"
+(* external format_int_r : string -> int -> string = "caml_format_int_r" "reentrant" *)
 external format_float : string -> float -> string = "caml_format_float"
-external format_float_r : string -> float -> string = "caml_format_float_r" "reentrant"
+(* external format_float_r : string -> float -> string = "caml_format_float_r" "reentrant" *)
 
 let string_of_bool b =
   if b then "true" else "false"
@@ -184,8 +184,8 @@ let bool_of_string = function
 let string_of_int n =
   format_int "%d" n;;
 
-let string_of_int_r n =
-  format_int_r "%d" n;;
+(* let string_of_int_r n = *)
+(*   format_int_r "%d" n;; *)
 
 external int_of_string : string -> int = "caml_int_of_string"
 
@@ -205,7 +205,7 @@ let valid_float_lexem s =
 ;;
 
 let string_of_float f = valid_float_lexem (format_float "%.12g" f);;
-let string_of_float_r f = valid_float_lexem (format_float_r "%.12g" f);;
+(* let string_of_float_r f = valid_float_lexem (format_float_r "%.12g" f);; *)
 
 external float_of_string : string -> float = "caml_float_of_string"
 

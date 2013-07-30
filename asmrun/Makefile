@@ -89,6 +89,10 @@ power.o: power-$(SYSTEM).o
 power.p.o: power-$(SYSTEM).o
 	cp power-$(SYSTEM).o power.p.o
 
+# phc manual
+startup.o: startup.c
+	gcc -lpthread -I../byterun -DCAML_NAME_SPACE -DNATIVE_CODE -DTARGET_amd64 -DSYS_linux  -O -Wall -D_FILE_OFFSET_BITS=64 -D_REENTRANT   -c -o startup.o startup.c
+
 main.c: ../byterun/main.c
 	ln -s ../byterun/main.c main.c
 misc.c: ../byterun/misc.c

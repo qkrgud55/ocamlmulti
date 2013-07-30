@@ -43,7 +43,7 @@ ocamldep: depend.cmi $(CAMLDEP_OBJ)
 	$(CAMLC) $(LINKFLAGS) -o ocamldep $(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ)
 
 ocamldep.opt: depend.cmi $(CAMLDEP_OBJ:.cmo=.cmx)
-	$(CAMLOPT) $(LINKFLAGS) -o ocamldep.opt $(CAMLDEP_IMPORTS:.cmo=.cmx) \
+	$(CAMLOPT) $(LINKFLAGS) -o ocamldep.opt -cclib '-pthread' $(CAMLDEP_IMPORTS:.cmo=.cmx) \
 	           $(CAMLDEP_OBJ:.cmo=.cmx)
 
 # ocamldep is precious: sometimes we are stuck in the middle of a

@@ -46,6 +46,8 @@ let syscamllib x =
   else A("-l"^x)
 
 let ccoutput cc obj file =
+(*   let _ = print_endline "ccoutput " in *)
+(*   let _ = Command.print (Cmd(S[cc])) in *)
   if ccomptype = "msvc" then
     Seq[Cmd(S[cc; A"-c"; Px file]);
         mv (Pathname.basename (Pathname.update_extension C.o file)) obj]

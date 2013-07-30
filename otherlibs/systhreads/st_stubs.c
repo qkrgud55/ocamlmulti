@@ -281,6 +281,11 @@ static void st_unlock_phc_mutex(void){
   st_unlock_mutex(&phc_mutex);
 }
 
+static void st_phc_create_thread(void *(*fn)(void*), void *arg) {
+  st_thread_create(NULL, fn, arg);
+}
+
+
 /* Hook for estimating stack usage */
 
 static uintnat (*prev_stack_usage_hook)(void);
@@ -453,6 +458,7 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   pthread_mutex_init(&phc_mutex, NULL);
   caml_lock_phc_mutex_fptr = st_lock_phc_mutex;
   caml_unlock_phc_mutex_fptr = st_unlock_phc_mutex;
+  caml_phc_create_thread = st_phc_create_thread;
 
   caml_channel_mutex_free = caml_io_mutex_free;
   caml_channel_mutex_lock = caml_io_mutex_lock;

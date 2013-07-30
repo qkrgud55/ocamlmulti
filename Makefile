@@ -481,7 +481,7 @@ partialclean::
 	rm -f compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.a
 
 ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa $(OPTSTART:.cmo=.cmx)
-	$(CAMLOPT) $(LINKFLAGS) -o ocamlopt.opt \
+	$(CAMLOPT) $(LINKFLAGS) -o ocamlopt.opt -cclib '-pthread'\
            compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
            $(OPTSTART:.cmo=.cmx)
 	@sed -e 's|@compiler@|$$topdir/ocamlopt|' \

@@ -8,6 +8,7 @@
 #include "misc.h"
 
 #define NULL_CTX 0
+#define MAX_TH 16
 
 typedef struct phc_global_context {
   
@@ -37,6 +38,8 @@ extern void sync_with_context(pctxt ctx);
 
 CAMLextern void (*caml_lock_phc_mutex_fptr)(void);
 CAMLextern void (*caml_unlock_phc_mutex_fptr)(void);
+
+CAMLextern void (*caml_phc_create_thread)(void *(*fn)(void*), void *arg);
 
 
 #endif

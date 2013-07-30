@@ -155,6 +155,10 @@ extern value caml_start_program_r (pctxt ctx);
 extern void caml_init_ieee_floats (void);
 extern void caml_init_signals (void);
 
+void caml_start_program_r_wrapper(void *ctx){
+  caml_start_program_r(ctx);
+}
+
 void caml_main(char **argv)
 {
   char * exe_name;
@@ -172,49 +176,94 @@ void caml_main(char **argv)
 #endif
   caml_top_of_stack = &tos;
   parse_camlrunparam();
-  if (is_ctx){
-    ctx = create_empty_context();
-    printf("asmrun/startup.c ctx = %p\n", (void*)ctx);
 
-    sync_with_global_vars (ctx);
-    caml_init_gc_r (ctx, minor_heap_init, heap_size_init, heap_chunk_init,
+  if (num_th){
+    pctxt ctxl[MAX_TH];
+    pthread_t thl[MAX_TH];
+    int i;
+    
+    for (i=0; i<num_th; i++){
+      ctxl[i] = create_empty_context();
+      caml_init_gc_r (ctxl[i], minor_heap_init, heap_size_init, 
+                      heap_chunk_init, percent_free_init, 
+                      max_percent_free_init);
+      printf("asmrun/startup.c i=%d ctxl[i]=%p num_th=%d\n",
+             i, (void*)ctxl[i], num_th);
+    }
+  
+    init_atoms();
+//    caml_init_signals();
+    caml_debugger_init (); /* force debugger.o stub to be linked */
+    exe_name = argv[0];
+    if (exe_name == NULL) exe_name = "";
+    if (caml_executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0)
+      exe_name = proc_self_exe;
+    else
+      exe_name = caml_search_exe_in_path(exe_name);
+
+    caml_sys_init(exe_name, argv);
+    if (sigsetjmp(caml_termination_jmpbuf.buf, 0)) {
+      if (caml_termination_hook != NULL) caml_termination_hook(NULL);
+      return;
+    }
+
+    for (i=0; i<num_th; i++){
+      // caml_phc_create_thread(&caml_start_program_r, ctxl[i]);
+      caml_lock_phc_mutex(ctxl[i]);
+      printf("thread %d acquired phc lock\n", i);
+      pthread_create(thl+i, NULL, &caml_start_program_r_wrapper, ctxl[i]);
+    }
+
+    for (i=0; i<num_th; i++){
+      pthread_join(thl[i], NULL);
+    }
+  }
+  else {  // num_th == 0
+
+    if (is_ctx){
+      ctx = create_empty_context();
+      printf("asmrun/startup.c ctx = %p\n", (void*)ctx);
+  
+      sync_with_global_vars (ctx);
+      caml_init_gc_r (ctx, minor_heap_init, heap_size_init, heap_chunk_init,
+                      percent_free_init, max_percent_free_init);
+      sync_with_context (ctx);
+    }
+    else
+      caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
                     percent_free_init, max_percent_free_init);
-    sync_with_context (ctx);
-  }
-  else
-    caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
-                  percent_free_init, max_percent_free_init);
-
-  init_atoms();
-  caml_init_signals();
-  caml_debugger_init (); /* force debugger.o stub to be linked */
-  exe_name = argv[0];
-  if (exe_name == NULL) exe_name = "";
-#ifdef __linux__
-  if (caml_executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0)
-    exe_name = proc_self_exe;
-  else
+  
+    init_atoms();
+    caml_init_signals();
+    caml_debugger_init (); /* force debugger.o stub to be linked */
+    exe_name = argv[0];
+    if (exe_name == NULL) exe_name = "";
+  #ifdef __linux__
+    if (caml_executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0)
+      exe_name = proc_self_exe;
+    else
+      exe_name = caml_search_exe_in_path(exe_name);
+  #else
     exe_name = caml_search_exe_in_path(exe_name);
-#else
-  exe_name = caml_search_exe_in_path(exe_name);
-#endif
-  caml_sys_init(exe_name, argv);
-  if (sigsetjmp(caml_termination_jmpbuf.buf, 0)) {
-    if (caml_termination_hook != NULL) caml_termination_hook(NULL);
-    return;
+  #endif
+    caml_sys_init(exe_name, argv);
+    if (sigsetjmp(caml_termination_jmpbuf.buf, 0)) {
+      if (caml_termination_hook != NULL) caml_termination_hook(NULL);
+      return;
+    }
+    if (is_ctx){
+      res = caml_start_program_r(ctx);
+    }
+    else
+      res = caml_start_program();
   }
-  if (is_ctx){
-    res = caml_start_program_r(ctx);
-  }
-  else
-    res = caml_start_program();
 
   if (is_ctx){
     if (access_to_non_ctx)
       printf("access_to_non_ctx=%d need resolution\n", access_to_non_ctx);
   }
-  if (Is_exception_result(res))
-    caml_fatal_uncaught_exception(Extract_exception(res));
+//  if (Is_exception_result(res))
+//    caml_fatal_uncaught_exception(Extract_exception(res));
 }
 
 void caml_startup(char **argv)

@@ -70,6 +70,7 @@ let check_consistency file_name unit crc =
     raise (Error(Multiple_definition(unit.ui_name, file_name, source)))
   with Not_found -> ()
   end;
+(*   print_endline ("add to crc_impl "^unit.ui_name^" "^file_name); *)
   Consistbl.set crc_implementations unit.ui_name crc file_name;
   implementations_defined :=
     (unit.ui_name, file_name) :: !implementations_defined;
@@ -308,7 +309,16 @@ let link ppf objfiles output_name =
     if !Clflags.nopervasives then objfiles
     else if !Clflags.output_c_object then stdlib :: objfiles
     else stdlib :: (objfiles @ [stdexit]) in
+(*  let _ = if !Clflags.phcr then begin
+            print_endline "link objfiles list";
+            List.iter (fun objname -> print_endline objname) objfiles
+            end else () in *)
   let units_tolink = List.fold_right scan_file objfiles [] in
+(*  let _ = if !Clflags.phcr then begin
+            print_endline "link units list";
+            List.iter (fun (_,unitname,_) -> print_endline unitname) 
+              units_tolink
+            end else () in *)
   Array.iter remove_required Runtimedef.builtin_exceptions;
   begin match extract_missing_globals() with
     [] -> ()

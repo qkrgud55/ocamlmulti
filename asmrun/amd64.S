@@ -577,7 +577,8 @@ LBL(caml_c_call_r):
 
 /* Start the OCaml program */
 
-FUNCTION(G(caml_start_program))
+FUNCTION(G(caml_start_program)) 
+/* deprecated never call caml_start_program, now we are native mode */
 
 FUNCTION(G(caml_start_program_r))  /* phc ctx */
         CFI_STARTPROC
@@ -596,8 +597,9 @@ LBL(caml_start_program):
         PUSH_VAR(caml_bottom_of_stack)
         CFI_ADJUST(32)
     /* Setup alloc ptr and exception ptr */
-        LOAD_VAR(caml_young_ptr, %r15)
-        LOAD_VAR(caml_exception_pointer, %r14)
+    /*  LOAD_VAR(caml_young_ptr, %r15)  */
+        movq    (%r13), %r15
+        LOAD_VAR(caml_exception_pointer, %r14)  /* phc TODO */
     /* Build an exception handler */
         lea     LBL(108)(%rip), %rdi
         pushq   %rdi

@@ -481,14 +481,21 @@ let emit_instr fallthrough i =
             { gc_lbl = lbl_call_gc;
               gc_return_lbl = lbl_redo;
               gc_frame = lbl_frame } :: !call_gc_sites
-        end else begin
-          begin match n with
+        end else begin (if !Clflags.phcr then begin
+          match n with
+            16  -> `	{emit_call "caml_alloc1_r"}\n`
+          | 24 -> `	{emit_call "caml_alloc2_r"}\n`
+          | 32 -> `	{emit_call "caml_alloc3_r"}\n`
+          | _  -> `	movq	${emit_int n}, %rax\n`;
+                  `	{emit_call "caml_allocN_r"}\n`
+          end else begin
+          match n with
             16  -> `	{emit_call "caml_alloc1"}\n`
           | 24 -> `	{emit_call "caml_alloc2"}\n`
           | 32 -> `	{emit_call "caml_alloc3"}\n`
           | _  -> `	movq	${emit_int n}, %rax\n`;
                   `	{emit_call "caml_allocN"}\n`
-          end;
+          end);
           `{record_frame i.live Debuginfo.none}	leaq	8(%r15), {emit_reg i.res.(0)}\n`
         end
     | Lop(Iintop(Icomp cmp)) ->

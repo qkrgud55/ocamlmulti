@@ -115,7 +115,7 @@ void print_inconsis(char *name, value v1, value v2){
 }
 
 void sync_with_global_vars(pctxt ctx){
-  if (num_th==0 || count_start < num_th){
+  if (num_th==0){
 
   if (ctx->caml_young_ptr!=caml_young_ptr)
     print_inconsis("sync_with_global_vars caml_young_ptr",
@@ -143,7 +143,7 @@ void sync_with_global_vars(pctxt ctx){
 }
 
 void sync_with_context(pctxt ctx){
-  if (num_th==0 || count_start < num_th){
+  if (num_th==0){
 
   if (ctx->caml_young_ptr!=caml_young_ptr)
     print_inconsis("sync_with_context caml_young_ptr",

@@ -567,7 +567,7 @@ LBL(caml_c_call_r):
         addq    $32768, %rsp
 #endif
     /* Make the exception handler and alloc ptr available to the C code */
-        STORE_VAR(%r15, caml_young_ptr)
+    /*    STORE_VAR(%r15, caml_young_ptr) */
         movq    %r15, (%r13) 
         STORE_VAR(%r14, caml_exception_pointer)
     /* Call the function (address in %rax) */

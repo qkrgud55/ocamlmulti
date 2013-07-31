@@ -32,7 +32,6 @@
 #include "prims.h"
 #include "signals.h"
 #include "stacks.h"
-#include "context.h"
 
 /* Registers for the abstract machine:
         pc         the code pointer
@@ -222,8 +221,6 @@ value caml_interprete(code_t prog, asize_t prog_size)
   struct longjmp_buffer raise_buf;
   value * modify_dest, modify_newval;
   int debug_mode;
-  int no_ctx;
-  pctxt ctx;
 #ifndef THREADED_CODE
   opcode_t curr_instr;
 #endif
@@ -234,23 +231,12 @@ value caml_interprete(code_t prog, asize_t prog_size)
   };
 #endif
 
-  ctx = create_empty_context();
-  main_ctx = NULL;
-  *(int*)ctx = 0x101;
-
-  /* phc ctx */
   if (getenv("PHC_DEBUG")) {
     printf("caml_interprete detected env PHC_CTX\n");
     debug_mode = 1;
   }
   else {
     debug_mode = 0;
-  }
-  if (getenv("PHC_ignore")){
-    printf("interp.c  PHC_ignore detected\n");
-    no_ctx = 1;
-  }else{
-    no_ctx = 0;
   }
 
   if (prog == NULL) {           /* Interpreter is initializing */
@@ -1032,62 +1018,6 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
     }
 
-    Instruct(C_CALL1_R):
-		if (debug_mode) printf("C_CALL1_R accu=%p\n", (void*)accu);
-      Setup_for_c_call;
-      if (!no_ctx) accu = (value)ctx;
-      accu = Primitive(*pc)(accu);
-      Restore_after_c_call;
-      pc++;
-      Next;
-    Instruct(C_CALL2_R):
-		if (debug_mode) printf("C_CALL2_R accu=%p\n", (void*)accu);
-      Setup_for_c_call;
-      if (!no_ctx) accu = (value)ctx;
-      accu = Primitive(*pc)(accu, sp[1]);
-      Restore_after_c_call;
-      sp += 1;
-      pc++;
-      Next;
-    Instruct(C_CALL3_R):
-		if (debug_mode) printf("C_CALL3_R accu=%p\n", (void*)accu);
-      Setup_for_c_call;
-      if (!no_ctx) accu = (value)ctx;
-      accu = Primitive(*pc)(accu, sp[1], sp[2]);
-      Restore_after_c_call;
-      sp += 2;
-      pc++;
-      Next;
-    Instruct(C_CALL4_R):
-		if (debug_mode) printf("C_CALL4_R accu=%p\n", (void*)accu);
-      Setup_for_c_call;
-      if (!no_ctx) accu = (value)ctx;
-      accu = Primitive(*pc)(accu, sp[1], sp[2], sp[3]);
-      Restore_after_c_call;
-      sp += 3;
-      pc++;
-      Next;
-    Instruct(C_CALL5_R):
-		if (debug_mode) printf("C_CALL5_R accu=%p\n", (void*)accu);
-      Setup_for_c_call;
-      if (!no_ctx) accu = (value)ctx;
-      accu = Primitive(*pc)(accu, sp[1], sp[2], sp[3], sp[4]);
-      Restore_after_c_call;
-      sp += 4;
-      pc++;
-      Next;
-    Instruct(C_CALLN_R): {
-		if (debug_mode) printf("C_CALLN_R accu=%p\n", (void*)accu);
-      int nargs = *pc++;
-      if (!no_ctx) accu = (value)ctx;
-      *--sp = accu;
-      Setup_for_c_call;
-      accu = Primitive(*pc)(sp + 1, nargs);
-      Restore_after_c_call;
-      sp += nargs;
-      pc++;
-      Next;
-    }
 
 /* Integer constants */
 

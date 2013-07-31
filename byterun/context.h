@@ -11,6 +11,21 @@
 #define NULL_CTX 0
 #define MAX_TH 16
 
+
+// globroots.c
+struct global_root {
+  value * root;                    /* the address of the root */
+  struct global_root * forward[1]; /* variable-length array */
+};
+
+#define NUM_LEVELS 17
+
+struct global_root_list {
+  value * root;                 /* dummy value for layout compatibility */
+  struct global_root * forward[NUM_LEVELS]; /* forward chaining */
+  int level;                    /* max used level */
+};
+
 struct caml_ref_table {
   value **base;
   value **end;
@@ -36,6 +51,14 @@ typedef off_t file_offset;
 typedef long file_offset;
 #endif
 
+// callback.c
+#define Named_value_size 13
+
+struct named_value {
+  value val;
+  struct named_value * next;
+  char name[1];
+};
 
 struct channel {
   int fd;                       /* Unix file descriptor */
@@ -72,6 +95,16 @@ typedef struct phc_global_context {
   intnat caml_globals_inited;
 
   struct channel *caml_all_opened_channels;
+  struct named_value * named_value_table[Named_value_size];
+
+  struct global_root_list caml_global_roots;
+                  /* mutable roots, don't know whether old or young */
+  struct global_root_list caml_global_roots_young;
+                 /* generational roots pointing to minor or major heap */
+  struct global_root_list caml_global_roots_old;
+                  /* generational roots pointing to major heap */
+
+  uint32 random_seed;
 } phc_global_context;
 
 typedef phc_global_context *pctxt;

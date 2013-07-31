@@ -445,6 +445,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
    called. */
 
 CAMLextern void caml_register_global_root (value *);
+CAMLextern void caml_register_global_root_r (pctxt ctx, value *);
 
 /* [caml_remove_global_root] removes a memory root registered on a global C
    variable with [caml_register_global_root]. */

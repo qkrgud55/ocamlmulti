@@ -25,19 +25,6 @@
    (see William Pugh, "Skip lists: a probabilistic alternative to
    balanced binary trees", Comm. ACM 33(6), 1990). */
 
-struct global_root {
-  value * root;                    /* the address of the root */
-  struct global_root * forward[1]; /* variable-length array */
-};
-
-#define NUM_LEVELS 17
-
-struct global_root_list {
-  value * root;                 /* dummy value for layout compatibility */
-  struct global_root * forward[NUM_LEVELS]; /* forward chaining */
-  int level;                    /* max used level */
-};
-
 /* Generate a random level for a new node: 0 with probability 3/4,
    1 with probability 3/16, 2 with probability 3/64, etc.
    We use a simple linear congruential PRNG (see Knuth vol 2) instead
@@ -63,6 +50,21 @@ static int random_level(void)
   return level;
 }
 
+static int random_level_r(pctxt ctx)
+{
+  uint32 r;
+  int level = 0;
+
+  /* Linear congruence with modulus = 2^32, multiplier = 69069
+     (Knuth vol 2 p. 106, line 15 of table 1), additive = 25173. */
+  r = ctx->random_seed = ctx->random_seed * 69069 + 25173;
+  /* Knuth (vol 2 p. 13) shows that the least significant bits are
+     "less random" than the most significant bits with a modulus of 2^m,
+     so consume most significant bits first */
+  while ((r & 0xC0000000U) == 0xC0000000U) { level++; r = r << 2; }
+  Assert(level < NUM_LEVELS);
+  return level;
+}
 /* Insertion in a global root list */
 
 static void caml_insert_global_root(struct global_root_list * rootlist,
@@ -88,6 +90,44 @@ static void caml_insert_global_root(struct global_root_list * rootlist,
   if (e != NULL && e->root == r) return;
   /* Insert additional element, updating list level if necessary */
   new_level = random_level();
+  if (new_level > rootlist->level) {
+    for (i = rootlist->level + 1; i <= new_level; i++)
+      update[i] = (struct global_root *) rootlist;
+    rootlist->level = new_level;
+  }
+  e = caml_stat_alloc(sizeof(struct global_root) +
+                      new_level * sizeof(struct global_root *));
+  e->root = r;
+  for (i = 0; i <= new_level; i++) {
+    e->forward[i] = update[i]->forward[i];
+    update[i]->forward[i] = e;
+  }
+}
+
+static void caml_insert_global_root_r(pctxt ctx, 
+                                    struct global_root_list * rootlist,
+                                    value * r)
+{
+  struct global_root * update[NUM_LEVELS];
+  struct global_root * e, * f;
+  int i, new_level;
+
+  /* Init "cursor" to list head */
+  e = (struct global_root *) rootlist;
+  /* Find place to insert new node */
+  for (i = rootlist->level; i >= 0; i--) {
+    while (1) {
+      f = e->forward[i];
+      if (f == NULL || f->root >= r) break;
+      e = f;
+    }
+    update[i] = e;
+  }
+  e = e->forward[0];
+  /* If already present, don't do anything */
+  if (e != NULL && e->root == r) return;
+  /* Insert additional element, updating list level if necessary */
+  new_level = random_level_r(ctx);
   if (new_level > rootlist->level) {
     for (i = rootlist->level + 1; i <= new_level; i++)
       update[i] = (struct global_root *) rootlist;
@@ -192,6 +232,12 @@ CAMLexport void caml_register_global_root(value *r)
 {
   Assert (((intnat) r & 3) == 0);  /* compact.c demands this (for now) */
   caml_insert_global_root(&caml_global_roots, r);
+}
+
+CAMLexport void caml_register_global_root_r(pctxt ctx, value *r)
+{
+  Assert (((intnat) r & 3) == 0);  /* compact.c demands this (for now) */
+  caml_insert_global_root_r(ctx, &caml_global_roots, r);
 }
 
 /* Un-register a global C root of the mutable kind */

@@ -54,7 +54,6 @@
 #include "sys.h"
 #include "startup.h"
 #include "version.h"
-#include "context.h"
 
 #ifndef O_BINARY
 #define O_BINARY 0
@@ -67,7 +66,6 @@
 extern int caml_parser_trace;
 
 CAMLexport header_t caml_atom_table[256];
-int is_ctx = 0;
 
 /* Initialize the atom table */
 
@@ -320,7 +318,6 @@ static void parse_camlrunparam(void)
       case 'b': caml_record_backtrace(Val_true); break;
       case 'p': caml_parser_trace = 1; break;
       case 'a': scanmult (opt, &p); caml_set_allocation_policy (p); break;
-      case 'c': is_ctx = 1; break;
       }
     }
   }
@@ -342,7 +339,6 @@ CAMLexport void caml_main(char ** argv)
   value res;
   char * shared_lib_path, * shared_libs, * req_prims;
   char * exe_name;
-  pctxt ctx;
 
 #ifdef __linux__
   static char proc_self_exe[256];
@@ -387,16 +383,8 @@ CAMLexport void caml_main(char ** argv)
   caml_read_section_descriptors(fd, &trail);
 
   /* Initialize the abstract machine */
-  if (is_ctx){
-    ctx = create_empty_context();
-    caml_init_gc_r (ctx, minor_heap_init, heap_size_init, heap_chunk_init,
-                    percent_free_init, max_percent_free_init);
-  }
-  else{
-    main_ctx = NULL;
-    caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
-                  percent_free_init, max_percent_free_init);
-  }
+  caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
+                percent_free_init, max_percent_free_init);
 
   caml_init_stack (max_stack_init);
   init_atoms();
@@ -455,7 +443,6 @@ CAMLexport void caml_startup_code(code_t code, asize_t code_size, char * data, a
   value res;
   char* cds_file;
   char * exe_name;
-  pctxt ctx;
 #ifdef __linux__
   static char proc_self_exe[256];
 #endif
@@ -478,16 +465,8 @@ CAMLexport void caml_startup_code(code_t code, asize_t code_size, char * data, a
 #endif
   caml_external_raise = NULL;
   /* Initialize the abstract machine */
-  if (is_ctx) {
-    ctx = create_empty_context();
-    caml_init_gc_r (ctx, minor_heap_init, heap_size_init, heap_chunk_init,
-                    percent_free_init, max_percent_free_init);
-  }
-  else{
-    main_ctx = NULL;
-    caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
-                  percent_free_init, max_percent_free_init);
-  }
+  caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
+                percent_free_init, max_percent_free_init);
 
   caml_init_stack (max_stack_init);
   init_atoms();

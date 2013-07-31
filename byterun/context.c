@@ -25,6 +25,8 @@ CAMLexport void (*caml_phc_create_thread)(void *(*fn)(void*), void *arg) = NULL;
 pctxt create_empty_context(void){
   phc_global_context* res = NULL;
   struct caml_ref_table _ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0};
+  struct global_root_list _global_roots = { NULL, { NULL, }, 0 };
+  int i;
 
   res = malloc(sizeof(phc_global_context));
 //  printf("create_empty_context %p\n", (void*)res);
@@ -45,6 +47,14 @@ pctxt create_empty_context(void){
   res->caml_globals_inited = 0;
 
   res->caml_all_opened_channels = NULL;
+  for (i=0; i<Named_value_size; i++)
+    res->named_value_table[i] = NULL;
+
+  res->caml_global_roots = _global_roots;
+  res->caml_global_roots_young = _global_roots;
+  res->caml_global_roots_old = _global_roots;
+
+  res->random_seed = 0;
 
   if (main_ctx==NULL){
     main_ctx = res;
@@ -56,9 +66,6 @@ pctxt create_empty_context(void){
 }
 
 CAMLprim value caml_lock_phc_mutex(pctxt ctx, value v){
-//  int res;
-//  printf("caml_lock_phc_mutex\n");
-//  caml_lock_phc_mutex_fptr();
   pthread_mutex_lock(&phc_mutex_);
 //  main_ctx = ctx;
 //  sync_with_context(ctx); 
@@ -66,9 +73,6 @@ CAMLprim value caml_lock_phc_mutex(pctxt ctx, value v){
 }
 
 CAMLprim value caml_unlock_phc_mutex(pctxt ctx, value v){
-//  int res;
-//  printf("caml_unlock_phc_mutex\n");
-//  caml_unlock_phc_mutex_fptr();
   pthread_mutex_unlock(&phc_mutex_);
   return Val_unit;
 }

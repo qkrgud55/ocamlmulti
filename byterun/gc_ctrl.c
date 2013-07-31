@@ -311,7 +311,7 @@ CAMLprim value caml_gc_quick_stat(value v)
   Store_field (res, 14, Val_long (top_heap_words));
   Store_field (res, 15, Val_long (caml_stack_usage()));
 
-  sync_with_context(main_ctx);
+//  sync_with_context(main_ctx);
   CAMLreturn (res);
 }
 
@@ -491,9 +491,9 @@ CAMLprim value caml_gc_minor(value v)
 
 CAMLprim value caml_gc_minor_r(pctxt ctx, value v)
 {                                                    Assert (v == Val_unit);
-  sync_with_global_vars(ctx);
+//  sync_with_global_vars(ctx);
   caml_minor_collection_r (ctx);
-  sync_with_context(ctx);
+//  sync_with_context(ctx);
   return Val_unit;
 }
 

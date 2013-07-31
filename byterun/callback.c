@@ -197,12 +197,6 @@ CAMLexport value caml_callbackN (value closure, int narg, value args[])
 
 /* Naming of OCaml values */
 
-struct named_value {
-  value val;
-  struct named_value * next;
-  char name[1];
-};
-
 #define Named_value_size 13
 
 static struct named_value * named_value_table[Named_value_size] = { NULL, };
@@ -214,7 +208,6 @@ static unsigned int hash_value_name(char const *name)
   return h % Named_value_size;
 }
 
-// phc shared
 CAMLprim value caml_register_named_value(value vname, value val)
 {
   struct named_value * nv;
@@ -234,6 +227,28 @@ CAMLprim value caml_register_named_value(value vname, value val)
   nv->next = named_value_table[h];
   named_value_table[h] = nv;
   caml_register_global_root(&nv->val);
+  return Val_unit;
+}
+
+CAMLprim value caml_register_named_value_r(pctxt ctx, value vname, value val)
+{
+  struct named_value * nv;
+  char * name = String_val(vname);
+  unsigned int h = hash_value_name(name);
+
+  for (nv = ctx->named_value_table[h]; nv != NULL; nv = nv->next) {
+    if (strcmp(name, nv->name) == 0) {
+      nv->val = val;
+      return Val_unit;
+    }
+  }
+  nv = (struct named_value *)
+         caml_stat_alloc(sizeof(struct named_value) + strlen(name));
+  strcpy(nv->name, name);
+  nv->val = val;
+  nv->next = ctx->named_value_table[h];
+  ctx->named_value_table[h] = nv;
+  caml_register_global_root_r(ctx, &nv->val);
   return Val_unit;
 }
 

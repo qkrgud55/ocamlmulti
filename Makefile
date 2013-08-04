@@ -263,6 +263,9 @@ base.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
 
 COMPLIBDIR=$(LIBDIR)/compiler-libs
 
+install_r: install
+	cd stdlib_r; make allopt
+
 install:
 	if test -d $(BINDIR); then : ; else $(MKDIR) $(BINDIR); fi
 	if test -d $(LIBDIR); then : ; else $(MKDIR) $(LIBDIR); fi
@@ -485,7 +488,7 @@ ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa $(OPT
            compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
            $(OPTSTART:.cmo=.cmx)
 	@sed -e 's|@compiler@|$$topdir/ocamlopt|' \
-	  driver/ocamlcomp_phc.sh.in > ocamlcompopt.sh
+	  driver/ocamlcomp.sh.in > ocamlcompopt.sh
 	@chmod +x ocamlcompopt.sh
 
 partialclean::

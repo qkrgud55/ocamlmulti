@@ -104,6 +104,59 @@ NATTOPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) \
 
 PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
 
+
+phc:
+	@echo "phc reentrant multi runtime ocamlopt"
+	make coldstart
+	make all-phc
+	make runtimeopt
+	make ocamlopt
+	cd stdlib_r; make allopt
+	cp asmrun/libasmrun.a ./stdlib_r
+
+all-phc: runtime ocamlc ocamllex ocamlyacc library ocaml \
+  otherlibraries ocamlbuild.byte 
+
+install-phc:
+	if test -d $(BINDIR); then : ; else $(MKDIR) $(BINDIR); fi
+	if test -d $(LIBDIR); then : ; else $(MKDIR) $(LIBDIR); fi
+	if test -d $(STUBLIBDIR); then : ; else $(MKDIR) $(STUBLIBDIR); fi
+	if test -d $(COMPLIBDIR); then : ; else $(MKDIR) $(COMPLIBDIR); fi
+	if test -d $(MANDIR)/man$(MANEXT); then : ; \
+	  else $(MKDIR) $(MANDIR)/man$(MANEXT); fi
+	cp VERSION $(LIBDIR)/
+	cd $(LIBDIR); rm -f dllbigarray.so dlllabltk.so dllnums.so \
+	  dllthreads.so dllunix.so dllgraphics.so dllstr.so \
+	  dlltkanim.so
+	cd byterun; $(MAKE) install
+	cp ocamlc $(BINDIR)/ocamlc$(EXE)
+	cp ocaml $(BINDIR)/ocaml$(EXE)
+	cd stdlib; $(MAKE) install
+	cp lex/ocamllex $(BINDIR)/ocamllex$(EXE)
+	cp yacc/ocamlyacc$(EXE) $(BINDIR)/ocamlyacc$(EXE)
+	cp utils/*.cmi parsing/*.cmi typing/*.cmi bytecomp/*.cmi driver/*.cmi toplevel/*.cmi $(COMPLIBDIR)
+	cp compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma compilerlibs/ocamltoplevel.cma $(BYTESTART) $(TOPLEVELSTART) $(COMPLIBDIR)
+	cp expunge $(LIBDIR)/expunge$(EXE)
+	cp toplevel/topdirs.cmi $(LIBDIR)
+	cd tools; $(MAKE) install
+	-cd man; $(MAKE) install
+	for i in $(OTHERLIBRARIES); do \
+	  (cd otherlibs/$$i; $(MAKE) install) || exit $$?; \
+	done
+	if test -f ocamlopt; then $(MAKE) installopt-phc; else :; fi
+	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); \
+	   else :; fi
+	cp config/Makefile $(LIBDIR)/Makefile.config
+	BINDIR=$(BINDIR) LIBDIR=$(LIBDIR) PREFIX=$(PREFIX) \
+	  ./build/partial-install.sh
+
+installopt-phc:
+	cd asmrun; $(MAKE) install
+	cp ocamlopt $(BINDIR)/ocamlopt$(EXE)
+	cd stdlib_r; $(MAKE) installopt
+	cp asmcomp/*.cmi $(COMPLIBDIR)
+	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) $(COMPLIBDIR)
+
 # For users who don't read the INSTALL file
 defaultentry:
 	@echo "Please refer to the installation instructions in file INSTALL."
@@ -262,9 +315,6 @@ base.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
 # Installation
 
 COMPLIBDIR=$(LIBDIR)/compiler-libs
-
-install_r: install
-	cd stdlib_r; make allopt
 
 install:
 	if test -d $(BINDIR); then : ; else $(MKDIR) $(BINDIR); fi

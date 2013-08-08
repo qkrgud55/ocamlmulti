@@ -77,12 +77,14 @@ struct channel {
 
 
 typedef struct phc_global_context {
-  /* minor_gc.h */ 
   char *caml_young_ptr;
   char *caml_young_limit;
   char *caml_young_base;
   char *caml_young_start;
   char *caml_young_end;
+
+  char *caml_globals;       // 40
+  int caml_globals_len;
 
   int count_id;
 

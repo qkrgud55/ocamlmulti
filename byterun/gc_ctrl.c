@@ -497,6 +497,19 @@ CAMLprim value caml_gc_minor_r(pctxt ctx, value v)
   return Val_unit;
 }
 
+CAMLprim value caml_print_globals(pctxt ctx, value v)
+{
+  int i;
+#ifdef NATIVE_CODE
+  printf("caml_globals\n");
+  for (i=0; caml_globals[i]!=0; i++){
+    value v = caml_globals[i];
+    printf("Tag %d  Size %d\n", Tag_val(v), Wosize_val(v));
+  }
+#endif
+  return Val_unit;
+}
+
 static void test_and_compact (void)
 {
   float fp;

@@ -159,6 +159,28 @@ void caml_start_program_r_wrapper(void *ctx){
   caml_start_program_r(ctx);
 }
 
+void allocate_caml_globals(pctxt ctx){
+  int i, j;
+  value v, w;
+
+  i = 0;
+  while (caml_globals[i]!=0) 
+    i++;
+  ctx->caml_globals = malloc(sizeof(value)*i);
+  ctx->caml_globals_len = i;
+
+  i = 0;
+  while (caml_globals[i]!=0){
+    v = caml_globals[i++];
+    w = malloc(sizeof(value)*(Wosize_val(v)+1));
+    w = Val_hp(w);
+    ctx->caml_globals[i] = w;
+
+    for (j=-1; j<Wosize_val(v); j++)
+      Field(w, j) = Field(v, j);
+  }
+}
+
 void caml_main(char **argv)
 {
   char * exe_name;
@@ -187,6 +209,7 @@ void caml_main(char **argv)
       caml_init_gc_r (ctxl[i], minor_heap_init, heap_size_init, 
                       heap_chunk_init, percent_free_init, 
                       max_percent_free_init);
+      allocate_caml_globals(ctxl[i]);
       printf("asmrun/startup.c i=%d ctxl[i]=%p num_th=%d\n",
              i, (void*)ctxl[i], num_th);
     }
@@ -207,6 +230,14 @@ void caml_main(char **argv)
       return;
     }
 
+/*
+    printf("startup caml_globals\n");
+    for (i=0; caml_globals[i]!=0; i++){
+      value v = caml_globals[i];
+      printf("Tag %d  Size %d\n", Tag_val(v), Wosize_val(v));
+    }
+*/
+    
     for (i=0; i<num_th; i++){
       // caml_phc_create_thread(&caml_start_program_r, ctxl[i]);
       // caml_enter_cond_lock(ctxl[i]);

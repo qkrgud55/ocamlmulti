@@ -61,6 +61,7 @@ external unlock_phc_mutex : unit -> unit = "caml_unlock_phc_mutex" "reentrant";;
 external get_th_id : unit -> int = "caml_context_id" "reentrant";;
 external get_th_num : unit -> int = "caml_context_num" "reentrant";;
 external end_perv_mode : unit -> int = "caml_wait_counter" "reentrant";;
+external print_globals : unit -> unit = "caml_print_globals" "reentrant";;
 
 open Printf;;
 

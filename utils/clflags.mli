@@ -13,7 +13,7 @@
 (* $Id: clflags.mli 12800 2012-07-30 18:59:07Z doligez $ *)
 
 val phcr : bool ref
-val index : int option ref
+val index_file : string option ref
 val objfiles : string list ref
 val ccobjs : string list ref
 val dllibs : string list ref

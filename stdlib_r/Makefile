@@ -25,7 +25,8 @@ allopt-noprof:
 allopt-prof: stdlib.p.cmxa std_exit.p.cmx
 	rm -f std_exit.p.cmi
 
-installopt: installopt-default installopt-$(PROFILING)
+#installopt-$(PROFILING)
+installopt: installopt-default 
 
 installopt-default:
 	cp stdlib.cmxa stdlib.a std_exit.o *.cmx $(LIBDIR)

@@ -394,8 +394,8 @@ let mk_dstartup f =
 let mk_phcr f =
   "-phcr", Arg.Unit f, "phc use reentrant prim function"
 
-let mk_index f =
-  "-index", Arg.Int f, "<n>  Set the index number in the runtime caml_globals to <n>"
+let mk_index_file f =
+  "-index_file", Arg.String f, "<file>  The file should provide mapping from module symbols to index numbers according to runtime caml_globals"
 
 let mk__ f =
   "-", Arg.String f,
@@ -560,7 +560,7 @@ module type Optcomp_options = sig
   val _dlinear :  unit -> unit
   val _dstartup :  unit -> unit
   val _phcr :  unit -> unit
-  val _index : int -> unit
+  val _index_file : string -> unit
 
   val anonymous : string -> unit
 end;;
@@ -608,7 +608,7 @@ module type Opttop_options = sig
   val _dlinear :  unit -> unit
   val _dstartup :  unit -> unit
   val _phcr :  unit -> unit
-  val _index : int -> unit
+  val _index_file : string -> unit
 
   val anonymous : string -> unit
 end;;
@@ -790,7 +790,7 @@ struct
     mk_dlinear F._dlinear;
     mk_dstartup F._dstartup;
     mk_phcr F._phcr;
-    mk_index F._index;
+    mk_index_file F._index_file;
 
     mk__ F.anonymous;
   ]
@@ -839,7 +839,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dlinear F._dlinear;
     mk_dstartup F._dstartup;
     mk_phcr F._phcr;
-    mk_index F._index;
+    mk_index_file F._index_file;
 
     mk__ F.anonymous;
   ]

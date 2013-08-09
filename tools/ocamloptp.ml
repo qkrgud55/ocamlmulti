@@ -112,7 +112,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dlinear = option "-dlinear"
   let _dstartup = option "-dstartup"
   let _phcr = option "-phcr"
-  let _index i = option_with_int "-index" i
+  let _index_file s = option_with_arg "-index_file" s
 
   let anonymous = process_file
 end);;

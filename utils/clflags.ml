@@ -19,7 +19,7 @@ and ccobjs = ref ([] : string list)     (* .o, .a, .so and -cclib -lxxx *)
 and dllibs = ref ([] : string list)     (* .so and -dllib -lxxx *)
 
 let phcr = ref false                  (* -phcr *)
-let index = ref (None : int option)   (* module index in runtime caml_globals *)
+let index_file = ref (None : string option)   (* module index in runtime caml_globals *)
 let compile_only = ref false            (* -c *)
 and output_name = ref (None : string option) (* -o *)
 and include_dirs = ref ([] : string list)(* -I *)

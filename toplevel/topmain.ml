@@ -88,7 +88,7 @@ module Options = Main_args.Make_bytetop_options (struct
   let _dlambda = set dump_lambda
   let _dinstr = set dump_instr
   let _phcr = set phcr
-  let _index i = index := Some i 
+  let _index_file i = index_file := Some i 
 
   let anonymous s = file_argument s
 end);;

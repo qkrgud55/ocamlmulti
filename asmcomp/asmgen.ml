@@ -94,6 +94,26 @@ let compile_genfuns ppf f =
        | _ -> ())
     (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
 
+let build_and_exec_index_cmd asmfile = 
+  let filename = match !Clflags.index_file with 
+                 | None -> raise(Error(Assembler_error "build_index_cmd"))
+                 | Some s -> s in
+  let ic = open_in filename in
+  let l = ref [] in
+  let _ = try while true do 
+            l:=(Scanf.fscanf ic "%s %d\n" (fun s i -> (s,i))) :: !l 
+          done with End_of_file -> () in
+  let rec build_cmd l = match l with
+    | [] -> ""
+    | (sym, idx) :: tl -> "-e 's/"^ sym ^"(/"^(string_of_int (idx*8))^"(/g' \\\n" ^ 
+                          (build_cmd tl) in
+  let cmd = "sed " ^ (build_cmd !l) ^ asmfile ^ ".tmp > " ^ asmfile in
+  let tmp_oc = open_out asmfile in
+  let _ = close_out tmp_oc in
+  let res = Ccomp.command cmd in
+    if res <> 0 then raise(Error(Assembler_error "build_and_exec_index_cmd")) 
+    else ()
+
 let compile_implementation ?toplevel prefixname ppf (size, lam) =
   let asmfile =
     if !keep_asm_file
@@ -128,11 +148,15 @@ let compile_implementation ?toplevel prefixname ppf (size, lam) =
     raise x
   end;
   if !Clflags.phcr && not !Clflags.compile_only then begin
-    print_endline "pending asm mode";
     Proc.assemble_file_cmd asmfile (prefixname ^ ext_obj);
     Cmm.phc_asmfiles := asmfile::!Cmm.phc_asmfiles
-  end else begin
+  end else if !Clflags.index_file==None then begin
     let _ = Ccomp.command ("mv "^asmfile^".tmp "^asmfile) in
+    if Proc.assemble_file asmfile (prefixname ^ ext_obj) <> 0
+    then raise(Error(Assembler_error asmfile));
+    if !keep_asm_file then () else remove_file asmfile
+  end else begin
+    let _ = build_and_exec_index_cmd asmfile in 
     if Proc.assemble_file asmfile (prefixname ^ ext_obj) <> 0
     then raise(Error(Assembler_error asmfile));
     if !keep_asm_file then () else remove_file asmfile

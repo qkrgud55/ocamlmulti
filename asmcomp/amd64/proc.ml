@@ -308,14 +308,18 @@ let assemble_file_cmd infile outfile =
      Filename.quote outfile ^ " " ^ Filename.quote infile) :: !pending_cmds
 
 let exec_pending_cmds _ = 
+(*  let _ = print_endline "exec_pending_cmds > " in *)
   let rec exec l =
     match l with
       [] -> ()
     | hd :: tl -> (exec tl); 
-                  let _ = print_endline "exec_pending_cmds";
-                          print_endline hd in 
-                  if Ccomp.command hd <> 0 then 
+(*                  print_endline "exec_pending_cmds before Ccomp.command hd call"; *)
+(*                  print_endline hd; *)
+                  if Ccomp.command hd <> 0 then begin
                     print_endline "Assembly error";
-                    print_endline hd
+                    print_endline hd end;
+(*                  print_endline "exec_pending_cmds after call" *)
   in
-    exec !pending_cmds
+  let _ = exec !pending_cmds in
+(*  let _ = print_endline "exec_pending_cmds < " in *)
+    ()

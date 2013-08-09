@@ -75,7 +75,7 @@ clean::
 	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(OPTCOMPFLAGS) `./Compflags $@` -c $<
+	$(CAMLOPT) $(OPTCOMPFLAGS) `./Compflags $@` -c -index_file index $<
 
 .ml.p.cmx:
 	$(CAMLOPT) $(OPTCOMPFLAGS) `./Compflags $@` -p -c -o $*.p.cmx $<

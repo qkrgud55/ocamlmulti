@@ -174,7 +174,7 @@ void allocate_caml_globals(pctxt ctx){
     v = caml_globals[i++];
     w = malloc(sizeof(value)*(Wosize_val(v)+1));
     w = Val_hp(w);
-    ctx->caml_globals[i] = w;
+    *(value*)(ctx->caml_globals+8*i) = w;
 
     for (j=-1; j<Wosize_val(v); j++)
       Field(w, j) = Field(v, j);

@@ -15,7 +15,8 @@
 
 include Makefile.shared
 
-allopt: stdlib.cmxa std_exit.cmx allopt-$(PROFILING)
+#allopt-$(PROFILING)
+allopt: stdlib.cmxa std_exit.cmx 
 	cd ../asmrun; make all
 	cp ../asmrun/libasmrun.a ./libasmrun.a
 

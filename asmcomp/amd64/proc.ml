@@ -287,6 +287,7 @@ let contains_calls = ref false
 (* Calling the assembler *)
 
 let assemble_file infile outfile =
+(*  let _ = read_line () in *)
   if masm then
     Ccomp.command (Config.asm ^
                    Filename.quote outfile ^ " " ^ Filename.quote infile ^
@@ -294,3 +295,27 @@ let assemble_file infile outfile =
   else
     Ccomp.command (Config.asm ^ " -o " ^
                    Filename.quote outfile ^ " " ^ Filename.quote infile)
+
+let pending_cmds = ref []
+
+let assemble_file_cmd infile outfile =
+  if masm then
+    pending_cmds := (Config.asm ^
+     Filename.quote outfile ^ " " ^ Filename.quote infile ^
+     (if !Clflags.verbose then "" else ">NUL")) :: !pending_cmds
+  else
+    pending_cmds := (Config.asm ^ " -o " ^
+     Filename.quote outfile ^ " " ^ Filename.quote infile) :: !pending_cmds
+
+let exec_pending_cmds _ = 
+  let rec exec l =
+    match l with
+      [] -> ()
+    | hd :: tl -> (exec tl); 
+                  let _ = print_endline "exec_pending_cmds";
+                          print_endline hd in 
+                  if Ccomp.command hd <> 0 then 
+                    print_endline "Assembly error";
+                    print_endline hd
+  in
+    exec !pending_cmds

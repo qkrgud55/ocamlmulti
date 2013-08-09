@@ -69,7 +69,7 @@ clean::
 .SUFFIXES: .mli .ml .cmi .cmo .cmx .p.cmx
 
 .mli.cmi:
-	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<
+	$(CAMLOPT) $(COMPFLAGS) `./Compflags $@` -c $<
 
 .ml.cmo:
 	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<

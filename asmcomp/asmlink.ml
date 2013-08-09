@@ -300,6 +300,26 @@ let call_linker file_list startup_file output_name =
 
 (* Main entry point *)
 
+let update_asmfiles _ = 
+  let asmfiles = !Cmm.phc_asmfiles in
+  let globals = !Cmm.phc_globals in
+  let rec build_sed n l =
+    match l with
+    | [] -> "" 
+    | hd::tl -> "-e 's/"^hd^"(/"^(string_of_int (8*n))^"(/g' \\\n"^(build_sed (n+1) tl)
+  in
+  let cmd = "sed " ^ (build_sed 0 globals) in
+  let rec exec_on_files cmd files =
+    match files with
+    | [] -> ()
+    | hd :: tl -> let _ = exec_on_files cmd tl in
+                  let _cmd = (cmd ^ (hd^".tmp") ^ " > " ^ hd) in 
+                  let _ = print_endline _cmd in
+                  let _ = Ccomp.command _cmd in ()
+  in
+  let _ = exec_on_files cmd asmfiles in
+    ()
+
 let link ppf objfiles output_name =
   let stdlib =
     if !Clflags.gprofile then "stdlib.p.cmxa" else "stdlib.cmxa" in
@@ -334,6 +354,8 @@ let link ppf objfiles output_name =
     else Filename.temp_file "camlstartup" ext_asm in
   make_startup_file ppf startup units_tolink;
   let startup_obj = Filename.temp_file "camlstartup" ext_obj in
+  update_asmfiles ();
+  Proc.exec_pending_cmds ();
   if Proc.assemble_file startup startup_obj <> 0 then
     raise(Error(Assembler_error startup));
   try

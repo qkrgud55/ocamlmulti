@@ -83,7 +83,7 @@ typedef struct phc_global_context {
   char *caml_young_start;
   char *caml_young_end;
 
-  char *caml_globals;       // 40
+  intnat caml_globals;       // 40
   int caml_globals_len;
 
   int count_id;

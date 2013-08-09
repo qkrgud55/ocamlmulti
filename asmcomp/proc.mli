@@ -48,3 +48,6 @@ val contains_calls: bool ref
 
 (* Calling the assembler *)
 val assemble_file: string -> string -> int
+val assemble_file_cmd: string -> string -> unit
+val pending_cmds : string list ref
+val exec_pending_cmds : unit -> unit

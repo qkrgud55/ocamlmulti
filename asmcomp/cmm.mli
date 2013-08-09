@@ -116,3 +116,6 @@ type data_item =
 type phrase =
     Cfunction of fundecl
   | Cdata of data_item list
+
+val phc_globals : string list ref
+val phc_asmfiles : string list ref

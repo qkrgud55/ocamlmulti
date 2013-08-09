@@ -2144,6 +2144,7 @@ let global_table namelist =
   let mksym name =
     Csymbol_address (Compilenv.make_symbol ~unitname:name None)
   in
+  let _ = Cmm.phc_globals := List.map (fun x->"caml"^x) namelist in
   Cdata(Cglobal_symbol "caml_globals" ::
         Cdefine_symbol "caml_globals" ::
         List.map mksym namelist @
@@ -2215,3 +2216,6 @@ let plugin_header units =
     } in
   global_data "caml_plugin_header"
     { dynu_magic = Config.cmxs_magic_number; dynu_units = List.map mk units }
+
+let phc_globals = ref []
+let phc_asmfiles = ref []

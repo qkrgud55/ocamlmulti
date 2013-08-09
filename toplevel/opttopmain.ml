@@ -105,6 +105,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _dlinear = set dump_linear
   let _dstartup = set keep_startup_file
   let _phcr = set phcr
+  let _index = index := None
 
   let anonymous = file_argument
 end);;

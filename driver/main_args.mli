@@ -172,6 +172,7 @@ module type Optcomp_options = sig
   val _dlinear :  unit -> unit
   val _dstartup :  unit -> unit
   val _phcr :  unit -> unit
+  val _index :  int -> unit
 
   val anonymous : string -> unit
 end;;
@@ -219,6 +220,7 @@ module type Opttop_options = sig
   val _dlinear :  unit -> unit
   val _dstartup :  unit -> unit
   val _phcr :  unit -> unit
+  val _index :  int -> unit
 
   val anonymous : string -> unit
 end;;

@@ -378,7 +378,12 @@ let emit_instr fallthrough i =
           `	movsd	{emit_label lbl}(%rip), {emit_reg i.res.(0)}\n`
         end
     | Lop(Iconst_symbol s) ->
-        `	{load_symbol_addr s}, {emit_reg i.res.(0)}\n`
+        if String.contains s '_' then 
+          `	{load_symbol_addr s}, {emit_reg i.res.(0)}\n`
+        else begin
+          ` movq    40(%r13), {emit_reg i.res.(0)}\n`;
+          ` movq    {emit_symbol s}({emit_reg i.res.(0)}), {emit_reg i.res.(0)}\n`
+        end
     | Lop(Icall_ind) ->
         `	call	*{emit_reg i.arg.(0)}\n`;
         record_frame i.live i.dbg

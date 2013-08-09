@@ -130,3 +130,6 @@ type data_item =
 type phrase =
     Cfunction of fundecl
   | Cdata of data_item list
+
+let phc_globals = ref []
+let phc_asmfiles = ref []

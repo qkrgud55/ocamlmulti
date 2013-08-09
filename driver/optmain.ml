@@ -168,6 +168,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dlinear = set dump_linear
   let _dstartup = set keep_startup_file
   let _phcr = set phcr
+  let _index i = index := Some i
 
   let anonymous = anonymous
 end);;

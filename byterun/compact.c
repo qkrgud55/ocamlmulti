@@ -504,3 +504,48 @@ void caml_compact_heap_maybe (void)
     caml_compact_heap ();
   }
 }
+
+void caml_compact_heap_maybe_r (pctxt ctx)
+{
+  /* Estimated free words in the heap:
+         FW = fl_size_at_change + 3 * (caml_fl_cur_size
+                                       - caml_fl_size_at_phase_change)
+         FW = 3 * caml_fl_cur_size - 2 * caml_fl_size_at_phase_change
+     Estimated live words:      LW = caml_stat_heap_size - FW
+     Estimated free percentage: FP = 100 * FW / LW
+     We compact the heap if FP > caml_percent_max
+  */
+  float fw, fp;
+                                          Assert (caml_gc_phase == Phase_idle);
+  if (caml_percent_max >= 1000000) return;
+  if (caml_stat_major_collections < 3) return;
+
+  fw = 3.0 * caml_fl_cur_size - 2.0 * caml_fl_size_at_phase_change;
+  if (fw < 0) fw = caml_fl_cur_size;
+
+  if (fw >= Wsize_bsize (caml_stat_heap_size)){
+    fp = 1000000.0;
+  }else{
+    fp = 100.0 * fw / (Wsize_bsize (caml_stat_heap_size) - fw);
+    if (fp > 1000000.0) fp = 1000000.0;
+  }
+  caml_gc_message (0x200, "FL size at phase change = %"
+                          ARCH_INTNAT_PRINTF_FORMAT "u\n",
+                   (uintnat) caml_fl_size_at_phase_change);
+  caml_gc_message (0x200, "Estimated overhead = %"
+                          ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
+                   (uintnat) fp);
+  if (fp >= caml_percent_max){
+    caml_gc_message (0x200, "Automatic compaction triggered.\n", 0);
+    caml_finish_major_cycle ();
+
+    /* We just did a complete GC, so we can measure the overhead exactly. */
+    fw = caml_fl_cur_size;
+    fp = 100.0 * fw / (Wsize_bsize (caml_stat_heap_size) - fw);
+    caml_gc_message (0x200, "Measured overhead: %"
+                            ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
+                     (uintnat) fp);
+
+    caml_compact_heap ();
+  }
+}

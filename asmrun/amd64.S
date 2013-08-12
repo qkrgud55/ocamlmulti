@@ -648,7 +648,6 @@ LBL(108):
 #endif
 
 /* Raise an exception from OCaml */
-
 FUNCTION(G(caml_raise_exn))
         TESTL_VAR($1, caml_backtrace_active)
         jne     LBL(110)
@@ -656,6 +655,26 @@ FUNCTION(G(caml_raise_exn))
         popq    %r14
         ret
 LBL(110):
+        movq    %rax, %r12            /* Save exception bucket */
+        movq    %rax, C_ARG_1         /* arg 1: exception bucket */
+        popq    C_ARG_2               /* arg 2: pc of raise */
+        movq    %rsp, C_ARG_3         /* arg 3: sp at raise */
+        movq    %r14, C_ARG_4         /* arg 4: sp of handler */
+	/* PR#5700: thanks to popq above, stack is now 16-aligned */
+        PREPARE_FOR_C_CALL            /* no need to cleanup after */
+        call    GCALL(caml_stash_backtrace)
+        movq    %r12, %rax            /* Recover exception bucket */
+        movq    %r14, %rsp
+        popq    %r14
+        ret
+
+FUNCTION(G(caml_raise_exn_r))
+        TESTL_VAR($1, caml_backtrace_active)
+        jne     LBL(210)
+        movq    %r14, %rsp
+        popq    %r14
+        ret
+LBL(210):
         movq    %rax, %r12            /* Save exception bucket */
         movq    %rax, C_ARG_1         /* arg 1: exception bucket */
         popq    C_ARG_2               /* arg 2: pc of raise */
@@ -697,6 +716,15 @@ LBL(111):
 /* Callback from C to OCaml */
 
 FUNCTION(G(caml_callback_exn))
+    /* Save callee-save registers */
+        PUSH_CALLEE_SAVE_REGS
+    /* Initial loading of arguments */
+        movq    C_ARG_1, %rbx      /* closure */
+        movq    C_ARG_2, %rax      /* argument */
+        movq    0(%rbx), %r12      /* code pointer */
+        jmp     LBL(caml_start_program)
+
+FUNCTION(G(caml_callback_exn_r))
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
     /* Initial loading of arguments */

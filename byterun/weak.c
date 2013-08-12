@@ -72,7 +72,7 @@ static void do_set_r (pctxt ctx, value ar, mlsize_t offset, value v)
     if (!(Is_block (old) && Is_young_r (ctx, old))){
       if (ctx->caml_weak_ref_table.ptr >= ctx->caml_weak_ref_table.limit){
         CAMLassert (ctx->caml_weak_ref_table.ptr == ctx->caml_weak_ref_table.limit);
-        caml_realloc_ref_table_r (&(ctx->caml_weak_ref_table));
+        caml_realloc_ref_table_r (ctx, &(ctx->caml_weak_ref_table));
       }
       *(ctx->caml_weak_ref_table.ptr++) = &Field (ar, offset);
     }

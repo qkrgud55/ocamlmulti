@@ -26,7 +26,9 @@ typedef void (*scanning_action_r) (pctxt, value, value *);
 void caml_oldify_local_roots (void);
 void caml_oldify_local_roots_r (pctxt);
 void caml_darken_all_roots (void);
+void caml_darken_all_roots_r (pctxt);
 void caml_do_roots (scanning_action);
+void caml_do_roots_r (pctxt, scanning_action_r);
 #ifndef NATIVE_CODE
 CAMLextern void caml_do_local_roots (scanning_action, value *, value *,
                                      struct caml__roots_block *);

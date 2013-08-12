@@ -8,6 +8,7 @@
 #include "minor_gc.h"
 #include <stdlib.h>
 #include <pthread.h>
+#include "gc.h"
 
 int access_to_non_ctx = 0;
 pctxt main_ctx = NULL;
@@ -26,6 +27,7 @@ pctxt create_empty_context(void){
   phc_global_context* res = NULL;
   struct caml_ref_table _ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0};
   struct global_root_list _global_roots = { NULL, { NULL, }, 0 };
+  sentinel_t _sentinel = {0, Make_header (0, 0, Caml_blue), 0, 0};
   int i;
 
   res = malloc(sizeof(phc_global_context));
@@ -55,6 +57,34 @@ pctxt create_empty_context(void){
   res->caml_global_roots_old = _global_roots;
 
   res->random_seed = 0;
+
+  res->oldify_todo_list = 0;
+  res->final_table      = NULL;
+  res->final_old        = 0;
+  res->final_young      = 0;
+  res->final_size       = 0;
+  
+  res->to_do_hd                      = NULL;
+  res->to_do_tl                      = NULL;
+
+  res->running_finalisation_function = 0;
+  res->caml_fl_size_at_phase_change  = 0;
+
+  #ifdef DEBUG
+  ctx->major_gc_counter = 0;
+  #endif
+
+  res->caml_weak_list_head   = 0;
+  res->weak_dummy            = 0;
+  res->caml_weak_none        = (value)&(res->weak_dummy);
+
+  res->sentinel         = _sentinel;
+  res->fl_prev          = ((char *) (&(res->sentinel.first_bp)));
+  res->fl_last          = NULL;
+  res->caml_fl_merge    = res->fl_prev;
+  res->caml_fl_cur_size = 0;
+  res->flp_size         = 0;
+  res->beyond           = NULL;
 
   if (main_ctx==NULL){
     main_ctx = res;

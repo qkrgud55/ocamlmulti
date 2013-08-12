@@ -11,6 +11,18 @@
 #define NULL_CTX 0
 #define MAX_TH 16
 
+// finalise.c
+struct final {
+  value fun;
+  value val;
+  int offset;
+};
+
+struct to_do {
+  struct to_do *next;
+  int size;
+  struct final item[1];  /* variable size */
+};
 
 // globroots.c
 struct global_root {
@@ -75,6 +87,27 @@ struct channel {
   char buff[IO_BUFFER_SIZE];    /* The buffer itself */
 };
 
+// freelist.c
+
+/* The free-list is kept sorted by increasing addresses.
+   This makes the merging of adjacent free blocks possible.
+   (See [caml_fl_merge_block].)
+*/
+
+typedef struct {
+  char *next_bp;   /* Pointer to the first byte of the next block. */
+} block;
+
+/* The sentinel can be located anywhere in memory, but it must not be
+   adjacent to any heap object. */
+typedef struct sentinel_t{
+  value filler1; /* Make sure the sentinel is never adjacent to any block. */
+  header_t h;
+  value first_bp;
+  value filler2; /* Make sure the sentinel is never adjacent to any block. */
+} sentinel_t;
+
+#define FLP_MAX 1000
 
 typedef struct phc_global_context {
   char *caml_young_ptr;
@@ -91,6 +124,7 @@ typedef struct phc_global_context {
   struct caml_ref_table caml_ref_table;
   struct caml_ref_table caml_weak_ref_table;
 
+  uint32 random_seed;
   int caml_in_minor_collection;
 
   intnat caml_globals_scanned;
@@ -106,7 +140,62 @@ typedef struct phc_global_context {
   struct global_root_list caml_global_roots_old;
                   /* generational roots pointing to major heap */
 
-  uint32 random_seed;
+  value oldify_todo_list;
+
+  struct final *final_table;
+  value final_old, final_young, final_size;
+
+  struct to_do *to_do_hd;
+  struct to_do *to_do_tl;
+
+  int running_finalisation_function;
+
+  // major_gc.c
+  uintnat caml_percent_free;
+  uintnat caml_major_heap_increment;
+  char *caml_heap_start;
+  char *caml_gc_sweep_hp;
+  int caml_gc_phase;        /* always Phase_mark, Phase_sweep, or Phase_idle */
+  value *gray_vals;
+  value *gray_vals_cur, *gray_vals_end;
+  asize_t gray_vals_size;
+  int heap_is_pure;   /* The heap is pure if the only gray objects
+                                below [markhp] are also in [gray_vals]. */
+  uintnat caml_allocated_words;
+  uintnat caml_dependent_size, caml_dependent_allocated;
+  double caml_extra_heap_resources;
+  uintnat caml_fl_size_at_phase_change;
+  
+  char *markhp, *chunk, *limit;
+  
+  int caml_gc_subphase;     /* Subphase_{main,weak1,weak2,final} */
+  value *weak_prev;
+  
+  #ifdef DEBUG
+  unsigned long major_gc_counter; // phc todo = 0;
+  #endif
+
+  // weak.c
+  value caml_weak_list_head;
+  value weak_dummy;
+  value caml_weak_none;
+
+  // freelist.c
+  sentinel_t sentinel; 
+  
+  char *fl_prev; /* Current allocation pointer.         */
+  /* Last block in the list.  Only valid just after [caml_fl_allocate] returns NULL. */
+  char *fl_last; 
+  /* Current insertion pointer.  Managed jointly with [sweep_slice]. */
+  char *caml_fl_merge; 
+  /* Number of words in the free list, including headers but not fragments. */
+  asize_t caml_fl_cur_size; 
+  char *flp [FLP_MAX];
+  int flp_size; 
+  char *beyond; 
+
+
+
 } phc_global_context;
 
 typedef phc_global_context *pctxt;

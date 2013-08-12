@@ -225,6 +225,7 @@ int caml_page_table_remove(int kind, void * start, void * end)
    The returned pointer is a hp, but the header must be initialized by
    the caller.
 */
+// phc no ctx
 char *caml_alloc_for_heap (asize_t request)
 {
   char *mem;
@@ -552,6 +553,7 @@ CAMLexport void caml_stat_free (void * blk)
   free (blk);
 }
 
+// phc no ctx
 CAMLexport void * caml_stat_resize (void * blk, asize_t sz)
 {
   void * result = realloc (blk, sz);

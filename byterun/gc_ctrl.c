@@ -447,9 +447,9 @@ CAMLprim value caml_gc_set_r(pctxt ctx, value v)
 #endif
 
   newpf = norm_pfree (Long_val (Field (v, 2)));
-  if (newpf != caml_percent_free){
-    caml_percent_free = newpf;
-    caml_gc_message (0x20, "New space overhead: %d%%\n", caml_percent_free);
+  if (newpf != ctx->caml_percent_free){
+    ctx->caml_percent_free = newpf;
+    caml_gc_message (0x20, "New space overhead: %d%%\n", ctx->caml_percent_free);
   }
 
   newpm = norm_pmax (Long_val (Field (v, 4)));
@@ -459,10 +459,10 @@ CAMLprim value caml_gc_set_r(pctxt ctx, value v)
   }
 
   newheapincr = Bsize_wsize (norm_heapincr (Long_val (Field (v, 1))));
-  if (newheapincr != caml_major_heap_increment){
-    caml_major_heap_increment = newheapincr;
+  if (newheapincr != ctx->caml_major_heap_increment){
+    ctx->caml_major_heap_increment = newheapincr;
     caml_gc_message (0x20, "New heap increment size: %luk bytes\n",
-                     caml_major_heap_increment/1024);
+                     ctx->caml_major_heap_increment/1024);
   }
   oldpolicy = caml_allocation_policy;
   caml_set_allocation_policy (Long_val (Field (v, 6)));
@@ -606,18 +606,18 @@ void caml_init_gc_r (pctxt ctx,
     caml_fatal_error ("OCaml runtime error: cannot initialize page table\n");
   }
   caml_set_minor_heap_size_r (ctx, Bsize_wsize (norm_minsize (minor_size)));
-  caml_major_heap_increment = Bsize_wsize (norm_heapincr (major_incr));
-  caml_percent_free = norm_pfree (percent_fr);
+  ctx->caml_major_heap_increment = Bsize_wsize (norm_heapincr (major_incr));
+  ctx->caml_percent_free = norm_pfree (percent_fr);
   caml_percent_max = norm_pmax (percent_m);
   caml_init_major_heap (major_heap_size);
   caml_gc_message (0x20, "Initial minor heap size: %luk bytes\n",
                    caml_minor_heap_size / 1024);
   caml_gc_message (0x20, "Initial major heap size: %luk bytes\n",
                    major_heap_size / 1024);
-  caml_gc_message (0x20, "Initial space overhead: %lu%%\n", caml_percent_free);
+  caml_gc_message (0x20, "Initial space overhead: %lu%%\n", ctx->caml_percent_free);
   caml_gc_message (0x20, "Initial max overhead: %lu%%\n", caml_percent_max);
   caml_gc_message (0x20, "Initial heap increment: %luk bytes\n",
-                   caml_major_heap_increment / 1024);
+                   ctx->caml_major_heap_increment / 1024);
   caml_gc_message (0x20, "Initial allocation policy: %d\n",
                    caml_allocation_policy);
 }

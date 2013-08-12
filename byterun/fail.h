@@ -25,6 +25,7 @@
 #endif
 #include "misc.h"
 #include "mlvalues.h"
+#include "context.h"
 
 /* <private> */
 #define OUT_OF_MEMORY_EXN 0     /* "Out_of_memory" */
@@ -63,6 +64,7 @@ extern "C" {
 #endif
 
 CAMLextern void caml_raise (value bucket) Noreturn;
+CAMLextern void caml_raise_r (pctxt, value bucket) Noreturn;
 CAMLextern void caml_raise_constant (value tag) Noreturn;
 CAMLextern void caml_raise_with_arg (value tag, value arg) Noreturn;
 CAMLextern void caml_raise_with_args (value tag, int nargs, value arg[]) Noreturn;

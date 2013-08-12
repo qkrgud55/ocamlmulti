@@ -109,6 +109,14 @@ CAMLexport value caml_callback_exn(value closure, value arg1)
   return caml_callbackN_exn(closure, 1, arg);
 }
 
+// phc todo reentrant
+CAMLexport value caml_callback_exn_r(pctxt ctx, value closure, value arg1)
+{
+  value arg[1];
+  arg[0] = arg1;
+  return caml_callbackN_exn(closure, 1, arg);
+}
+
 CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
 {
   value arg[2];

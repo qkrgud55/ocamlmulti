@@ -21,11 +21,13 @@
 #include "roots.h"
 #include "signals.h"
 
+/*
 struct final {
   value fun;
   value val;
   int offset;
 };
+*/
 
 static struct final *final_table = NULL;
 static uintnat old = 0, young = 0, size = 0;
@@ -34,11 +36,13 @@ static uintnat old = 0, young = 0, size = 0;
    [young..size) : free space
 */
 
+/*
 struct to_do {
   struct to_do *next;
   int size;
-  struct final item[1];  /* variable size */
+  struct final item[1];  
 };
+*/
 
 static struct to_do *to_do_hd = NULL;
 static struct to_do *to_do_tl = NULL;
@@ -57,6 +61,23 @@ static void alloc_to_do (int size)
     Assert (to_do_tl->next == NULL);
     to_do_tl->next = result;
     to_do_tl = result;
+  }
+}
+
+static void alloc_to_do_r (pctxt ctx, int size)
+{
+  struct to_do *result = malloc (sizeof (struct to_do)
+                                 + size * sizeof (struct final));
+  if (result == NULL) caml_fatal_error ("out of memory");
+  result->next = NULL;
+  result->size = size;
+  if (ctx->to_do_tl == NULL){
+    ctx->to_do_hd = result;
+    ctx->to_do_tl = result;
+  }else{
+    Assert (ctx->to_do_tl->next == NULL);
+    ctx->to_do_tl->next = result;
+    ctx->to_do_tl = result;
   }
 }
 
@@ -114,6 +135,63 @@ void caml_final_update (void)
   }
 }
 
+/* 
+ * 1. alloc new todo table
+ * 2. put white blocks in the ctx->final_table into the todo table
+ *    if the block is forwarded then follow the forwarding ptr
+ * 3. caml_darken those white blocks in the todo table
+ */
+void caml_final_update_r (pctxt ctx)
+{
+  uintnat i, j, k;
+  uintnat todo_count = 0;
+
+  Assert (ctx->final_young == ctx->final_old);
+  for (i = 0; i < ctx->final_old; i++){
+    Assert (Is_block (ctx->final_table[i].val));
+    Assert (Is_in_heap (ctx->final_table[i].val));
+    if (Is_white_val (ctx->final_table[i].val)) ++ todo_count;
+  }
+
+  if (todo_count > 0){
+    alloc_to_do_r (ctx, todo_count);
+    j = k = 0;
+    for (i = 0; i < ctx->final_old; i++){
+    again:
+      Assert (Is_block (ctx->final_table[i].val));
+      Assert (Is_in_heap (ctx->final_table[i].val));
+      if (Is_white_val (ctx->final_table[i].val)){
+        if (Tag_val (ctx->final_table[i].val) == Forward_tag){
+          value fv;
+          Assert (ctx->final_table[i].offset == 0);
+          fv = Forward_val (ctx->final_table[i].val);
+          if (Is_block (fv)
+              && (!Is_in_value_area(fv) || Tag_val (fv) == Forward_tag
+                  || Tag_val (fv) == Lazy_tag || Tag_val (fv) == Double_tag)){
+            /* Do not short-circuit the pointer. */
+          }else{
+            ctx->final_table[i].val = fv;
+            if (Is_block (ctx->final_table[i].val)
+                && Is_in_heap (ctx->final_table[i].val)){
+              goto again;
+            }
+          }
+        }
+        ctx->to_do_tl->item[k++] = ctx->final_table[i];
+      }else{
+        ctx->final_table[j++] = ctx->final_table[i];
+      }
+    }
+    ctx->final_young = ctx->final_old = j;
+    ctx->to_do_tl->size = k;
+    for (i = 0; i < k; i++){
+      CAMLassert (Is_white_val (ctx->to_do_tl->item[i].val));
+      caml_darken_r (ctx, ctx->to_do_tl->item[i].val, NULL);
+    }
+  }
+}
+
+
 static int running_finalisation_function = 0;
 
 /* Call the finalisation functions for the finalising set.
@@ -148,6 +226,43 @@ void caml_final_do_calls (void)
   }
 }
 
+void caml_final_do_calls_r (pctxt ctx)
+{
+  struct final f;
+  value res;
+
+  if (ctx->running_finalisation_function) return;
+
+  if (ctx->to_do_hd != NULL){
+    caml_gc_message (0x80, "Calling finalisation functions.\n", 0);
+    while (1){
+      // phc - freeing to_do with size==0 seems unnecessary
+      // phc - why did we allocate size==0 at all?
+      while (ctx->to_do_hd != NULL && ctx->to_do_hd->size == 0){
+        struct to_do *next_hd = ctx->to_do_hd->next;
+        free (ctx->to_do_hd);
+        ctx->to_do_hd = next_hd;
+        if (ctx->to_do_hd == NULL) ctx->to_do_tl = NULL;
+      }
+      if (ctx->to_do_hd == NULL) break;
+      Assert (ctx->to_do_hd->size > 0);
+
+      // phc - for f in reverse(ctx->to_do_head)
+      -- ctx->to_do_hd->size;
+      f = ctx->to_do_hd->item[ctx->to_do_hd->size];
+
+      // phc - running_finalisation_function==1 prevents the runtime of
+      //       caml_callback_exn from entering caml_final_do_calls again
+      ctx->running_finalisation_function = 1;
+      res = caml_callback_exn_r (ctx, f.fun, f.val + f.offset);
+      ctx->running_finalisation_function = 0;
+
+      if (Is_exception_result (res)) caml_raise_r (ctx, Extract_exception (res));
+    }
+    caml_gc_message (0x80, "Done calling finalisation functions.\n", 0);
+  }
+}
+
 /* Call a scanning_action [f] on [x]. */
 #define Call_action(f,x) (*(f)) ((x), &(x))
 #define Call_action_r(ctx, f,x) (*(f)) ((ctx), (x), &(x))
@@ -174,6 +289,23 @@ void caml_final_do_strong_roots (scanning_action f)
   }
 }
 
+void caml_final_do_strong_roots_r (pctxt ctx, scanning_action_r f)
+{
+  uintnat i;
+  struct to_do *todo;
+
+  Assert (ctx->final_old == ctx->final_young);
+  for (i = 0; i < ctx->final_old; i++) 
+    Call_action_r (ctx, f, ctx->final_table[i].fun);
+
+  for (todo = ctx->to_do_hd; todo != NULL; todo = todo->next){
+    for (i = 0; i < todo->size; i++){
+      Call_action_r (ctx, f, todo->item[i].fun);
+      Call_action_r (ctx, f, todo->item[i].val);
+    }
+  }
+}
+
 /* Call [*f] on the values of the finalisable set.
    The recent set is empty.
    This is called directly by the compactor.
@@ -185,6 +317,16 @@ void caml_final_do_weak_roots (scanning_action f)
   Assert (old == young);
   for (i = 0; i < old; i++) Call_action (f, final_table[i].val);
 }
+
+void caml_final_do_weak_roots_r (pctxt ctx, scanning_action_r f)
+{
+  uintnat i;
+
+  Assert (ctx->final_old == ctx->final_young);
+  for (i = 0; i < ctx->final_old; i++) 
+    Call_action_r (ctx, f, ctx->final_table[i].val);
+}
+
 
 /* Call [*f] on the closures and values of the recent set.
    This is called by the minor GC through [caml_oldify_local_roots].
@@ -199,14 +341,15 @@ void caml_final_do_young_roots (scanning_action f)
     Call_action (f, final_table[i].val);
   }
 }
+
 void caml_final_do_young_roots_r (pctxt ctx, scanning_action_r f)
 {
   uintnat i;
 
-  Assert (old <= young);
-  for (i = old; i < young; i++){
-    Call_action_r (ctx, f, final_table[i].fun);
-    Call_action_r (ctx, f, final_table[i].val);
+  Assert (ctx->final_old <= ctx->final_young);
+  for (i = ctx->final_old; i < ctx->final_young; i++){
+    Call_action_r (ctx, f, ctx->final_table[i].fun);
+    Call_action_r (ctx, f, ctx->final_table[i].val);
   }
 }
 /* Empty the recent set into the finalisable set.
@@ -216,6 +359,11 @@ void caml_final_do_young_roots_r (pctxt ctx, scanning_action_r f)
 void caml_final_empty_young (void)
 {
   old = young;
+}
+
+void caml_final_empty_young_r (pctxt ctx)
+{
+  ctx->final_old = ctx->final_young;
 }
 
 /* Put (f,v) in the recent set. */
@@ -254,8 +402,50 @@ CAMLprim value caml_final_register (value f, value v)
   return Val_unit;
 }
 
+CAMLprim value caml_final_register_r (pctxt ctx, value f, value v)
+{
+  if (!(Is_block (v) && Is_in_heap_or_young(v))) {
+    caml_invalid_argument ("Gc.finalise");
+  }
+  Assert (ctx->final_old <= ctx->final_young);
+
+  if (ctx->final_young >= ctx->final_size){
+    if (ctx->final_table == NULL){
+      uintnat new_size = 30;
+      ctx->final_table = caml_stat_alloc (new_size * sizeof (struct final));
+      Assert (ctx->final_old == 0);
+      Assert (ctx->final_young == 0);
+      ctx->final_size = new_size;
+    }else{
+      uintnat new_size = ctx->final_size * 2;
+      ctx->final_table = caml_stat_resize (ctx->final_table,
+                                      new_size * sizeof (struct final));
+      ctx->final_size = new_size;
+    }
+  }
+  Assert (ctx->final_young < ctx->final_size);
+  ctx->final_table[ctx->final_young].fun = f;
+  if (Tag_val (v) == Infix_tag){
+    ctx->final_table[ctx->final_young].offset = Infix_offset_val (v);
+    ctx->final_table[ctx->final_young].val = v - Infix_offset_val (v);
+  }else{
+    ctx->final_table[ctx->final_young].offset = 0;
+    ctx->final_table[ctx->final_young].val = v;
+  }
+  ++ ctx->final_young;
+
+  return Val_unit;
+}
+
+
 CAMLprim value caml_final_release (value unit)
 {
   running_finalisation_function = 0;
+  return Val_unit;
+}
+ 
+CAMLprim value caml_final_release_r (pctxt ctx, value unit)
+{
+  ctx->running_finalisation_function = 0;
   return Val_unit;
 }

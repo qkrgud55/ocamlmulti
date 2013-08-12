@@ -361,6 +361,12 @@ void caml_darken_all_roots (void)
   caml_do_roots (caml_darken);
 }
 
+// phc todo reentrant
+void caml_darken_all_roots_r (pctxt ctx)
+{
+  caml_do_roots_r (ctx, caml_darken_r);
+}
+
 void caml_do_roots (scanning_action f)
 {
   int i, j;
@@ -394,7 +400,7 @@ void caml_do_roots (scanning_action f)
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f);
 }
 
-void caml_do_roots_r (pctxt ctx, scanning_action f)
+void caml_do_roots_r (pctxt ctx, scanning_action_r f)
 {
   int i, j;
   value glob;
@@ -404,14 +410,14 @@ void caml_do_roots_r (pctxt ctx, scanning_action f)
   for (i = 0; caml_globals[i] != 0; i++) {
     glob = caml_globals[i];
     for (j = 0; j < Wosize_val(glob); j++)
-      f (Field (glob, j), &Field (glob, j));
+      f (ctx, Field (glob, j), &Field (glob, j));
   }
 
   /* Dynamic global roots */
   iter_list(caml_dyn_globals, lnk) {
     glob = (value) lnk->data;
     for (j = 0; j < Wosize_val(glob); j++){
-      f (Field (glob, j), &Field (glob, j));
+      f (ctx, Field (glob, j), &Field (glob, j));
     }
   }
 

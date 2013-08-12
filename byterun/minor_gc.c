@@ -44,6 +44,7 @@ int caml_in_minor_collection = 0;
 static unsigned long minor_gc_counter = 0;
 #endif
 
+// no ctx
 void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv)
 {
   value **new_table;
@@ -60,6 +61,7 @@ void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv)
   tbl->end = tbl->base + tbl->size + tbl->reserve;
 }
 
+// no ctx
 static void reset_table (struct caml_ref_table *tbl)
 {
   tbl->size = 0;
@@ -68,6 +70,7 @@ static void reset_table (struct caml_ref_table *tbl)
   tbl->base = tbl->ptr = tbl->threshold = tbl->limit = tbl->end = NULL;
 }
 
+// no ctx
 static void clear_table (struct caml_ref_table *tbl)
 {
     tbl->ptr = tbl->base;
@@ -250,8 +253,8 @@ void caml_oldify_one_r (pctxt ctx, value v, value *p)
         Field (v, 0) = result;     /*  and forward pointer. */
         if (sz > 1){
           Field (result, 0) = field0;
-          Field (result, 1) = oldify_todo_list;    /* Add this block */
-          oldify_todo_list = v;                    /*  to the "to do" list. */
+          Field (result, 1) = ctx->oldify_todo_list;    /* Add this block */
+          ctx->oldify_todo_list = v;                    /*  to the "to do" list. */
         }else{
           Assert (sz == 1);
           p = &Field (result, 0);
@@ -343,19 +346,19 @@ void caml_oldify_mopup_r (pctxt ctx)
   value v, new_v, f;
   mlsize_t i;
 
-  while (oldify_todo_list != 0){
-    v = oldify_todo_list;                /* Get the head. */
+  while (ctx->oldify_todo_list != 0){
+    v = ctx->oldify_todo_list;                /* Get the head. */
     Assert (Hd_val (v) == 0);            /* It must be forwarded. */
     new_v = Field (v, 0);                /* Follow forward pointer. */
-    oldify_todo_list = Field (new_v, 1); /* Remove from list. */
+    ctx->oldify_todo_list = Field (new_v, 1); /* Remove from list. */
 
     f = Field (new_v, 0);
-    if (Is_block (f) && Is_young (f)){
+    if (Is_block (f) && Is_young_r (ctx, f)){
       caml_oldify_one_r (ctx, f, &Field (new_v, 0));
     }
     for (i = 1; i < Wosize_val (new_v); i++){
       f = Field (v, i);
-      if (Is_block (f) && Is_young (f)){
+      if (Is_block (f) && Is_young_r (ctx, f)){
         caml_oldify_one_r (ctx, f, &Field (new_v, i));
       }else{
         Field (new_v, i) = f;
@@ -424,7 +427,7 @@ void caml_empty_minor_heap_r (pctxt ctx)
     }
     caml_oldify_mopup_r (ctx);
     for (r = ctx->caml_weak_ref_table.base; r < ctx->caml_weak_ref_table.ptr; r++){
-      if (Is_block (**r) && Is_young (**r)){
+      if (Is_block (**r) && Is_young_r (ctx, **r)){
         if (Hd_val (**r) == 0){
           **r = Field (**r, 0);
         }else{
@@ -442,7 +445,7 @@ void caml_empty_minor_heap_r (pctxt ctx)
     caml_gc_message (0x02, ">", 0);
     ctx->caml_in_minor_collection = 0;
   }
-  caml_final_empty_young ();
+  caml_final_empty_young_r (ctx);
 
 #ifdef DEBUG
   {
@@ -487,10 +490,10 @@ CAMLexport void caml_minor_collection_r (pctxt ctx)
 
   caml_stat_promoted_words += caml_allocated_words - prev_alloc_words;
   ++ caml_stat_minor_collections;
-  caml_major_collection_slice (0);
+  caml_major_collection_slice_r (0);
   caml_force_major_slice = 0;
 
-  caml_final_do_calls ();
+  caml_final_do_calls_r (ctx);
 
   caml_empty_minor_heap_r (ctx);
 }

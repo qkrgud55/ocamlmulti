@@ -22,6 +22,7 @@
 #include "compatibility.h"
 #endif
 #include "mlvalues.h"
+#include "context.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,6 +35,7 @@ CAMLextern value caml_callback3 (value closure, value arg1, value arg2,
 CAMLextern value caml_callbackN (value closure, int narg, value args[]);
 
 CAMLextern value caml_callback_exn (value closure, value arg);
+CAMLextern value caml_callback_exn_r (pctxt ctx, value closure, value arg);
 CAMLextern value caml_callback2_exn (value closure, value arg1, value arg2);
 CAMLextern value caml_callback3_exn (value closure,
                                      value arg1, value arg2, value arg3);

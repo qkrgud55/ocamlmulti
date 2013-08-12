@@ -39,6 +39,15 @@ CAMLexport void caml_raise(value v)
   siglongjmp(caml_external_raise->buf, 1);
 }
 
+// phc todo reentrant
+CAMLexport void caml_raise_r(pctxt ctx, value v)
+{
+  Unlock_exn();
+  caml_exn_bucket = v;
+  if (caml_external_raise == NULL) caml_fatal_uncaught_exception(v);
+  siglongjmp(caml_external_raise->buf, 1);
+}
+
 CAMLexport void caml_raise_constant(value tag)
 {
   CAMLparam1 (tag);

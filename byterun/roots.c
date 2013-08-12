@@ -99,6 +99,12 @@ void caml_darken_all_roots (void)
   caml_do_roots (caml_darken);
 }
 
+// phc todo reentrant
+void caml_darken_all_roots_r (pctxt ctx)
+{
+  caml_do_roots_r (ctx, caml_darken_r);
+}
+
 void caml_do_roots (scanning_action f)
 {
   /* Global variables */
@@ -113,7 +119,44 @@ void caml_do_roots (scanning_action f)
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f);
 }
 
+void caml_do_roots_r (pctxt ctx, scanning_action_r f)
+{
+  /* Global variables */
+  f(ctx, caml_global_data, &caml_global_data);
+  /* The stack and the local C roots */
+  caml_do_local_roots(f, caml_extern_sp, caml_stack_high, caml_local_roots);
+  /* Global C roots */
+  caml_scan_global_roots(f);
+  /* Finalised values */
+  caml_final_do_strong_roots (f);
+  /* Hook */
+  if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f);
+}
+
 CAMLexport void caml_do_local_roots (scanning_action f, value *stack_low,
+                                     value *stack_high,
+                                     struct caml__roots_block *local_roots)
+{
+  register value * sp;
+  struct caml__roots_block *lr;
+  int i, j;
+
+  for (sp = stack_low; sp < stack_high; sp++) {
+    f (*sp, sp);
+  }
+  for (lr = local_roots; lr != NULL; lr = lr->next) {
+    for (i = 0; i < lr->ntables; i++){
+      for (j = 0; j < lr->nitems; j++){
+        sp = &(lr->tables[i][j]);
+        f (*sp, sp);
+      }
+    }
+  }
+}
+
+// phc todo reentrant
+CAMLexport void caml_do_local_roots_r (pctxt ctx, 
+                                     scanning_action f, value *stack_low,
                                      value *stack_high,
                                      struct caml__roots_block *local_roots)
 {

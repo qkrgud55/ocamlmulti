@@ -21,7 +21,9 @@
 #include "misc.h"
 
 extern void caml_compact_heap (void);
+extern void caml_compact_heap_r (pctxt);
 extern void caml_compact_heap_maybe (void);
+extern void caml_compact_heap_maybe_r (pctxt);
 
 
 #endif /* CAML_COMPACT_H */

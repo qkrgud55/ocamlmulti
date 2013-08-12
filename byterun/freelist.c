@@ -28,35 +28,33 @@
 #include "major_gc.h"
 #include "misc.h"
 #include "mlvalues.h"
+#include "context.h"
 
-/* The free-list is kept sorted by increasing addresses.
-   This makes the merging of adjacent free blocks possible.
-   (See [caml_fl_merge_block].)
-*/
 
+/*
 typedef struct {
-  char *next_bp;   /* Pointer to the first byte of the next block. */
+  char *next_bp;   
 } block;
 
-/* The sentinel can be located anywhere in memory, but it must not be
-   adjacent to any heap object. */
 static struct {
-  value filler1; /* Make sure the sentinel is never adjacent to any block. */
+  value filler1; 
   header_t h;
   value first_bp;
-  value filler2; /* Make sure the sentinel is never adjacent to any block. */
+  value filler2; 
 } sentinel = {0, Make_header (0, 0, Caml_blue), 0, 0};
+*/
 
-#define Fl_head ((char *) (&(sentinel.first_bp)))
-static char *fl_prev = Fl_head;  /* Current allocation pointer. */
-static char *fl_last = NULL;     /* Last block in the list.  Only valid
-                                 just after [caml_fl_allocate] returns NULL. */
-char *caml_fl_merge = Fl_head;   /* Current insertion pointer.  Managed
-                                    jointly with [sweep_slice]. */
-asize_t caml_fl_cur_size = 0;    /* Number of words in the free list,
-                                    including headers but not fragments. */
+static sentinel_t sentinel = {0, Make_header (0, 0, Caml_blue), 0, 0};
 
-#define FLP_MAX 1000
+#define Fl_head ((char *) (&(sentinel.first_bp))) 
+static char *fl_prev = Fl_head;  
+static char *fl_last = NULL;     
+                                 
+char *caml_fl_merge = Fl_head;   
+                                 
+asize_t caml_fl_cur_size = 0;    
+                                 
+// #define FLP_MAX 1000
 static char *flp [FLP_MAX];
 static int flp_size = 0;
 static char *beyond = NULL;
@@ -347,6 +345,16 @@ void caml_fl_init_merge (void)
 #endif
 }
 
+// phc todo reentrant
+void caml_fl_init_merge_r (pctxt ctx)
+{
+  last_fragment = NULL;
+  caml_fl_merge = Fl_head;
+#ifdef DEBUG
+  fl_check ();
+#endif
+}
+
 static void truncate_flp (char *changed)
 {
   if (changed == Fl_head){
@@ -455,6 +463,85 @@ char *caml_fl_merge_block (char *bp)
   return adj;
 }
 
+// phc todo reentrant
+char *caml_fl_merge_block_r (pctxt ctx, char *bp)
+{
+  char *prev, *cur, *adj;
+  header_t hd = Hd_bp (bp);
+  mlsize_t prev_wosz;
+
+  caml_fl_cur_size += Whsize_hd (hd);
+
+#ifdef DEBUG
+  caml_set_fields (bp, 0, Debug_free_major);
+#endif
+  prev = caml_fl_merge;
+  cur = Next (prev);
+  /* The sweep code makes sure that this is the right place to insert
+     this block: */
+  Assert (prev < bp || prev == Fl_head);
+  Assert (cur > bp || cur == NULL);
+
+  if (policy == Policy_first_fit) truncate_flp (prev);
+
+  /* If [last_fragment] and [bp] are adjacent, merge them. */
+  if (last_fragment == Hp_bp (bp)){
+    mlsize_t bp_whsz = Whsize_bp (bp);
+    if (bp_whsz <= Max_wosize){
+      hd = Make_header (bp_whsz, 0, Caml_white);
+      bp = last_fragment;
+      Hd_bp (bp) = hd;
+      caml_fl_cur_size += Whsize_wosize (0);
+    }
+  }
+
+  /* If [bp] and [cur] are adjacent, remove [cur] from the free-list
+     and merge them. */
+  adj = bp + Bosize_hd (hd);
+  if (adj == Hp_bp (cur)){
+    char *next_cur = Next (cur);
+    mlsize_t cur_whsz = Whsize_bp (cur);
+
+    if (Wosize_hd (hd) + cur_whsz <= Max_wosize){
+      Next (prev) = next_cur;
+      if (policy == Policy_next_fit && fl_prev == cur) fl_prev = prev;
+      hd = Make_header (Wosize_hd (hd) + cur_whsz, 0, Caml_blue);
+      Hd_bp (bp) = hd;
+      adj = bp + Bosize_hd (hd);
+#ifdef DEBUG
+      fl_last = NULL;
+      Next (cur) = (char *) Debug_free_major;
+      Hd_bp (cur) = Debug_free_major;
+#endif
+      cur = next_cur;
+    }
+  }
+  /* If [prev] and [bp] are adjacent merge them, else insert [bp] into
+     the free-list if it is big enough. */
+  prev_wosz = Wosize_bp (prev);
+  if (prev + Bsize_wsize (prev_wosz) == Hp_bp (bp)
+      && prev_wosz + Whsize_hd (hd) < Max_wosize){
+    Hd_bp (prev) = Make_header (prev_wosz + Whsize_hd (hd), 0,Caml_blue);
+#ifdef DEBUG
+    Hd_bp (bp) = Debug_free_major;
+#endif
+    Assert (caml_fl_merge == prev);
+  }else if (Wosize_hd (hd) != 0){
+    Hd_bp (bp) = Bluehd_hd (hd);
+    Next (bp) = cur;
+    Next (prev) = bp;
+    caml_fl_merge = bp;
+  }else{
+    /* This is a fragment.  Leave it in white but remember it for eventual
+       merging with the next block. */
+    last_fragment = bp;
+    caml_fl_cur_size -= Whsize_wosize (0);
+  }
+  return adj;
+}
+
+
+
 /* This is a heap extension.  We have to insert it in the right place
    in the free-list.
    [caml_fl_add_blocks] can only be called right after a call to
@@ -514,6 +601,24 @@ void caml_fl_add_blocks (char *bp)
           [Caml_white].
 */
 void caml_make_free_blocks (value *p, mlsize_t size, int do_merge, int color)
+{
+  mlsize_t sz;
+
+  while (size > 0){
+    if (size > Whsize_wosize (Max_wosize)){
+      sz = Whsize_wosize (Max_wosize);
+    }else{
+      sz = size;
+    }
+    *(header_t *)p = Make_header (Wosize_whsize (sz), 0, color);
+    if (do_merge) caml_fl_merge_block (Bp_hp (p));
+    size -= sz;
+    p += sz;
+  }
+}
+
+// phc todo reentrant
+void caml_make_free_blocks_r (pctxt ctx, value *p, mlsize_t size, int do_merge, int color)
 {
   mlsize_t sz;
 

@@ -171,7 +171,6 @@ static char * parse_format(value fmt,
     return caml_stat_alloc(prec + 1);
 }
 
-// phc shared
 CAMLprim value caml_format_int(value fmt, value arg)
 {
   char format_string[FORMAT_BUFFER_SIZE];
@@ -180,48 +179,6 @@ CAMLprim value caml_format_int(value fmt, value arg)
   char conv;
   value res;
 
-  if (main_ctx){
-    sync_with_global_vars(main_ctx);
-    buffer = parse_format(fmt, ARCH_INTNAT_PRINTF_FORMAT,
-                         format_string, default_format_buffer, &conv);
-    switch (conv) {
-    case 'u': case 'x': case 'X': case 'o':
-      sprintf(buffer, format_string, Unsigned_long_val(arg));
-      break;
-    default:
-      sprintf(buffer, format_string, Long_val(arg));
-      break;
-    }
-    res = caml_copy_string_r(main_ctx, buffer);
-    if (buffer != default_format_buffer) caml_stat_free(buffer);
-    sync_with_context(main_ctx);
-    return res;
-  }else{
-    buffer = parse_format(fmt, ARCH_INTNAT_PRINTF_FORMAT,
-                         format_string, default_format_buffer, &conv);
-    switch (conv) {
-    case 'u': case 'x': case 'X': case 'o':
-      sprintf(buffer, format_string, Unsigned_long_val(arg));
-      break;
-    default:
-      sprintf(buffer, format_string, Long_val(arg));
-      break;
-    }
-    res = caml_copy_string(buffer);
-    if (buffer != default_format_buffer) caml_stat_free(buffer);
-    return res;
-  }
-}
-
-CAMLprim value caml_format_int_r(pctxt ctx, value fmt, value arg)
-{
-  char format_string[FORMAT_BUFFER_SIZE];
-  char default_format_buffer[FORMAT_BUFFER_SIZE];
-  char * buffer;
-  char conv;
-  value res;
-
-  sync_with_global_vars(main_ctx);
   buffer = parse_format(fmt, ARCH_INTNAT_PRINTF_FORMAT,
                        format_string, default_format_buffer, &conv);
   switch (conv) {
@@ -232,9 +189,31 @@ CAMLprim value caml_format_int_r(pctxt ctx, value fmt, value arg)
     sprintf(buffer, format_string, Long_val(arg));
     break;
   }
-  res = caml_copy_string_r(main_ctx, buffer);
+  res = caml_copy_string(buffer);
   if (buffer != default_format_buffer) caml_stat_free(buffer);
-  sync_with_context(main_ctx);
+  return res;
+}
+
+CAMLprim value caml_format_int_r(pctxt ctx, value fmt, value arg)
+{
+  char format_string[FORMAT_BUFFER_SIZE];
+  char default_format_buffer[FORMAT_BUFFER_SIZE];
+  char * buffer;
+  char conv;
+  value res;
+
+  buffer = parse_format(fmt, ARCH_INTNAT_PRINTF_FORMAT,
+                       format_string, default_format_buffer, &conv);
+  switch (conv) {
+  case 'u': case 'x': case 'X': case 'o':
+    sprintf(buffer, format_string, Unsigned_long_val(arg));
+    break;
+  default:
+    sprintf(buffer, format_string, Long_val(arg));
+    break;
+  }
+  res = caml_copy_string_r(ctx, buffer);
+  if (buffer != default_format_buffer) caml_stat_free(buffer);
   return res;
 }
 

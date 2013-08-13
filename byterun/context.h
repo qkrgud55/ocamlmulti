@@ -119,6 +119,9 @@ typedef struct phc_global_context {
   intnat caml_globals;       // 40
   int caml_globals_len;
 
+  intnat caml_globals_scanned;
+  intnat caml_globals_inited;
+
   int count_id;
 
   struct caml_ref_table caml_ref_table;
@@ -126,9 +129,6 @@ typedef struct phc_global_context {
 
   uint32 random_seed;
   int caml_in_minor_collection;
-
-  intnat caml_globals_scanned;
-  intnat caml_globals_inited;
 
   struct channel *caml_all_opened_channels;
   struct named_value * named_value_table[Named_value_size];

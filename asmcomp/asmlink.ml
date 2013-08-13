@@ -321,6 +321,11 @@ let update_asmfiles _ =
   let _ = exec_on_files cmd asmfiles in
     ()
 
+let run_sed_caml_globals_inited startup =
+  let cmd = "sed -e 's/movq\\s*caml_globals_inited@GOTPCREL(%rip)/" in
+  let cmd = cmd ^ "leaq 56(%r13)/g' "^startup^".tmp > "^startup in
+  let _ = Ccomp.command cmd in ()
+
 (* Main entry point *)
 let link ppf objfiles output_name =
   let stdlib =
@@ -354,10 +359,11 @@ let link ppf objfiles output_name =
   let startup =
     if !Clflags.keep_startup_file then output_name ^ ".startup" ^ ext_asm
     else Filename.temp_file "camlstartup" ext_asm in
-  make_startup_file ppf startup units_tolink;
+  make_startup_file ppf (startup^".tmp") units_tolink;
   let startup_obj = Filename.temp_file "camlstartup" ext_obj in
   update_asmfiles ();
   Proc.exec_pending_cmds ();
+  run_sed_caml_globals_inited startup;
   if Proc.assemble_file startup startup_obj <> 0 then
     raise(Error(Assembler_error startup));
   try

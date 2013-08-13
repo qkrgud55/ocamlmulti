@@ -184,6 +184,7 @@ typedef struct phc_global_context {
   // freelist.c
   sentinel_t sentinel; 
   
+  char *fl_head;
   char *fl_prev; /* Current allocation pointer.         */
   /* Last block in the list.  Only valid just after [caml_fl_allocate] returns NULL. */
   char *fl_last; 
@@ -194,6 +195,7 @@ typedef struct phc_global_context {
   char *flp [FLP_MAX];
   int flp_size; 
   char *beyond; 
+  char *last_fragment;
 
   // gc_ctrl.c
   double caml_stat_minor_words;

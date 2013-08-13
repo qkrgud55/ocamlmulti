@@ -80,7 +80,8 @@ pctxt create_empty_context(void){
   res->caml_weak_none        = (value)&(res->weak_dummy);
 
   res->sentinel         = _sentinel;
-  res->fl_prev          = ((char *) (&(res->sentinel.first_bp)));
+  res->fl_head          = ((char *) (&(res->sentinel.first_bp)));
+  res->fl_prev          = res->fl_head;
   res->fl_last          = NULL;
   res->caml_fl_merge    = res->fl_prev;
   res->caml_fl_cur_size = 0;

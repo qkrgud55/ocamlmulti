@@ -97,8 +97,6 @@ pctxt create_empty_context(void){
 
 CAMLprim value caml_lock_phc_mutex(pctxt ctx, value v){
   pthread_mutex_lock(&phc_mutex_);
-//  main_ctx = ctx;
-//  sync_with_context(ctx); 
   return Val_unit;
 }
 

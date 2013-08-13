@@ -187,8 +187,6 @@ CAMLprim value caml_make_vect_r(pctxt ctx, value len, value init)
   mlsize_t size, wsize, i;
   double d;
 
-  sync_with_global_vars(ctx);
-
   size = Long_val(len);
   if (size == 0) {
     res = Atom(0);
@@ -225,8 +223,6 @@ CAMLprim value caml_make_vect_r(pctxt ctx, value len, value init)
       caml_check_urgent_gc_r (ctx, res);
     }
   }
-  sync_with_context(ctx);
-
   CAMLreturn (res);
 }
 

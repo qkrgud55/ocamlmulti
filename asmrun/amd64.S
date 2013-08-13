@@ -354,7 +354,7 @@ LBL(caml_call_gc_r):
         pushq   %rax
         STORE_VAR(%rsp, caml_gc_regs)
     /* Save caml_young_ptr, caml_exception_pointer */
-        STORE_VAR(%r15, caml_young_ptr) 
+    /*    STORE_VAR(%r15, caml_young_ptr)  */
         movq    %r15, (%r13)
         STORE_VAR(%r14, caml_exception_pointer)
     /* Save floating-point registers */

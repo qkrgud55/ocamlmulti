@@ -44,6 +44,9 @@ CAMLexport header_t caml_atom_table[256];
 char * caml_code_area_start, * caml_code_area_end;
 int is_ctx = 0;
 
+pctxt ctxl[MAX_TH];
+pthread_t thl[MAX_TH];
+
 /* Initialize the atom table and the static data and code area limits. */
 
 struct segment { char * begin; char * end; };
@@ -202,8 +205,6 @@ void caml_main(char **argv)
   parse_camlrunparam();
 
   if (num_th){
-    pctxt ctxl[MAX_TH];
-    pthread_t thl[MAX_TH];
     int i;
     
     for (i=0; i<num_th; i++){

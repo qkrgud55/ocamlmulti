@@ -50,7 +50,7 @@ struct page_table {
   uintnat * entries;            /* [size]  */
 };
 
-static struct page_table caml_page_table;
+static struct page_table caml_page_table = {0};
 
 /* Page table entries are the logical 'or' of
    - the key: address of a page (low Page_log bits = 0)
@@ -90,6 +90,9 @@ int caml_page_table_lookup(void * addr)
 int caml_page_table_initialize(mlsize_t bytesize)
 {
   uintnat pagesize = Page(bytesize);
+
+  if (caml_page_table.entries != NULL)
+    return 0;
 
   pthread_mutex_init(&page_mutex, NULL); 
 
@@ -179,7 +182,6 @@ static int caml_page_table_modify(uintnat page, int toclear, int toset)
 
 CAMLexport unsigned char * caml_page_table[Pagetable1_size];
 static unsigned char caml_page_table_empty[Pagetable2_size] = { 0, };
-
 int caml_page_table_initialize(mlsize_t bytesize)
 {
   int i;
@@ -187,7 +189,6 @@ int caml_page_table_initialize(mlsize_t bytesize)
     caml_page_table[i] = caml_page_table_empty;
   return 0;
 }
-
 static int caml_page_table_modify(uintnat page, int toclear, int toset)
 {
   uintnat i = Pagetable_index1(page);
@@ -201,7 +202,6 @@ static int caml_page_table_modify(uintnat page, int toclear, int toset)
   caml_page_table[i][j] = (caml_page_table[i][j] & ~toclear) | toset;
   return 0;
 }
-
 #endif
 
 // phc no ctx, page_mutex required
@@ -318,7 +318,7 @@ int caml_add_to_heap_r (pctxt ctx, char *m)
 #endif /* debug */
 
   caml_gc_message (0x04, "Growing heap to %luk bytes\n",
-                   (caml_stat_heap_size + Chunk_size (m)) / 1024);
+                   (ctx->caml_stat_heap_size + Chunk_size (m)) / 1024);
 
   /* Register block in page table */
   if (caml_page_table_add(In_heap, m, m + Chunk_size(m)) != 0)
@@ -406,7 +406,7 @@ static char *expand_heap_r (pctxt ctx, mlsize_t request)
   asize_t over_request, malloc_request, remain;
 
   Assert (request <= Max_wosize);
-  over_request = request + request / 100 * caml_percent_free;
+  over_request = request + request / 100 * ctx->caml_percent_free;
   malloc_request = caml_round_heap_chunk_size_r (ctx, Bhsize_wosize (over_request));
   mem = caml_alloc_for_heap (malloc_request);
   if (mem == NULL){
@@ -693,19 +693,18 @@ CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
   }
 }
 
-// phc todo reentrant
 CAMLexport void caml_adjust_gc_speed_r (pctxt ctx, mlsize_t res, mlsize_t max)
 {
   if (max == 0) max = 1;
   if (res > max) res = max;
-  caml_extra_heap_resources += (double) res / (double) max;
-  if (caml_extra_heap_resources > 1.0){
-    caml_extra_heap_resources = 1.0;
+  ctx->caml_extra_heap_resources += (double) res / (double) max;
+  if (ctx->caml_extra_heap_resources > 1.0){
+    ctx->caml_extra_heap_resources = 1.0;
     caml_urge_major_slice ();
   }
-  if (caml_extra_heap_resources
-           > (double) Wsize_bsize (caml_minor_heap_size) / 2.0
-             / (double) Wsize_bsize (caml_stat_heap_size)) {
+  if (ctx->caml_extra_heap_resources
+           > (double) Wsize_bsize (ctx->caml_minor_heap_size) / 2.0
+             / (double) Wsize_bsize (ctx->caml_stat_heap_size)) {
     caml_urge_major_slice ();
   }
 }
@@ -748,6 +747,11 @@ void caml_modify (value *fp, value val)
   Modify (fp, val);
 }
 
+void caml_modify_r (pctxt ctx, value *fp, value val)
+{
+  Modify_r (ctx, fp, val);
+}
+
 CAMLexport void * caml_stat_alloc (asize_t sz)
 {
   void * result = malloc (sz);
@@ -760,6 +764,20 @@ CAMLexport void * caml_stat_alloc (asize_t sz)
   return result;
 }
 
+// phc todo reentrant
+CAMLexport void * caml_stat_alloc_r (pctxt ctx, asize_t sz)
+{
+  void * result = malloc (sz);
+
+  /* malloc() may return NULL if size is 0 */
+  if (result == NULL && sz != 0) caml_raise_out_of_memory ();
+#ifdef DEBUG
+  memset (result, Debug_uninit_stat, sz);
+#endif
+  return result;
+}
+
+// phc no ctx
 CAMLexport void caml_stat_free (void * blk)
 {
   free (blk);

@@ -25,13 +25,14 @@ CAMLexport void (*caml_phc_create_thread)(void *(*fn)(void*), void *arg) = NULL;
 
 pctxt create_empty_context(void){
   phc_global_context* res = NULL;
+  phc_global_context _zero = {0,};
   struct caml_ref_table _ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0};
   struct global_root_list _global_roots = { NULL, { NULL, }, 0 };
   sentinel_t _sentinel = {0, Make_header (0, 0, Caml_blue), 0, 0};
   int i;
 
   res = malloc(sizeof(phc_global_context));
-//  printf("create_empty_context %p\n", (void*)res);
+  *res = _zero;
 
   res->caml_young_ptr     = NULL;
   res->caml_young_limit   = NULL;

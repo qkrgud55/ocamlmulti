@@ -165,6 +165,24 @@ int caml_page_table_initialize(mlsize_t bytesize);
   }                                                                         \
 }while(0)
 
+// phc todo reentrant
+#define Modify_r(ctx, fp, val) do{                                          \
+  value _old_ = *(fp);                                                      \
+  *(fp) = (val);                                                            \
+  if (Is_in_heap (fp)){                                                     \
+    if (caml_gc_phase == Phase_mark) caml_darken (_old_, NULL);             \
+    if (Is_block (val) && Is_young (val)                                    \
+        && ! (Is_block (_old_) && Is_young (_old_))){                       \
+      if (caml_ref_table.ptr >= caml_ref_table.limit){                      \
+        CAMLassert (caml_ref_table.ptr == caml_ref_table.limit);            \
+        caml_realloc_ref_table (&caml_ref_table);                           \
+      }                                                                     \
+      *caml_ref_table.ptr++ = (fp);                                         \
+    }                                                                       \
+  }                                                                         \
+}while(0)
+
+
 /* </private> */
 
 struct caml__roots_block {

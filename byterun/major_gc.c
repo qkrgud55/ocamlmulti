@@ -90,7 +90,7 @@ static void realloc_gray_vals_r (pctxt ctx)
   value *new;
 
   Assert (ctx->gray_vals_cur == ctx->gray_vals_end);
-  if (ctx->gray_vals_size < caml_stat_heap_size / 128){
+  if (ctx->gray_vals_size < ctx->caml_stat_heap_size / 128){
     caml_gc_message (0x08, "Growing gray_vals to %"
                            ARCH_INTNAT_PRINTF_FORMAT "uk bytes\n",
                      (intnat) ctx->gray_vals_size * sizeof (value) / 512);
@@ -609,7 +609,7 @@ static void sweep_slice_r (pctxt ctx, intnat work)
       ctx->chunk = Chunk_next (ctx->chunk);
       if (ctx->chunk == NULL){
         /* Sweeping is done. */
-        ++ caml_stat_major_collections;
+        ++ (ctx->caml_stat_major_collections);
         work = 0;
         ctx->caml_gc_phase = Phase_idle;
       }else{
@@ -774,7 +774,7 @@ intnat caml_major_collection_slice_r (pctxt ctx, intnat howmuch)
   if (ctx->caml_gc_phase == Phase_idle) start_cycle_r (ctx);
 
   p = (double) caml_allocated_words * 3.0 * (100 + ctx->caml_percent_free)
-      / Wsize_bsize (caml_stat_heap_size) / ctx->caml_percent_free / 2.0;
+      / Wsize_bsize (ctx->caml_stat_heap_size) / ctx->caml_percent_free / 2.0;
   if (ctx->caml_dependent_size > 0){
     dp = (double) ctx->caml_dependent_allocated * (100 + ctx->caml_percent_free)
          / ctx->caml_dependent_size / ctx->caml_percent_free;
@@ -795,10 +795,10 @@ intnat caml_major_collection_slice_r (pctxt ctx, intnat howmuch)
                    (uintnat) (p * 1000000));
 
   if (ctx->caml_gc_phase == Phase_mark){
-    computed_work = (intnat) (p * Wsize_bsize (caml_stat_heap_size) * 250
+    computed_work = (intnat) (p * Wsize_bsize (ctx->caml_stat_heap_size) * 250
                               / (100 + ctx->caml_percent_free));
   }else{
-    computed_work = (intnat) (p * Wsize_bsize (caml_stat_heap_size) * 5 / 3);
+    computed_work = (intnat) (p * Wsize_bsize (ctx->caml_stat_heap_size) * 5 / 3);
   }
   caml_gc_message (0x40, "ordered work = %ld words\n", howmuch);
   caml_gc_message (0x40, "computed work = %ld words\n", computed_work);
@@ -814,7 +814,7 @@ intnat caml_major_collection_slice_r (pctxt ctx, intnat howmuch)
 
   if (ctx->caml_gc_phase == Phase_idle) caml_compact_heap_maybe_r (ctx);
 
-  caml_stat_major_words += ctx->caml_allocated_words;
+  ctx->caml_stat_major_words += ctx->caml_allocated_words;
   ctx->caml_allocated_words = 0;
   ctx->caml_dependent_allocated = 0;
   ctx->caml_extra_heap_resources = 0.0;
@@ -847,7 +847,7 @@ void caml_finish_major_cycle_r (pctxt ctx)
   Assert (ctx->caml_gc_phase == Phase_sweep);
   while (ctx->caml_gc_phase == Phase_sweep) sweep_slice_r (ctx, LONG_MAX);
   Assert (ctx->caml_gc_phase == Phase_idle);
-  caml_stat_major_words += ctx->caml_allocated_words;
+  ctx->caml_stat_major_words += ctx->caml_allocated_words;
   ctx->caml_allocated_words = 0;
 }
 
@@ -916,23 +916,23 @@ void caml_init_major_heap (asize_t heap_size)
 
 void caml_init_major_heap_r (pctxt ctx, asize_t heap_size)
 {
-  caml_stat_heap_size = clip_heap_chunk_size (heap_size);
-  caml_stat_top_heap_size = caml_stat_heap_size;
-  Assert (caml_stat_heap_size % Page_size == 0);
-  ctx->caml_heap_start = (char *) caml_alloc_for_heap (caml_stat_heap_size);
+  ctx->caml_stat_heap_size = clip_heap_chunk_size (heap_size);
+  ctx->caml_stat_top_heap_size = ctx->caml_stat_heap_size;
+  Assert (ctx->caml_stat_heap_size % Page_size == 0);
+  ctx->caml_heap_start = (char *) caml_alloc_for_heap (ctx->caml_stat_heap_size);
   if (ctx->caml_heap_start == NULL)
     caml_fatal_error ("Fatal error: not enough memory for the initial heap.\n");
   Chunk_next (ctx->caml_heap_start) = NULL;
   caml_stat_heap_chunks = 1;
 
   if (caml_page_table_add(In_heap, ctx->caml_heap_start,
-                          ctx->caml_heap_start + caml_stat_heap_size) != 0) {
+                          ctx->caml_heap_start + ctx->caml_stat_heap_size) != 0) {
     caml_fatal_error ("Fatal error: not enough memory for the initial page table.\n");
   }
 
   caml_fl_init_merge_r (ctx);
   caml_make_free_blocks_r (ctx, (value *) ctx->caml_heap_start,
-                         Wsize_bsize (caml_stat_heap_size), 1, Caml_white);
+                         Wsize_bsize (ctx->caml_stat_heap_size), 1, Caml_white);
   ctx->caml_gc_phase = Phase_idle;
   ctx->gray_vals_size = 2048;
   ctx->gray_vals = (value *) malloc (ctx->gray_vals_size * sizeof (value));

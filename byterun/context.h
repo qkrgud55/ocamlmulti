@@ -194,6 +194,17 @@ typedef struct phc_global_context {
   int flp_size; 
   char *beyond; 
 
+  // gc_ctrl.c
+  double caml_stat_minor_words;
+  double caml_stat_promoted_words;
+  double caml_stat_major_words;
+
+  intnat caml_stat_minor_collections;
+  intnat caml_stat_major_collections;
+  intnat caml_stat_heap_size;
+  intnat caml_stat_top_heap_size;
+  intnat caml_stat_compactions;
+  intnat caml_stat_heap_chunks;
 
 
 } phc_global_context;

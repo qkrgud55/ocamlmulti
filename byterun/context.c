@@ -86,6 +86,18 @@ pctxt create_empty_context(void){
   res->flp_size         = 0;
   res->beyond           = NULL;
 
+  res->caml_stat_minor_words       = 0.0;
+  res->caml_stat_promoted_words    = 0.0;
+  res->caml_stat_major_words       = 0.0;
+
+  res->caml_stat_minor_collections = 0;
+  res->caml_stat_major_collections = 0;
+  res->caml_stat_heap_size         = 0;
+  res->caml_stat_top_heap_size     = 0;
+  res->caml_stat_compactions       = 0;
+  res->caml_stat_heap_chunks       = 0;
+
+
   if (main_ctx==NULL){
     main_ctx = res;
     pthread_mutex_init(&phc_mutex_, NULL);

@@ -437,7 +437,7 @@ void caml_empty_minor_heap_r (pctxt ctx)
     }
     if (ctx->caml_young_ptr < ctx->caml_young_start)
       ctx->caml_young_ptr = ctx->caml_young_start;
-    caml_stat_minor_words += Wsize_bsize (ctx->caml_young_end - ctx->caml_young_ptr);
+    ctx->caml_stat_minor_words += Wsize_bsize (ctx->caml_young_end - ctx->caml_young_ptr);
     ctx->caml_young_ptr = ctx->caml_young_end;
     ctx->caml_young_limit = ctx->caml_young_start;
     clear_table (&(ctx->caml_ref_table));
@@ -488,8 +488,8 @@ CAMLexport void caml_minor_collection_r (pctxt ctx)
   printf("caml_minor_collection_r after caml_empty_minor_heap_r %p %p\n",
          ctx->caml_young_ptr, caml_young_ptr);
 
-  caml_stat_promoted_words += caml_allocated_words - prev_alloc_words;
-  ++ caml_stat_minor_collections;
+  ctx->caml_stat_promoted_words += caml_allocated_words - prev_alloc_words;
+  ++ ctx->caml_stat_minor_collections;
   caml_major_collection_slice_r (0);
   caml_force_major_slice = 0;
 

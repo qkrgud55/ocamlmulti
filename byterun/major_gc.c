@@ -866,7 +866,6 @@ static asize_t clip_heap_chunk_size (asize_t request)
 /* Make sure the request is >= caml_major_heap_increment, then call
    clip_heap_chunk_size, then make sure the result is >= request.
 */
-// phc todo 
 asize_t caml_round_heap_chunk_size (asize_t request)
 {
   asize_t result = request;
@@ -878,6 +877,22 @@ asize_t caml_round_heap_chunk_size (asize_t request)
 
   if (result < request){
     caml_raise_out_of_memory ();
+    return 0; /* not reached */
+  }
+  return result;
+}
+
+asize_t caml_round_heap_chunk_size_r (pctxt ctx, asize_t request)
+{
+  asize_t result = request;
+
+  if (result < ctx->caml_major_heap_increment){
+    result = ctx->caml_major_heap_increment;
+  }
+  result = clip_heap_chunk_size (result);
+
+  if (result < request){
+    caml_raise_out_of_memory (); // phc todo reentrant
     return 0; /* not reached */
   }
   return result;

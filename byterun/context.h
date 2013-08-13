@@ -150,6 +150,7 @@ typedef struct phc_global_context {
 
   int running_finalisation_function;
 
+  asize_t caml_minor_heap_size;
   // major_gc.c
   uintnat caml_percent_free;
   uintnat caml_major_heap_increment;

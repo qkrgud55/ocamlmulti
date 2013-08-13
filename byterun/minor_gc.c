@@ -133,7 +133,7 @@ void caml_set_minor_heap_size_r (pctxt ctx, asize_t size)
   ctx->caml_young_end = new_heap + size;
   ctx->caml_young_limit = ctx->caml_young_start;
   ctx->caml_young_ptr = ctx->caml_young_end;
-  caml_minor_heap_size = size;
+  ctx->caml_minor_heap_size = size;
 
   reset_table (&(ctx->caml_ref_table));
   reset_table (&(ctx->caml_weak_ref_table));
@@ -550,7 +550,7 @@ void caml_realloc_ref_table_r (pctxt ctx, struct caml_ref_table *tbl)
                                       Assert (tbl->limit >= tbl->threshold);
 
   if (tbl->base == NULL){
-    caml_alloc_table (tbl, caml_minor_heap_size / sizeof (value) / 8, 256);
+    caml_alloc_table (tbl, ctx->caml_minor_heap_size / sizeof (value) / 8, 256);
   }else if (tbl->limit == tbl->threshold){
     caml_gc_message (0x08, "ref_table threshold crossed\n", 0);
     tbl->limit = tbl->end;

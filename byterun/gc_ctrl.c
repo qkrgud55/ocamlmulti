@@ -474,7 +474,7 @@ CAMLprim value caml_gc_set_r(pctxt ctx, value v)
     /* Minor heap size comes last because it will trigger a minor collection
        (thus invalidating [v]) and it can raise [Out_of_memory]. */
   newminsize = norm_minsize (Bsize_wsize (Long_val (Field (v, 0))));
-  if (newminsize != caml_minor_heap_size){
+  if (newminsize != ctx->caml_minor_heap_size){
     caml_gc_message (0x20, "New minor heap size: %luk bytes\n",
                      newminsize/1024);
     caml_set_minor_heap_size_r (ctx, newminsize);
@@ -611,7 +611,7 @@ void caml_init_gc_r (pctxt ctx,
   caml_percent_max = norm_pmax (percent_m);
   caml_init_major_heap (major_heap_size);
   caml_gc_message (0x20, "Initial minor heap size: %luk bytes\n",
-                   caml_minor_heap_size / 1024);
+                   ctx->caml_minor_heap_size / 1024);
   caml_gc_message (0x20, "Initial major heap size: %luk bytes\n",
                    major_heap_size / 1024);
   caml_gc_message (0x20, "Initial space overhead: %lu%%\n", ctx->caml_percent_free);

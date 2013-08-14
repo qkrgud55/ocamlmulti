@@ -234,6 +234,7 @@ CAMLexport void caml_register_global_root(value *r)
   caml_insert_global_root(&caml_global_roots, r);
 }
 
+// phc todo reentrant
 CAMLexport void caml_register_global_root_r(pctxt ctx, value *r)
 {
   Assert (((intnat) r & 3) == 0);  /* compact.c demands this (for now) */
@@ -339,6 +340,7 @@ void caml_scan_global_young_roots(scanning_action f)
   caml_empty_global_roots(&caml_global_roots_young);
 }
 
+// phc todo reentrant
 void caml_scan_global_young_roots_r(pctxt ctx, scanning_action_r f)
 {
   struct global_root * gr;

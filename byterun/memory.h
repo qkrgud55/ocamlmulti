@@ -37,19 +37,26 @@ extern "C" {
 
 
 CAMLextern value caml_alloc_shr (mlsize_t, tag_t);
+CAMLextern value caml_alloc_shr_r (pctxt,mlsize_t, tag_t);
 CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
+CAMLextern void caml_adjust_gc_speed_r (pctxt,mlsize_t, mlsize_t);
 CAMLextern void caml_alloc_dependent_memory (mlsize_t);
 CAMLextern void caml_free_dependent_memory (mlsize_t);
 CAMLextern void caml_modify (value *, value);
+CAMLextern void caml_modify_r (pctxt, value *, value);
 CAMLextern void caml_initialize (value *, value);
+CAMLextern void caml_initialize_r (pctxt,value *, value);
 CAMLextern value caml_check_urgent_gc (value);
 CAMLextern void * caml_stat_alloc (asize_t);              /* Size in bytes. */
+CAMLextern void * caml_stat_alloc_r (pctxt,asize_t);              /* Size in bytes. */
 CAMLextern void caml_stat_free (void *);
 CAMLextern void * caml_stat_resize (void *, asize_t);     /* Size in bytes. */
 char *caml_alloc_for_heap (asize_t request);   /* Size in bytes. */
 void caml_free_for_heap (char *mem);
 int caml_add_to_heap (char *mem);
+int caml_add_to_heap_r (pctxt,char *mem);
 color_t caml_allocation_color (void *hp);
+color_t caml_allocation_color_r (pctxt,void *hp);
 
 /* void caml_shrink_heap (char *);        Only used in compact.c */
 

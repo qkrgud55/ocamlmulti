@@ -265,6 +265,38 @@ static void caml_io_mutex_unlock(struct channel *chan)
   st_tls_set(last_channel_locked_key, NULL);
 }
 
+static void caml_io_mutex_lock_r(pctxt ctx, struct channel *chan)
+{
+  st_mutex mutex = chan->mutex;
+
+  if (mutex == NULL) {
+    st_mutex_create(&mutex);
+    chan->mutex = mutex;
+  }
+  /* PR#4351: first try to acquire mutex without releasing the master lock */
+  if (st_mutex_trylock(mutex) == PREVIOUSLY_UNLOCKED) {
+    st_tls_set(last_channel_locked_key, (void *) chan);
+    return;
+  }
+  /* If unsuccessful, block on mutex */
+//  enter_blocking_section();
+  st_mutex_lock(mutex);
+  /* Problem: if a signal occurs at this point,
+     and the signal handler raises an exception, we will not
+     unlock the mutex.  The alternative (doing the setspecific
+     before locking the mutex is also incorrect, since we could
+     then unlock a mutex that is unlocked or locked by someone else. */
+  st_tls_set(last_channel_locked_key, (void *) chan);
+//  leave_blocking_section();
+}
+
+static void caml_io_mutex_unlock_r(pctxt ctx, struct channel *chan)
+{
+  st_mutex_unlock(chan->mutex);
+  st_tls_set(last_channel_locked_key, NULL);
+}
+
+
 static void caml_io_mutex_unlock_exn(void)
 {
   struct channel * chan = st_tls_get(last_channel_locked_key);
@@ -462,7 +494,9 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
 
   caml_channel_mutex_free = caml_io_mutex_free;
   caml_channel_mutex_lock = caml_io_mutex_lock;
+  caml_channel_mutex_lock_r = caml_io_mutex_lock_r;
   caml_channel_mutex_unlock = caml_io_mutex_unlock;
+  caml_channel_mutex_unlock_r = caml_io_mutex_unlock_r;
   caml_channel_mutex_unlock_exn = caml_io_mutex_unlock_exn;
   prev_stack_usage_hook = caml_stack_usage_hook;
   caml_stack_usage_hook = caml_thread_stack_usage;

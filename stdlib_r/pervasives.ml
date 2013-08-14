@@ -246,6 +246,7 @@ let open_out_bin name =
   open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o666 name
 
 external flush : out_channel -> unit = "caml_ml_flush"
+external flush_r : out_channel -> unit = "caml_ml_flush_r" "reentrant"
 
 external out_channels_list : unit -> out_channel list
                            = "caml_ml_out_channels_list_r" "reentrant"
@@ -258,11 +259,18 @@ let flush_all () =
 
 external unsafe_output : out_channel -> string -> int -> int -> unit
                        = "caml_ml_output"
+external unsafe_output_r : out_channel -> string -> int -> int -> unit
+                       = "caml_ml_output_r" "reentrant"
 
 external output_char : out_channel -> char -> unit = "caml_ml_output_char"
+external output_char_r : out_channel -> char -> unit = "caml_ml_output_char_r"
+"reentrant"
 
 let output_string oc s =
   unsafe_output oc s 0 (string_length s)
+
+let output_string_r oc s =
+  unsafe_output_r oc s 0 (string_length s)
 
 let output oc s ofs len =
   if ofs < 0 || len < 0 || ofs > string_length s - len
@@ -370,6 +378,8 @@ let print_int i = output_string stdout (string_of_int i)
 let print_float f = output_string stdout (string_of_float f)
 let print_endline s =
   output_string stdout s; output_char stdout '\n'; flush stdout
+let print_endline_r s =
+  output_string_r stdout s; output_char_r stdout '\n'; flush_r stdout
 let print_newline () = output_char stdout '\n'; flush stdout
 
 (* Output functions on standard error *)

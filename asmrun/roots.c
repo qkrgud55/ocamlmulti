@@ -263,17 +263,18 @@ void caml_oldify_local_roots_r (pctxt ctx)
   struct caml__roots_block *lr;
   link *lnk;
 
-  printf("asmrun/roots.c : caml_oldify_local_roots_r\n");
+  printf("asmrun/roots.c : caml_oldify_local_roots_r %d %d\n", 
+                  ctx->caml_globals_scanned, ctx->caml_globals_inited);
+//  printf("ctx = %p ctx->caml_globals = %p\n", ctx, ctx->caml_globals);
 
   /* The global roots */
   for (i = ctx->caml_globals_scanned;
-       i <= ctx->caml_globals_inited && caml_globals[i] != 0;
+       i <= ctx->caml_globals_inited && ctx->caml_globals[i] != 0;
        i++) {
-    glob = caml_globals[i];
+    glob = ctx->caml_globals[i];
+//    printf("ctx->caml_globals[%d] = %p wosize = %d\n", i, glob, Wosize_val(glob));
     for (j = 0; j < Wosize_val(glob); j++){
-      // phc test
-      if (Is_young_r(ctx, Field (glob, j)))
-        printf("caml_globals[%d][%d] - in young heap\n", i, j);
+//      printf("caml_globals[%d][%d] Is_young_r = %d\n", i, j, Is_young_r(ctx, Field (glob, j)));
       Oldify_r (ctx, &Field (glob, j));
     }
   }
@@ -400,6 +401,7 @@ void caml_do_roots (scanning_action f)
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f);
 }
 
+// phc todo reentrant
 void caml_do_roots_r (pctxt ctx, scanning_action_r f)
 {
   int i, j;
@@ -407,8 +409,8 @@ void caml_do_roots_r (pctxt ctx, scanning_action_r f)
   link *lnk;
 
   /* The global roots */
-  for (i = 0; caml_globals[i] != 0; i++) {
-    glob = caml_globals[i];
+  for (i = 0; ctx->caml_globals[i] != 0; i++) {
+    glob = ctx->caml_globals[i];
     for (j = 0; j < Wosize_val(glob); j++)
       f (ctx, Field (glob, j), &Field (glob, j));
   }

@@ -163,27 +163,36 @@ void caml_start_program_r_wrapper(void *ctx){
 }
 
 void allocate_caml_globals(pctxt ctx){
+  value *_caml_globals;
   int i, j;
   value v, w;
 
+  _caml_globals = (value*)caml_globals;
+//printf("allocate_caml_globals ctx = %p _caml_globals = %p\n", ctx, _caml_globals);
+//printf("%p %p %p\n", _caml_globals[0], _caml_globals[1], _caml_globals[2]);
+//printf("%x %x %x\n", Hd_val(_caml_globals[0]),Hd_val(_caml_globals[1]),Hd_val(_caml_globals[2]));
+//printf("%d %d %d\n", Wosize_val(_caml_globals[0]),Wosize_val(_caml_globals[1]),Wosize_val(_caml_globals[2]));
+
   i = 0;
-  while (caml_globals[i]!=0) 
+  while (_caml_globals[i]!=0) 
     i++;
   ctx->caml_globals = malloc(sizeof(value)*(i+1));
   ctx->caml_globals_len = i;
+// printf("ctx->caml_globals = %p\n", ctx->caml_globals);
 
   i = 0;
-  while (caml_globals[i]!=0){
-    v = caml_globals[i];
+  while (_caml_globals[i]!=0){
+    v = _caml_globals[i];
+// printf("v = %p hd = %x wosize = %d\n", v, Hd_val(v), Wosize_val(v));
     w = malloc(sizeof(value)*(Wosize_val(v)+1));
+    *(value*)w = Hd_val(v);
     w = Val_hp(w);
-    *(value*)(ctx->caml_globals+8*i) = w;
+    *(ctx->caml_globals+i) = w;
 
-    for (j=-1; j<Wosize_val(v); j++)
-      Field(w, j) = Field(v, j);
+ // printf("ctx->caml_globals[%d] = %p wosize = %d\n", i, w, Wosize_val(w));
     i++;
   }
-  *(value*)(ctx->caml_globals+8*i) = 0;
+  *(ctx->caml_globals+i) = 0;
 }
 
 void caml_main(char **argv)

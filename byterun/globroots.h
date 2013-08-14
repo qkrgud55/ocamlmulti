@@ -22,6 +22,8 @@
 #include "roots.h"
 
 void caml_scan_global_roots(scanning_action f);
+void caml_scan_global_roots_r(pctxt,scanning_action_r f);
 void caml_scan_global_young_roots(scanning_action f);
+void caml_scan_global_young_roots_r(pctxt,scanning_action_r f);
 
 #endif /* CAML_GLOBROOTS_H */

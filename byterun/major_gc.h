@@ -52,12 +52,16 @@ extern uintnat total_heap_size;
 extern char *caml_gc_sweep_hp;
 
 void caml_init_major_heap (asize_t);           /* size in bytes */
+void caml_init_major_heap_r (pctxt,asize_t);           /* size in bytes */
 asize_t caml_round_heap_chunk_size (asize_t);  /* size in bytes */
+asize_t caml_round_heap_chunk_size_r (pctxt,asize_t);  /* size in bytes */
 void caml_darken (value, value *);
 void caml_darken_r (pctxt ctx, value, value *);
 intnat caml_major_collection_slice (intnat);
+intnat caml_major_collection_slice_r (pctxt,intnat);
 void major_collection (void);
 void caml_finish_major_cycle (void);
+void caml_finish_major_cycle_r (pctxt);
 
 
 #endif /* CAML_MAJOR_GC_H */

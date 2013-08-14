@@ -116,11 +116,11 @@ typedef struct phc_global_context {
   char *caml_young_start;
   char *caml_young_end;
 
-  intnat caml_globals;       // 40
+  value *caml_globals;       // 40
   int caml_globals_len;
 
+  intnat caml_globals_inited; // 56
   intnat caml_globals_scanned;
-  intnat caml_globals_inited;
 
   int count_id;
 
@@ -208,6 +208,10 @@ typedef struct phc_global_context {
   intnat caml_stat_top_heap_size;
   intnat caml_stat_compactions;
   intnat caml_stat_heap_chunks;
+
+  // signals.c
+  volatile int caml_force_major_slice;
+
 
 
 } phc_global_context;

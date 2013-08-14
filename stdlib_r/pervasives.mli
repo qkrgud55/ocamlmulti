@@ -547,6 +547,7 @@ val print_float : float -> unit
 (** Print a floating-point number, in decimal, on standard output. *)
 
 val print_endline : string -> unit
+val print_endline_r : string -> unit
 (** Print a string, followed by a newline character, on
    standard output and flush standard output. *)
 
@@ -635,6 +636,7 @@ val open_out_gen : open_flag list -> int -> string -> out_channel
    cases of this function. *)
 
 val flush : out_channel -> unit
+val flush_r : out_channel -> unit
 (** Flush the buffer associated with the given output channel,
    performing all pending writes on that channel.
    Interactive programs must be careful about flushing standard
@@ -644,9 +646,11 @@ val flush_all : unit -> unit
 (** Flush all open output channels; ignore errors. *)
 
 val output_char : out_channel -> char -> unit
+val output_char_r : out_channel -> char -> unit
 (** Write the character on the given output channel. *)
 
 val output_string : out_channel -> string -> unit
+val output_string_r : out_channel -> string -> unit
 (** Write the string on the given output channel. *)
 
 val output : out_channel -> string -> int -> int -> unit

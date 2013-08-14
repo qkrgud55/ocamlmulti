@@ -631,16 +631,8 @@ CAMLexport value caml_alloc_shr_r (pctxt ctx, mlsize_t wosize, tag_t tag)
   Assert (Hd_hp (hp) == Make_header (wosize, tag, caml_allocation_color_r (ctx, hp)));
   ctx->caml_allocated_words += Whsize_wosize (wosize);
   if (ctx->caml_allocated_words > Wsize_bsize (ctx->caml_minor_heap_size)){
-    caml_urge_major_slice ();
+    caml_urge_major_slice_r (ctx);
   }
-#ifdef DEBUG
-  {
-    uintnat i;
-    for (i = 0; i < wosize; i++){
-      Field (Val_hp (hp), i) = Debug_uninit_major;
-    }
-  }
-#endif
   return Val_hp (hp);
 }
 /* Dependent memory is all memory blocks allocated out of the heap
@@ -700,12 +692,12 @@ CAMLexport void caml_adjust_gc_speed_r (pctxt ctx, mlsize_t res, mlsize_t max)
   ctx->caml_extra_heap_resources += (double) res / (double) max;
   if (ctx->caml_extra_heap_resources > 1.0){
     ctx->caml_extra_heap_resources = 1.0;
-    caml_urge_major_slice ();
+    caml_urge_major_slice_r (ctx);
   }
   if (ctx->caml_extra_heap_resources
            > (double) Wsize_bsize (ctx->caml_minor_heap_size) / 2.0
              / (double) Wsize_bsize (ctx->caml_stat_heap_size)) {
-    caml_urge_major_slice ();
+    caml_urge_major_slice_r (ctx);
   }
 }
 

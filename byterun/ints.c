@@ -262,6 +262,13 @@ CAMLexport value caml_copy_int32(int32 i)
   return res;
 }
 
+CAMLexport value caml_copy_int32_r (pctxt ctx,int32 i)
+{
+  value res = caml_alloc_custom_r(ctx, &caml_int32_ops, 4, 0, 1);
+  Int32_val(res) = i;
+  return res;
+}
+
 CAMLprim value caml_int32_neg(value v)
 { return caml_copy_int32(- Int32_val(v)); }
 
@@ -456,6 +463,21 @@ CAMLexport value caml_copy_int64(int64 i)
 #endif
   return res;
 }
+
+CAMLexport value caml_copy_int64_r(pctxt ctx,int64 i)
+{
+  value res = caml_alloc_custom_r(ctx, &caml_int64_ops, 8, 0, 1);
+#ifndef ARCH_ALIGN_INT64
+  Int64_val(res) = i;
+#else
+  union { int32 i[2]; int64 j; } buffer;
+  buffer.j = i;
+  ((int32 *) Data_custom_val(res))[0] = buffer.i[0];
+  ((int32 *) Data_custom_val(res))[1] = buffer.i[1];
+#endif
+  return res;
+}
+
 
 CAMLprim value caml_int64_neg(value v)
 { return caml_copy_int64(I64_neg(Int64_val(v))); }
@@ -710,6 +732,13 @@ CAMLexport struct custom_operations caml_nativeint_ops = {
 CAMLexport value caml_copy_nativeint(intnat i)
 {
   value res = caml_alloc_custom(&caml_nativeint_ops, sizeof(intnat), 0, 1);
+  Nativeint_val(res) = i;
+  return res;
+}
+
+CAMLexport value caml_copy_nativeint_r(pctxt ctx,intnat i)
+{
+  value res = caml_alloc_custom_r(ctx, &caml_nativeint_ops, sizeof(intnat), 0, 1);
   Nativeint_val(res) = i;
   return res;
 }

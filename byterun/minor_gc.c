@@ -246,7 +246,7 @@ void caml_oldify_one_r (pctxt ctx, value v, value *p)
         value field0;
 
         sz = Wosize_hd (hd);
-        result = caml_alloc_shr (sz, tag);
+        result = caml_alloc_shr_r (ctx, sz, tag);
         *p = result;
         field0 = Field (v, 0);
         Hd_val (v) = 0;            /* Set forward flag */
@@ -263,7 +263,7 @@ void caml_oldify_one_r (pctxt ctx, value v, value *p)
         }
       }else if (tag >= No_scan_tag){
         sz = Wosize_hd (hd);
-        result = caml_alloc_shr (sz, tag);
+        result = caml_alloc_shr_r (ctx, sz, tag);
         for (i = 0; i < sz; i++) Field (result, i) = Field (v, i);
         Hd_val (v) = 0;            /* Set forward flag */
         Field (v, 0) = result;     /*  and forward pointer. */
@@ -292,7 +292,7 @@ void caml_oldify_one_r (pctxt ctx, value v, value *p)
         if (!vv || ft == Forward_tag || ft == Lazy_tag || ft == Double_tag){
           /* Do not short-circuit the pointer.  Copy as a normal block. */
           Assert (Wosize_hd (hd) == 1);
-          result = caml_alloc_shr (1, Forward_tag);
+          result = caml_alloc_shr_r (ctx, 1, Forward_tag);
           *p = result;
           Hd_val (v) = 0;             /* Set (GC) forward flag */
           Field (v, 0) = result;      /*  and forward pointer. */
@@ -480,22 +480,21 @@ CAMLexport void caml_minor_collection (void)
 
 CAMLexport void caml_minor_collection_r (pctxt ctx)
 {
-  intnat prev_alloc_words = caml_allocated_words;
- 
-  printf("caml_minor_collection_r before caml_empty_minor_heap_r %p %p\n",
-         ctx->caml_young_ptr, caml_young_ptr);
-  caml_empty_minor_heap_r (ctx);
-  printf("caml_minor_collection_r after caml_empty_minor_heap_r %p %p\n",
-         ctx->caml_young_ptr, caml_young_ptr);
+  intnat prev_alloc_words = ctx->caml_allocated_words;
 
-  ctx->caml_stat_promoted_words += caml_allocated_words - prev_alloc_words;
+  printf("caml_minor_collection_r > \n"); 
+  caml_empty_minor_heap_r (ctx);
+
+  ctx->caml_stat_promoted_words += ctx->caml_allocated_words - prev_alloc_words;
   ++ ctx->caml_stat_minor_collections;
-  caml_major_collection_slice_r (0);
-  caml_force_major_slice = 0;
+//  caml_major_collection_slice_r (ctx, 0);
+  ctx->caml_force_major_slice = 0;
 
   caml_final_do_calls_r (ctx);
 
   caml_empty_minor_heap_r (ctx);
+
+  printf("caml_minor_collection_r < \n"); 
 }
 
 CAMLexport value caml_check_urgent_gc (value extra_root)

@@ -35,6 +35,8 @@
 #include "sys.h"
 #include "context.h"
 
+#include <pthread.h>
+
 #ifndef SEEK_SET
 #define SEEK_SET 0
 #define SEEK_CUR 1
@@ -46,6 +48,8 @@
 CAMLexport void (*caml_channel_mutex_free) (struct channel *) = NULL;
 CAMLexport void (*caml_channel_mutex_lock) (struct channel *) = NULL;
 CAMLexport void (*caml_channel_mutex_unlock) (struct channel *) = NULL;
+CAMLexport void (*caml_channel_mutex_lock_r) (pctxt,struct channel *) = NULL;
+CAMLexport void (*caml_channel_mutex_unlock_r) (pctxt,struct channel *) = NULL;
 CAMLexport void (*caml_channel_mutex_unlock_exn) (void) = NULL;
 
 /* List of opened channels */
@@ -211,6 +215,28 @@ again:
   return retcode;
 }
 
+static int do_write_r(pctxt ctx, int fd, char *p, int n)
+{
+  int retcode;
+
+again:
+//  caml_enter_blocking_section();
+  retcode = write(fd, p, n);
+//  caml_leave_blocking_section();
+  if (retcode == -1) {
+    if (errno == EINTR) goto again;
+    if ((errno == EAGAIN || errno == EWOULDBLOCK) && n > 1) {
+      /* We couldn't do a partial write here, probably because
+         n <= PIPE_BUF and POSIX says that writes of less than
+         PIPE_BUF characters must be atomic.
+         We first try again with a partial write of 1 character.
+         If that fails too, we'll raise Sys_blocked_io below. */
+      n = 1; goto again;
+    }
+  }
+  if (retcode == -1) caml_sys_io_error(NO_ARG);
+  return retcode;
+}
 /* Attempt to flush the buffer. This will make room in the buffer for
    at least one character. Returns true if the buffer is empty at the
    end of the flush, or false if some data remains in the buffer.
@@ -231,11 +257,31 @@ CAMLexport int caml_flush_partial(struct channel *channel)
   return (channel->curr == channel->buff);
 }
 
+CAMLexport int caml_flush_partial_r(pctxt ctx, struct channel *channel)
+{
+  int towrite, written;
+
+  towrite = channel->curr - channel->buff;
+  if (towrite > 0) {
+    written = do_write_r(ctx, channel->fd, channel->buff, towrite);
+    channel->offset += written;
+    if (written < towrite)
+      memmove(channel->buff, channel->buff + written, towrite - written);
+    channel->curr -= written;
+  }
+  return (channel->curr == channel->buff);
+}
+
 /* Flush completely the buffer. */
 
 CAMLexport void caml_flush(struct channel *channel)
 {
   while (! caml_flush_partial(channel)) /*nothing*/;
+}
+
+CAMLexport void caml_flush_r(pctxt ctx, struct channel *channel)
+{
+  while (! caml_flush_partial_r(ctx, channel)) /*nothing*/;
 }
 
 /* Output data */
@@ -274,6 +320,32 @@ CAMLexport int caml_putblock(struct channel *channel, char *p, intnat len)
     return free;
   }
 }
+
+CAMLexport int caml_putblock_r(pctxt ctx, struct channel *channel, char *p, intnat len)
+{
+  int n, free, towrite, written;
+
+  n = len >= INT_MAX ? INT_MAX : (int) len;
+  free = channel->end - channel->curr;
+  if (n < free) {
+    /* Write request small enough to fit in buffer: transfer to buffer. */
+    memmove(channel->curr, p, n);
+    channel->curr += n;
+    return n;
+  } else {
+    /* Write request overflows buffer (or just fills it up): transfer whatever
+       fits to buffer and write the buffer */
+    memmove(channel->curr, p, free);
+    towrite = channel->end - channel->buff;
+    written = do_write_r(ctx, channel->fd, channel->buff, towrite);
+    if (written < towrite)
+      memmove(channel->buff, channel->buff + written, towrite - written);
+    channel->offset += written;
+    channel->curr = channel->end - written;
+    return free;
+  }
+}
+
 
 CAMLexport void caml_really_putblock(struct channel *channel,
                                      char *p, intnat len)
@@ -673,6 +745,18 @@ CAMLprim value caml_ml_flush(value vchannel)
   CAMLreturn (Val_unit);
 }
 
+CAMLprim value caml_ml_flush_r(pctxt ctx, value vchannel)
+{
+  CAMLparam1 (vchannel);
+  struct channel * channel = Channel(vchannel);
+
+  if (channel->fd == -1) CAMLreturn(Val_unit);
+  Lock_r(ctx, channel);
+  caml_flush_r(ctx, channel);
+  Unlock_r(ctx, channel);
+  CAMLreturn (Val_unit);
+}
+
 CAMLprim value caml_ml_output_char(value vchannel, value ch)
 {
   CAMLparam2 (vchannel, ch);
@@ -683,6 +767,18 @@ CAMLprim value caml_ml_output_char(value vchannel, value ch)
   Unlock(channel);
   CAMLreturn (Val_unit);
 }
+
+CAMLprim value caml_ml_output_char_r(pctxt ctx, value vchannel, value ch)
+{
+  CAMLparam2 (vchannel, ch);
+  struct channel * channel = Channel(vchannel);
+
+  Lock_r(ctx, channel);
+  putch_r(ctx, channel, Long_val(ch));
+  Unlock_r(ctx, channel);
+  CAMLreturn (Val_unit);
+}
+
 
 CAMLprim value caml_ml_output_int(value vchannel, value w)
 {
@@ -723,6 +819,24 @@ CAMLprim value caml_ml_output(value vchannel, value buff, value start,
       len -= written;
     }
   Unlock(channel);
+  CAMLreturn (Val_unit);
+}
+
+CAMLprim value caml_ml_output_r(pctxt ctx, value vchannel, value buff, value start,
+                              value length)
+{
+  CAMLparam4 (vchannel, buff, start, length);
+  struct channel * channel = Channel(vchannel);
+  intnat pos = Long_val(start);
+  intnat len = Long_val(length);
+
+//  Lock_r(ctx, channel);
+    while (len > 0) {
+      int written = caml_putblock_r(ctx, channel, &Byte(buff, pos), len);
+      pos += written;
+      len -= written;
+    }
+//  Unlock_r(ctx, channel);
   CAMLreturn (Val_unit);
 }
 

@@ -66,7 +66,7 @@ CAMLexport value caml_alloc_r (pctxt ctx, mlsize_t wosize, tag_t tag)
       for (i = 0; i < wosize; i++) Field (result, i) = 0;
     }
   }else{
-    result = caml_alloc_shr (wosize, tag);
+    result = caml_alloc_shr_r (ctx, wosize, tag);
     if (tag < No_scan_tag) memset (Bp_val (result), 0, Bsize_wsize (wosize));
     result = caml_check_urgent_gc_r (ctx, result);
   }
@@ -131,8 +131,8 @@ CAMLexport value caml_alloc_string_r (pctxt ctx, mlsize_t len)
   if (wosize <= Max_young_wosize) {
     Alloc_small_r (ctx, result, wosize, String_tag);
   }else{
-    result = caml_alloc_shr (wosize, String_tag);
-    result = caml_check_urgent_gc (result);
+    result = caml_alloc_shr_r (ctx, wosize, String_tag);
+    result = caml_check_urgent_gc_r (ctx, result);
   }
   Field (result, wosize - 1) = 0;
   offset_index = Bsize_wsize (wosize) - 1;
@@ -144,6 +144,13 @@ CAMLexport value caml_alloc_final (mlsize_t len, final_fun fun,
                                    mlsize_t mem, mlsize_t max)
 {
   return caml_alloc_custom(caml_final_custom_operations(fun),
+                           len * sizeof(value), mem, max);
+}
+
+CAMLexport value caml_alloc_final_r (pctxt ctx, mlsize_t len, final_fun fun,
+                                   mlsize_t mem, mlsize_t max)
+{
+  return caml_alloc_custom_r (ctx, caml_final_custom_operations(fun),
                            len * sizeof(value), mem, max);
 }
 
@@ -193,11 +200,42 @@ CAMLexport value caml_alloc_array(value (*funct)(char const *),
   }
 }
 
+CAMLexport value caml_alloc_array_r(pctxt ctx, value (*funct)(char const *),
+                                  char const ** arr)
+{
+  CAMLparam0 ();
+  mlsize_t nbr, n;
+  CAMLlocal2 (v, result);
+
+  nbr = 0;
+  while (arr[nbr] != 0) nbr++;
+  if (nbr == 0) {
+    CAMLreturn (Atom(0));
+  } else {
+    result = caml_alloc_r (ctx, nbr, 0);
+    for (n = 0; n < nbr; n++) {
+      /* The two statements below must be separate because of evaluation
+         order (don't take the address &Field(result, n) before
+         calling funct, which may cause a GC and move result). */
+      v = funct(arr[n]); // phc todo reentrant
+      caml_modify_r(ctx, &Field(result, n), v);
+    }
+    CAMLreturn (result);
+  }
+}
+
+
 CAMLexport value caml_copy_string_array(char const ** arr)
 {
   return caml_alloc_array(caml_copy_string, arr);
 }
 
+CAMLexport value caml_copy_string_array_r(pctxt ctx, char const ** arr)
+{
+  return caml_alloc_array_r(ctx, caml_copy_string, arr);
+}
+
+// phc no ctx
 CAMLexport int caml_convert_flag_list(value list, int *flags)
 {
   int res;
@@ -209,6 +247,7 @@ CAMLexport int caml_convert_flag_list(value list, int *flags)
   return res;
 }
 
+
 /* For compiling let rec over values */
 
 CAMLprim value caml_alloc_dummy(value size)
@@ -219,12 +258,28 @@ CAMLprim value caml_alloc_dummy(value size)
   return caml_alloc (wosize, 0);
 }
 
+CAMLprim value caml_alloc_dummy_r(pctxt ctx, value size)
+{
+  mlsize_t wosize = Int_val(size);
+
+  if (wosize == 0) return Atom(0);
+  return caml_alloc_r (ctx, wosize, 0);
+}
+
 CAMLprim value caml_alloc_dummy_float (value size)
 {
   mlsize_t wosize = Int_val(size) * Double_wosize;
 
   if (wosize == 0) return Atom(0);
   return caml_alloc (wosize, 0);
+}
+
+CAMLprim value caml_alloc_dummy_float_r (pctxt ctx, value size)
+{
+  mlsize_t wosize = Int_val(size) * Double_wosize;
+
+  if (wosize == 0) return Atom(0);
+  return caml_alloc_r (ctx, wosize, 0);
 }
 
 CAMLprim value caml_update_dummy(value dummy, value newval)
@@ -246,6 +301,30 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
   }else{
     for (i = 0; i < size; i++){
       caml_modify (&Field(dummy, i), Field(newval, i));
+    }
+  }
+  return Val_unit;
+}
+
+CAMLprim value caml_update_dummy_r(pctxt ctx, value dummy, value newval)
+{
+  mlsize_t size, i;
+  tag_t tag;
+
+  size = Wosize_val(newval);
+  tag = Tag_val (newval);
+  Assert (size == Wosize_val(dummy));
+  Assert (tag < No_scan_tag || tag == Double_array_tag);
+
+  Tag_val(dummy) = tag;
+  if (tag == Double_array_tag){
+    size = Wosize_val (newval) / Double_wosize;
+    for (i = 0; i < size; i++){
+      Store_double_field (dummy, i, Double_field (newval, i));
+    }
+  }else{
+    for (i = 0; i < size; i++){
+      caml_modify_r (ctx, &Field(dummy, i), Field(newval, i));
     }
   }
   return Val_unit;

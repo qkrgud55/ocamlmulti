@@ -556,6 +556,13 @@ CAMLprim value caml_gc_major_slice (value v)
   return Val_long (caml_major_collection_slice (Long_val (v)));
 }
 
+CAMLprim value caml_gc_major_slice_r (pctxt ctx, value v)
+{
+  Assert (Is_long (v));
+  caml_empty_minor_heap_r (ctx);
+  return Val_long (caml_major_collection_slice_r (ctx, Long_val (v)));
+}
+
 CAMLprim value caml_gc_compaction(value v)
 {                                                    Assert (v == Val_unit);
   caml_gc_message (0x10, "Heap compaction requested\n", 0);

@@ -82,6 +82,10 @@ extern int caml_frame_descriptors_mask;
 #define Hash_retaddr(addr) \
   (((uintnat)(addr) >> 3) & caml_frame_descriptors_mask)
 
+#define Hash_retaddr_r(ctx, addr) \
+  (((uintnat)(addr) >> 3) & ((ctx)->caml_frame_descriptors_mask))
+
+
 extern void caml_init_frame_descriptors(void);
 extern void caml_register_frametable(intnat *);
 extern void caml_register_dyn_global(void *);

@@ -195,6 +195,7 @@ static void caml_iterate_global_roots_r(pctxt ctx, scanning_action_r f,
 {
   struct global_root * gr;
 
+//  printf("caml_iterate_global_roots_r gr=%p\n", rootlist->forward[0]);
   for (gr = rootlist->forward[0]; gr != NULL; gr = gr->forward[0]) {
     f(ctx, *(gr->root), gr->root);
   }
@@ -202,7 +203,7 @@ static void caml_iterate_global_roots_r(pctxt ctx, scanning_action_r f,
 
 
 /* Empty a global root list */
-
+// phc no ctx
 static void caml_empty_global_roots(struct global_root_list * rootlist)
 {
   struct global_root * gr, * next;
@@ -324,6 +325,13 @@ void caml_scan_global_roots(scanning_action f)
   caml_iterate_global_roots(f, &caml_global_roots_old);
 }
 
+void caml_scan_global_roots_r(pctxt ctx, scanning_action_r f)
+{
+  caml_iterate_global_roots_r(ctx, f, &ctx->caml_global_roots);
+  caml_iterate_global_roots_r(ctx, f, &ctx->caml_global_roots_young);
+  caml_iterate_global_roots_r(ctx, f, &ctx->caml_global_roots_old);
+}
+
 /* Scan global roots for a minor collection */
 
 void caml_scan_global_young_roots(scanning_action f)
@@ -345,12 +353,12 @@ void caml_scan_global_young_roots_r(pctxt ctx, scanning_action_r f)
 {
   struct global_root * gr;
 
-  caml_iterate_global_roots_r(ctx, f, &caml_global_roots);
-  caml_iterate_global_roots_r(ctx, f, &caml_global_roots_young);
+  caml_iterate_global_roots_r(ctx, f, &ctx->caml_global_roots);
+  caml_iterate_global_roots_r(ctx, f, &ctx->caml_global_roots_young);
   /* Move young roots to old roots */
-  for (gr = caml_global_roots_young.forward[0];
+  for (gr = ctx->caml_global_roots_young.forward[0];
        gr != NULL; gr = gr->forward[0]) {
-    caml_insert_global_root(&caml_global_roots_old, gr->root);
+    caml_insert_global_root_r(ctx, &ctx->caml_global_roots_old, gr->root);
   }
-  caml_empty_global_roots(&caml_global_roots_young);
+  caml_empty_global_roots(&ctx->caml_global_roots_young);
 }

@@ -346,6 +346,9 @@ void caml_final_do_young_roots_r (pctxt ctx, scanning_action_r f)
 {
   uintnat i;
 
+//  printf("caml_final_do_young_roots_r final_old=%d final_young=%d", 
+//                 ctx->final_old, ctx->final_young);
+
   Assert (ctx->final_old <= ctx->final_young);
   for (i = ctx->final_old; i < ctx->final_young; i++){
     Call_action_r (ctx, f, ctx->final_table[i].fun);

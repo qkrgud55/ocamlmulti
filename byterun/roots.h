@@ -36,12 +36,11 @@ CAMLextern void caml_do_local_roots (scanning_action, value *, value *,
 CAMLextern void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
                                     uintnat last_retaddr, value * gc_regs,
                                     struct caml__roots_block * local_roots);
-CAMLextern void caml_do_local_roots_r(pctxt,scanning_action f, char * bottom_of_stack,
+CAMLextern void caml_do_local_roots_r(pctxt, scanning_action_r f, char * bottom_of_stack,
                                     uintnat last_retaddr, value * gc_regs,
                                     struct caml__roots_block * local_roots);
 #endif
 
 CAMLextern void (*caml_scan_roots_hook) (scanning_action);
-CAMLextern void (*caml_scan_roots_hook_r) (scanning_action_r);
 
 #endif /* CAML_ROOTS_H */

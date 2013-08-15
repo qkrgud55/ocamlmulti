@@ -143,12 +143,12 @@ void caml_init_frame_descriptors_r(pctxt ctx)
   uintnat h;
   link_t *lnk;
 
-  static int inited = 0;
 
-  if (!inited) {
+  if (!ctx->caml_frame_descr_inited) {
     for (i = 0; caml_frametable[i] != 0; i++)
       caml_register_frametable_r (ctx, caml_frametable[i]);
-    inited = 1;
+   // printf("caml_init_frame_descr ctx = %p, count = %d\n", ctx, i); 
+    ctx->caml_frame_descr_inited = 1;
   }
 
   /* Count the frame descriptors */
@@ -174,9 +174,10 @@ void caml_init_frame_descriptors_r(pctxt ctx)
     len = *tbl;
     d = (frame_descr *)(tbl + 1);
     for (j = 0; j < len; j++) {
-      h = Hash_retaddr(d->retaddr);
+      h = Hash_retaddr_r(ctx, d->retaddr);
       while (ctx->caml_frame_descriptors[h] != NULL) {
-        h = (h+1) & ctx->caml_frame_descriptors_mask;
+        int _mask = ctx->caml_frame_descriptors_mask;
+        h = (h+1) & _mask;
       }
       ctx->caml_frame_descriptors[h] = d;
       nextd =
@@ -332,16 +333,18 @@ void caml_oldify_local_roots_r (pctxt ctx)
   struct caml__roots_block *lr;
   link_t *lnk;
 
-  printf("asmrun/roots.c : caml_oldify_local_roots_r %d %d\n", 
-                  ctx->caml_globals_scanned, ctx->caml_globals_inited);
-//  printf("ctx = %p ctx->caml_globals = %p\n", ctx, ctx->caml_globals);
+ // printf("=========================================================\n");
+ // printf("asmrun/roots.c : caml_oldify_local_roots_r > \n");
+ // printf("---------------------------------------------------------\n");
+ // printf("global roots\n");
+ // printf("ctx = %p ctx->caml_globals = %p ctx->caml_globals_scanned = %d ctx->caml_globals_inited = %d\n", ctx, ctx->caml_globals, ctx->caml_globals_scanned, ctx->caml_globals_inited);
 
   /* The global roots */
   for (i = ctx->caml_globals_scanned;
        i <= ctx->caml_globals_inited && ctx->caml_globals[i] != 0;
        i++) {
     glob = ctx->caml_globals[i];
-//    printf("ctx->caml_globals[%d] = %p wosize = %d\n", i, glob, Wosize_val(glob));
+   // printf("ctx->caml_globals[%d] = %p wosize = %d\n", i, glob, Wosize_val(glob));
     for (j = 0; j < Wosize_val(glob); j++){
 //      printf("caml_globals[%d][%d] Is_young_r = %d\n", i, j, Is_young_r(ctx, Field (glob, j)));
       Oldify_r (ctx, &Field (glob, j));
@@ -349,36 +352,62 @@ void caml_oldify_local_roots_r (pctxt ctx)
   }
   ctx->caml_globals_scanned = ctx->caml_globals_inited;
 
+ // printf("---------------------------------------------------------\n");
+ // printf("dynamic global roots\n");
+ // printf("ctx->caml_dyn_globals = %p\n", ctx->caml_dyn_globals);
+ 
   /* Dynamic global roots */
   iter_list(ctx->caml_dyn_globals, lnk) {
     glob = (value) lnk->data;
+   // printf("iter(ctx->caml_dyn_globals) = %p wosize = %d\n", glob, Wosize_val(glob));
     for (j = 0; j < Wosize_val(glob); j++){
       Oldify_r (ctx, &Field (glob, j));
     }
   }
 
+ // printf("---------------------------------------------------------\n");
+ // printf("stack and local roots\n");
+ // printf("ctx->caml_bottom_of_stack          = %p\n", ctx->caml_bottom_of_stack);
+ // printf("ctx->caml_last_return_address = %p\n", ctx->caml_last_return_address);
+ // printf("ctx->caml_gc_regs             = %p\n", ctx->caml_gc_regs);
+ 
   /* The stack and local roots */
   if (ctx->caml_frame_descriptors == NULL) caml_init_frame_descriptors_r(ctx);
+ // printf("ctx->caml_frame_descriptors   = %p\n", ctx->caml_frame_descriptors);
+ // printf("ctx->caml_frame_descriptors_mask = %p\n", ctx->caml_frame_descriptors_mask);
+
   sp = ctx->caml_bottom_of_stack;
   retaddr = ctx->caml_last_return_address;
   regs = ctx->caml_gc_regs;
   if (sp != NULL) {
     while (1) {
       /* Find the descriptor corresponding to the return address */
-      h = Hash_retaddr(retaddr);
+      h = Hash_retaddr_r(ctx, retaddr);
       while(1) {
         d = ctx->caml_frame_descriptors[h];
+        if (d==NULL){
+         // printf("descr==NULL\n");
+         // printf("retaddr = %p h = %p d = %p\n", retaddr, h, d);
+        }
         if (d->retaddr == retaddr) break;
-        h = (h+1) & ctx->caml_frame_descriptors_mask;
+        h = (h+1) & (ctx->caml_frame_descriptors_mask);
       }
+
+     // printf("------ frame_descr %p -------\n", d);
+     // printf("d->retaddr = %p\n", d->retaddr);
+     // printf("d->frame_size = %d\n", d->frame_size);
+     // printf("d->num_live = %d\n", d->num_live);
+
       if (d->frame_size != 0xFFFF) {
         /* Scan the roots in this frame */
         for (p = d->live_ofs, n = d->num_live; n > 0; n--, p++) {
           ofs = *p;
           if (ofs & 1) {
             root = regs + (ofs >> 1);
+           // printf("  d->live_ofs[%d] = reg(%d), root = %p, v = %p\n", n, (ofs>>1), root, *(value*)root);
           } else {
             root = (value *)(sp + ofs);
+           // printf("  d->live_ofs[%d] = stack, root = %p = %p+%p, v = %p\n", n, root, sp, ofs, *(value*)root);
           }
           Oldify_r (ctx, root);
         }
@@ -399,6 +428,8 @@ void caml_oldify_local_roots_r (pctxt ctx)
         /* This marks the top of a stack chunk for an ML callback.
            Skip C portion of stack and continue with next ML stack chunk. */
         struct caml_context * next_context = Callback_link(sp);
+
+       // printf("------ skip C stack frame -----\n");
         sp = next_context->bottom_of_stack;
         retaddr = next_context->last_retaddr;
         regs = next_context->gc_regs;
@@ -407,15 +438,22 @@ void caml_oldify_local_roots_r (pctxt ctx)
       }
     }
   }
+
+ // printf("---------------------------------------------------------\n");
+ // printf("Local C roots\n");
+ // printf("ctx->caml_local_roots  = %p\n", ctx->caml_local_roots);
+ 
   /* Local C roots */
   for (lr = ctx->caml_local_roots; lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
         root = &(lr->tables[i][j]);
+       // printf("iter(ctx->caml_local_roots)[i][j] = %p[%d][%d] = %p, v = %p \n", lr, i, j, root, *(value*)root);
         Oldify_r (ctx, root);
       }
     }
   }
+
   /* Global C roots */
   caml_scan_global_young_roots_r (ctx, &caml_oldify_one_r);
   /* Finalised values */
@@ -485,7 +523,7 @@ void caml_do_roots_r (pctxt ctx, scanning_action_r f)
   }
 
   /* Dynamic global roots */
-  iter_list(caml_dyn_globals, lnk) {
+  iter_list(ctx->caml_dyn_globals, lnk) {
     glob = (value) lnk->data;
     for (j = 0; j < Wosize_val(glob); j++){
       f (ctx, Field (glob, j), &Field (glob, j));
@@ -494,14 +532,14 @@ void caml_do_roots_r (pctxt ctx, scanning_action_r f)
 
   /* The stack and local roots */
   if (ctx->caml_frame_descriptors == NULL) caml_init_frame_descriptors_r(ctx);
-  caml_do_local_roots(f, ctx->caml_bottom_of_stack, ctx->caml_last_return_address,
+  caml_do_local_roots_r (ctx, f, ctx->caml_bottom_of_stack, ctx->caml_last_return_address,
                       ctx->caml_gc_regs, ctx->caml_local_roots);
   /* Global C roots */
-  caml_scan_global_roots(f);
+  caml_scan_global_roots_r (ctx, f);
   /* Finalised values */
-  caml_final_do_strong_roots (f);
+  caml_final_do_strong_roots_r (ctx, f);
   /* Hook */
-  if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f);
+  if (ctx->caml_scan_roots_hook != NULL) (*ctx->caml_scan_roots_hook)(ctx, f);
 }
 
 
@@ -579,6 +617,81 @@ void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
   }
 }
 
+void caml_do_local_roots_r(pctxt ctx, scanning_action_r f, char * bottom_of_stack,
+                         uintnat last_retaddr, value * gc_regs,
+                         struct caml__roots_block * local_roots)
+{
+  char * sp;
+  uintnat retaddr;
+  value * regs;
+  frame_descr * d;
+  uintnat h;
+  int i, j, n, ofs;
+#ifdef Stack_grows_upwards
+  short * p;  /* PR#4339: stack offsets are negative in this case */
+#else
+  unsigned short * p;
+#endif
+  value * root;
+  struct caml__roots_block *lr;
+
+  sp = bottom_of_stack;
+  retaddr = last_retaddr;
+  regs = gc_regs;
+  if (sp != NULL) {
+    while (1) {
+      /* Find the descriptor corresponding to the return address */
+      h = Hash_retaddr_r(ctx, retaddr);
+      while(1) {
+        d = ctx->caml_frame_descriptors[h];
+        if (d->retaddr == retaddr) break;
+        h = (h+1) & (ctx->caml_frame_descriptors_mask);
+
+      }
+      if (d->frame_size != 0xFFFF) {
+        /* Scan the roots in this frame */
+        for (p = d->live_ofs, n = d->num_live; n > 0; n--, p++) {
+          ofs = *p;
+          if (ofs & 1) {
+            root = regs + (ofs >> 1);
+          } else {
+            root = (value *)(sp + ofs);
+          }
+          f (ctx, *root, root);
+        }
+        /* Move to next frame */
+#ifndef Stack_grows_upwards
+        sp += (d->frame_size & 0xFFFC);
+#else
+        sp -= (d->frame_size & 0xFFFC);
+#endif
+        retaddr = Saved_return_address(sp);
+#ifdef Mask_already_scanned
+        retaddr = Mask_already_scanned(retaddr);
+#endif
+      } else {
+        /* This marks the top of a stack chunk for an ML callback.
+           Skip C portion of stack and continue with next ML stack chunk. */
+        struct caml_context * next_context = Callback_link(sp);
+        sp = next_context->bottom_of_stack;
+        retaddr = next_context->last_retaddr;
+        regs = next_context->gc_regs;
+        /* A null sp means no more ML stack chunks; stop here. */
+        if (sp == NULL) break;
+      }
+    }
+  }
+  /* Local C roots */
+  for (lr = local_roots; lr != NULL; lr = lr->next) {
+    for (i = 0; i < lr->ntables; i++){
+      for (j = 0; j < lr->nitems; j++){
+        root = &(lr->tables[i][j]);
+        f (ctx, *root, root);
+      }
+    }
+  }
+}
+
 uintnat (*caml_stack_usage_hook)(void) = NULL;
 
 uintnat caml_stack_usage (void)
@@ -587,5 +700,14 @@ uintnat caml_stack_usage (void)
   sz = (value *) caml_top_of_stack - (value *) caml_bottom_of_stack;
   if (caml_stack_usage_hook != NULL)
     sz += (*caml_stack_usage_hook)();
+  return sz;
+}
+
+uintnat caml_stack_usage_r (pctxt ctx)
+{
+  uintnat sz;
+  sz = (value *) ctx->caml_top_of_stack - (value *) ctx->caml_bottom_of_stack;
+  if (ctx->caml_stack_usage_hook != NULL)
+    sz += (*ctx->caml_stack_usage_hook)(ctx);
   return sz;
 }

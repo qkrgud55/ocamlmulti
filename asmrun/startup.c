@@ -189,7 +189,7 @@ void allocate_caml_globals(pctxt ctx){
     w = Val_hp(w);
     *(ctx->caml_globals+i) = w;
 
-    printf("ctx->caml_globals[%d] = %p wosize = %d\n", i, w, Wosize_val(w));
+  //  printf("ctx->caml_globals[%d] = %p wosize = %d\n", i, w, Wosize_val(w));
     i++;
   }
   *(ctx->caml_globals+i) = 0;
@@ -253,7 +253,6 @@ void caml_main(char **argv)
     for (i=0; i<num_th; i++){
       // caml_phc_create_thread(&caml_start_program_r, ctxl[i]);
       // caml_enter_cond_lock(ctxl[i]);
-      printf("thread %d acquired phc lock\n", i);
       pthread_create(thl+i, NULL, &caml_start_program_r_wrapper, ctxl[i]);
     }
 

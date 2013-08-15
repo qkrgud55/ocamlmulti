@@ -236,6 +236,7 @@ typedef struct phc_global_context {
   struct caml__roots_block *caml_local_roots;
   void (*caml_scan_roots_hook) (scanning_action_r);
 
+  int caml_frame_descr_inited;
   frame_descr ** caml_frame_descriptors;
   int caml_frame_descriptors_mask;
 
@@ -244,6 +245,7 @@ typedef struct phc_global_context {
   char * caml_top_of_stack;
   link_t * caml_dyn_globals;
 
+  uintnat (*caml_stack_usage_hook)(struct phc_global_context *);
 
 
 } phc_global_context;

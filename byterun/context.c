@@ -99,6 +99,9 @@ pctxt create_empty_context(void){
   res->caml_stat_compactions       = 0;
   res->caml_stat_heap_chunks       = 0;
 
+
+  res-> caml_last_return_address = 1;
+
   if (main_ctx==NULL){
     main_ctx = res;
     pthread_mutex_init(&phc_mutex_, NULL);

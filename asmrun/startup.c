@@ -189,7 +189,7 @@ void allocate_caml_globals(pctxt ctx){
     w = Val_hp(w);
     *(ctx->caml_globals+i) = w;
 
- // printf("ctx->caml_globals[%d] = %p wosize = %d\n", i, w, Wosize_val(w));
+    printf("ctx->caml_globals[%d] = %p wosize = %d\n", i, w, Wosize_val(w));
     i++;
   }
   *(ctx->caml_globals+i) = 0;

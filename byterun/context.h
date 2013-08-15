@@ -11,6 +11,21 @@
 #define NULL_CTX 0
 #define MAX_TH 16
 
+// stack.h
+typedef struct {
+  uintnat retaddr;
+  unsigned short frame_size;
+  unsigned short num_live;
+  unsigned short live_ofs[1];
+} frame_descr;
+
+// roots.c
+typedef struct link_t {
+  void *data;
+  struct link_t *next;
+} link_t;
+
+
 // finalise.c
 struct final {
   value fun;
@@ -116,11 +131,16 @@ typedef struct phc_global_context {
   char *caml_young_start;
   char *caml_young_end;
 
-  value *caml_globals;       // 40
+  value *caml_globals;              // 40
   int caml_globals_len;
 
-  intnat caml_globals_inited; // 56
+  intnat caml_globals_inited;       // 56
   intnat caml_globals_scanned;
+
+  uintnat caml_last_return_address; // 72   /* not in OCaml code initially */ 
+  char * caml_bottom_of_stack;      // 80   /* no stack initially */
+
+  value * caml_gc_regs;             // 88
 
   int count_id;
 
@@ -211,6 +231,18 @@ typedef struct phc_global_context {
 
   // signals.c
   volatile int caml_force_major_slice;
+
+  // roots.c
+  struct caml__roots_block *caml_local_roots;
+  void (*caml_scan_roots_hook) (scanning_action_r);
+
+  frame_descr ** caml_frame_descriptors;
+  int caml_frame_descriptors_mask;
+
+  link_t *frametables;
+
+  char * caml_top_of_stack;
+  link_t * caml_dyn_globals;
 
 
 

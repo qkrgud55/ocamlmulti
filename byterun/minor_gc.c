@@ -506,9 +506,9 @@ CAMLexport value caml_check_urgent_gc (value extra_root)
 
 CAMLexport value caml_check_urgent_gc_r (pctxt ctx, value extra_root)
 {
-  CAMLparam1 (extra_root);
+  PHCparam1_r (ctx, extra_root);
   if (caml_force_major_slice) caml_minor_collection_r(ctx);
-  CAMLreturn (extra_root);
+  PHCreturn_r (ctx, extra_root);
 }
 
 void caml_realloc_ref_table (struct caml_ref_table *tbl)

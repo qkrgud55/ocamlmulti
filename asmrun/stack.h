@@ -66,14 +66,14 @@ struct caml_context {
 };
 
 /* Structure of frame descriptors */
-
+/* phc - context
 typedef struct {
   uintnat retaddr;
   unsigned short frame_size;
   unsigned short num_live;
   unsigned short live_ofs[1];
 } frame_descr;
-
+*/
 /* Hash table of frame descriptors */
 
 extern frame_descr ** caml_frame_descriptors;

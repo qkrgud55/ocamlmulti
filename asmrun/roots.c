@@ -39,7 +39,6 @@ frame_descr ** caml_frame_descriptors = NULL;
 int caml_frame_descriptors_mask;
 
 /* Linked-list */
-
 typedef struct link {
   void *data;
   struct link *next;
@@ -65,6 +64,16 @@ void caml_register_frametable(intnat *table) {
   if (NULL != caml_frame_descriptors) {
     caml_stat_free(caml_frame_descriptors);
     caml_frame_descriptors = NULL;
+    /* force caml_init_frame_descriptors to be called */
+  }
+}
+
+void caml_register_frametable_r (pctxt ctx, intnat *table) {
+  ctx->frametables = cons(table,ctx->frametables);
+
+  if (NULL != ctx->caml_frame_descriptors) {
+    caml_stat_free(ctx->caml_frame_descriptors);
+    ctx->caml_frame_descriptors = NULL;
     /* force caml_init_frame_descriptors to be called */
   }
 }
@@ -125,6 +134,62 @@ void caml_init_frame_descriptors(void)
   }
 }
 
+void caml_init_frame_descriptors_r(pctxt ctx)
+{
+  intnat num_descr, tblsize, i, j, len;
+  intnat * tbl;
+  frame_descr * d;
+  uintnat nextd;
+  uintnat h;
+  link_t *lnk;
+
+  static int inited = 0;
+
+  if (!inited) {
+    for (i = 0; caml_frametable[i] != 0; i++)
+      caml_register_frametable_r (ctx, caml_frametable[i]);
+    inited = 1;
+  }
+
+  /* Count the frame descriptors */
+  num_descr = 0;
+  iter_list(ctx->frametables,lnk) {
+    num_descr += *((intnat*) lnk->data);
+  }
+
+  /* The size of the hashtable is a power of 2 greater or equal to
+     2 times the number of descriptors */
+  tblsize = 4;
+  while (tblsize < 2 * num_descr) tblsize *= 2;
+
+  /* Allocate the hash table */
+  ctx->caml_frame_descriptors =
+    (frame_descr **) caml_stat_alloc(tblsize * sizeof(frame_descr *));
+  for (i = 0; i < tblsize; i++) ctx->caml_frame_descriptors[i] = NULL;
+  ctx->caml_frame_descriptors_mask = tblsize - 1;
+
+  /* Fill the hash table */
+  iter_list(ctx->frametables,lnk) {
+    tbl = (intnat*) lnk->data;
+    len = *tbl;
+    d = (frame_descr *)(tbl + 1);
+    for (j = 0; j < len; j++) {
+      h = Hash_retaddr(d->retaddr);
+      while (ctx->caml_frame_descriptors[h] != NULL) {
+        h = (h+1) & ctx->caml_frame_descriptors_mask;
+      }
+      ctx->caml_frame_descriptors[h] = d;
+      nextd =
+        ((uintnat)d +
+         sizeof(char *) + sizeof(short) + sizeof(short) +
+         sizeof(short) * d->num_live + sizeof(frame_descr *) - 1)
+        & -sizeof(frame_descr *);
+      if (d->frame_size & 1) nextd += 8;
+      d = (frame_descr *) nextd;
+    }
+  }
+}
+
 /* Communication with [caml_start_program] and [caml_call_gc]. */
 
 char * caml_top_of_stack;
@@ -137,6 +202,10 @@ static link * caml_dyn_globals = NULL;
 
 void caml_register_dyn_global(void *v) {
   caml_dyn_globals = cons((void*) v,caml_dyn_globals);
+}
+
+void caml_register_dyn_global_r(pctxt ctx,void *v) {
+  ctx->caml_dyn_globals = cons((void*) v,ctx->caml_dyn_globals);
 }
 
 /* Call [caml_oldify_one] on (at least) all the roots that point to the minor
@@ -261,7 +330,7 @@ void caml_oldify_local_roots_r (pctxt ctx)
   value glob;
   value * root;
   struct caml__roots_block *lr;
-  link *lnk;
+  link_t *lnk;
 
   printf("asmrun/roots.c : caml_oldify_local_roots_r %d %d\n", 
                   ctx->caml_globals_scanned, ctx->caml_globals_inited);
@@ -281,7 +350,7 @@ void caml_oldify_local_roots_r (pctxt ctx)
   ctx->caml_globals_scanned = ctx->caml_globals_inited;
 
   /* Dynamic global roots */
-  iter_list(caml_dyn_globals, lnk) {
+  iter_list(ctx->caml_dyn_globals, lnk) {
     glob = (value) lnk->data;
     for (j = 0; j < Wosize_val(glob); j++){
       Oldify_r (ctx, &Field (glob, j));
@@ -289,18 +358,18 @@ void caml_oldify_local_roots_r (pctxt ctx)
   }
 
   /* The stack and local roots */
-  if (caml_frame_descriptors == NULL) caml_init_frame_descriptors();
-  sp = caml_bottom_of_stack;
-  retaddr = caml_last_return_address;
-  regs = caml_gc_regs;
+  if (ctx->caml_frame_descriptors == NULL) caml_init_frame_descriptors_r(ctx);
+  sp = ctx->caml_bottom_of_stack;
+  retaddr = ctx->caml_last_return_address;
+  regs = ctx->caml_gc_regs;
   if (sp != NULL) {
     while (1) {
       /* Find the descriptor corresponding to the return address */
       h = Hash_retaddr(retaddr);
       while(1) {
-        d = caml_frame_descriptors[h];
+        d = ctx->caml_frame_descriptors[h];
         if (d->retaddr == retaddr) break;
-        h = (h+1) & caml_frame_descriptors_mask;
+        h = (h+1) & ctx->caml_frame_descriptors_mask;
       }
       if (d->frame_size != 0xFFFF) {
         /* Scan the roots in this frame */
@@ -339,7 +408,7 @@ void caml_oldify_local_roots_r (pctxt ctx)
     }
   }
   /* Local C roots */
-  for (lr = caml_local_roots; lr != NULL; lr = lr->next) {
+  for (lr = ctx->caml_local_roots; lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
         root = &(lr->tables[i][j]);
@@ -352,7 +421,7 @@ void caml_oldify_local_roots_r (pctxt ctx)
   /* Finalised values */
   caml_final_do_young_roots_r (ctx, &caml_oldify_one_r);
   /* Hook */
-  if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(&caml_oldify_one_r);
+  if (ctx->caml_scan_roots_hook != NULL) (*ctx->caml_scan_roots_hook)(ctx, &caml_oldify_one_r);
 }
 
 /* Call [darken] on all roots */
@@ -406,7 +475,7 @@ void caml_do_roots_r (pctxt ctx, scanning_action_r f)
 {
   int i, j;
   value glob;
-  link *lnk;
+  link_t *lnk;
 
   /* The global roots */
   for (i = 0; ctx->caml_globals[i] != 0; i++) {
@@ -424,9 +493,9 @@ void caml_do_roots_r (pctxt ctx, scanning_action_r f)
   }
 
   /* The stack and local roots */
-  if (caml_frame_descriptors == NULL) caml_init_frame_descriptors();
-  caml_do_local_roots(f, caml_bottom_of_stack, caml_last_return_address,
-                      caml_gc_regs, caml_local_roots);
+  if (ctx->caml_frame_descriptors == NULL) caml_init_frame_descriptors_r(ctx);
+  caml_do_local_roots(f, ctx->caml_bottom_of_stack, ctx->caml_last_return_address,
+                      ctx->caml_gc_regs, ctx->caml_local_roots);
   /* Global C roots */
   caml_scan_global_roots(f);
   /* Finalised values */

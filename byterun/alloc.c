@@ -203,14 +203,14 @@ CAMLexport value caml_alloc_array(value (*funct)(char const *),
 CAMLexport value caml_alloc_array_r(pctxt ctx, value (*funct)(char const *),
                                   char const ** arr)
 {
-  CAMLparam0 ();
+  PHCparam0_r (ctx);
   mlsize_t nbr, n;
-  CAMLlocal2 (v, result);
+  PHClocal2_r (ctx, v, result);
 
   nbr = 0;
   while (arr[nbr] != 0) nbr++;
   if (nbr == 0) {
-    CAMLreturn (Atom(0));
+    PHCreturn_r (ctx, Atom(0));
   } else {
     result = caml_alloc_r (ctx, nbr, 0);
     for (n = 0; n < nbr; n++) {
@@ -220,7 +220,7 @@ CAMLexport value caml_alloc_array_r(pctxt ctx, value (*funct)(char const *),
       v = funct(arr[n]); // phc todo reentrant
       caml_modify_r(ctx, &Field(result, n), v);
     }
-    CAMLreturn (result);
+    PHCreturn_r (ctx, result);
   }
 }
 

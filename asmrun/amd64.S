@@ -118,6 +118,12 @@
         STORE_VAR(%rax,caml_bottom_of_stack) ; \
         popq    %r11
 
+#define RECORD_STACK_FRAME_r(OFFSET) \
+        movq    8+OFFSET(%rsp), %rax ; \
+        movq    %rax, 72(%r13) ; \
+        leaq    16+OFFSET(%rsp), %rax ; \
+        movq    %rax, 80(%r13) ; \
+
 #else
 
 /* Non-PIC operations on global variables.  Slightly faster. */
@@ -145,6 +151,12 @@
         STORE_VAR(%rax,caml_last_return_address) ; \
         leaq    8+OFFSET(%rsp), %rax ; \
         STORE_VAR(%rax,caml_bottom_of_stack)
+
+#define RECORD_STACK_FRAME_r(OFFSET) \
+        movq    OFFSET(%rsp), %rax ; \
+        movq    %rax, 72(%r13) ; \
+        leaq    8+OFFSET(%rsp), %rax ; \
+        movq    %rax, 80(%r13)
 
 #endif
 
@@ -329,7 +341,7 @@ LBL(caml_call_gc):
 
 FUNCTION(G(caml_call_gc_r))
         CFI_STARTPROC
-        RECORD_STACK_FRAME(0)
+        RECORD_STACK_FRAME_r(0)
 LBL(caml_call_gc_r):
 #ifndef SYS_mingw64
     /* Touch the stack to trigger a recoverable segfault
@@ -342,7 +354,7 @@ LBL(caml_call_gc_r):
         pushq   %r11
         pushq   %r10
         pushq   %rbp
-        pushq   %r13
+    /*  pushq   %r13  */   
         pushq   %r12
         pushq   %r9
         pushq   %r8
@@ -352,7 +364,8 @@ LBL(caml_call_gc_r):
         pushq   %rdi
         pushq   %rbx
         pushq   %rax
-        STORE_VAR(%rsp, caml_gc_regs)
+    /*  STORE_VAR(%rsp, caml_gc_regs) */
+        movq    %rsp, 88(%r13)
     /* Save caml_young_ptr, caml_exception_pointer */
     /*    STORE_VAR(%r15, caml_young_ptr)  */
         movq    %r15, (%r13)
@@ -412,7 +425,7 @@ LBL(caml_call_gc_r):
         popq    %r8
         popq    %r9
         popq    %r12
-        popq    %r13
+    /*  popq    %r13  */
         popq    %rbp
         popq    %r10
         popq    %r11
@@ -482,7 +495,7 @@ LBL(caml_alloc1_r):
         jb      LBL(200)
         ret
 LBL(200):
-        RECORD_STACK_FRAME(0)
+        RECORD_STACK_FRAME_r(0)
         subq    $8, %rsp
         call    LBL(caml_call_gc_r)
         addq    $8, %rsp
@@ -495,7 +508,7 @@ LBL(caml_alloc2_r):
         jb      LBL(201)
         ret
 LBL(201):
-        RECORD_STACK_FRAME(0)
+        RECORD_STACK_FRAME_r(0)
         subq    $8, %rsp
         call    LBL(caml_call_gc_r)
         addq    $8, %rsp
@@ -508,7 +521,7 @@ LBL(caml_alloc3_r):
         jb      LBL(202)
         ret
 LBL(202):
-        RECORD_STACK_FRAME(0)
+        RECORD_STACK_FRAME_r(0)
         subq    $8, %rsp
         call    LBL(caml_call_gc_r)
         addq    $8, %rsp
@@ -523,7 +536,7 @@ LBL(caml_allocN_r):
         addq    $8, %rsp                  /* drop desired size */
         ret
 LBL(203):
-        RECORD_STACK_FRAME(8)
+        RECORD_STACK_FRAME_r(8)
         call    LBL(caml_call_gc_r)
         popq    %rax                      /* recover desired size */
         jmp     LBL(caml_allocN_r)
@@ -589,12 +602,15 @@ FUNCTION(G(caml_start_program_r))  /* phc ctx */
         leaq    GCALL(caml_program)(%rip), %r12
         movq   %rdi, %r13          /* first arg from caml_main*/
     /* Common code for caml_start_program and caml_callback* */
-LBL(caml_start_program):
+LBL(caml_start_program):  /* phc deprecated */
     /* Build a callback link */
         subq    $8, %rsp        /* stack 16-aligned */
-        PUSH_VAR(caml_gc_regs)
-        PUSH_VAR(caml_last_return_address)
-        PUSH_VAR(caml_bottom_of_stack)
+    /*  PUSH_VAR(caml_gc_regs) */
+        pushq   88(%r13)
+    /*  PUSH_VAR(caml_last_return_address) */
+        pushq   72(%r13)
+    /*  PUSH_VAR(caml_bottom_of_stack) */
+        pushq   80(%r13)
         CFI_ADJUST(32)
     /* Setup alloc ptr and exception ptr */
     /*  LOAD_VAR(caml_young_ptr, %r15)  */
@@ -618,9 +634,12 @@ LBL(109):
         STORE_VAR(%r15,caml_young_ptr)
         STORE_VAR(%r14,caml_exception_pointer)
     /* Pop the callback link, restoring the global variables */
-        POP_VAR(caml_bottom_of_stack)
+    /*  POP_VAR(caml_bottom_of_stack)
         POP_VAR(caml_last_return_address)
-        POP_VAR(caml_gc_regs)
+        POP_VAR(caml_gc_regs) */
+        popq    80(%r13)
+        popq    72(%r13)
+        popq    88(%r13)
         addq    $8, %rsp
     /* Restore callee-save registers. */
         POP_CALLEE_SAVE_REGS

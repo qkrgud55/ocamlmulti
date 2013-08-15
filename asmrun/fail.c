@@ -84,9 +84,9 @@ void caml_raise_r(pctxt ctx, value v)
 #else
 #define PUSHED_AFTER >
 #endif
-  while (caml_local_roots != NULL &&
-         (char *) caml_local_roots PUSHED_AFTER caml_exception_pointer) {
-    caml_local_roots = caml_local_roots->next;
+  while (ctx->caml_local_roots != NULL &&
+         (char *) ctx->caml_local_roots PUSHED_AFTER caml_exception_pointer) {
+    ctx->caml_local_roots = ctx->caml_local_roots->next;
   }
 #undef PUSHED_AFTER
 

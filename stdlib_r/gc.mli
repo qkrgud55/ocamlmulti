@@ -151,6 +151,7 @@ external stat : unit -> stat = "caml_gc_stat"
    statistics. *)
 
 external quick_stat : unit -> stat = "caml_gc_quick_stat"
+external quick_stat_r : unit -> stat = "caml_gc_quick_stat_r" "reentrant"
 (** Same as [stat] except that [live_words], [live_blocks], [free_words],
     [free_blocks], [largest_free], and [fragments] are set to 0.  This
     function is much faster than [stat] because it does not need to go

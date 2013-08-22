@@ -46,6 +46,7 @@ external stat : unit -> stat = "caml_gc_stat";;
 external quick_stat : unit -> stat = "caml_gc_quick_stat";;
 external counters : unit -> (float * float * float) = "caml_gc_counters";;
 external get : unit -> control = "caml_gc_get";;
+external get_r : unit -> control = "caml_gc_get" "reentrant";;
 external set : control -> unit = "caml_gc_set";;
 external set_r : control -> unit = "caml_gc_set_r" "reentrant";;
 external minor : unit -> unit = "caml_gc_minor";;

@@ -482,7 +482,7 @@ CAMLexport void caml_minor_collection_r (pctxt ctx)
 {
   intnat prev_alloc_words = ctx->caml_allocated_words;
 
-  printf("caml_minor_collection_r > \n"); 
+//  printf("caml_minor_collection_r > \n"); 
   caml_empty_minor_heap_r (ctx);
 
   ctx->caml_stat_promoted_words += ctx->caml_allocated_words - prev_alloc_words;
@@ -494,7 +494,7 @@ CAMLexport void caml_minor_collection_r (pctxt ctx)
 
   caml_empty_minor_heap_r (ctx);
 
-  printf("caml_minor_collection_r < \n"); 
+//  printf("caml_minor_collection_r < \n"); 
 }
 
 CAMLexport value caml_check_urgent_gc (value extra_root)

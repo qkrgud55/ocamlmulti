@@ -260,7 +260,6 @@ CAMLprim value caml_gc_stat(value v)
   return heap_stats (1);
 }
 
-// TODO phc temp shared
 CAMLprim value caml_gc_quick_stat(value v)
 {
   CAMLparam0 ();
@@ -277,26 +276,13 @@ CAMLprim value caml_gc_quick_stat(value v)
   intnat cpct = caml_stat_compactions;
   intnat heap_chunks = caml_stat_heap_chunks;
 
-  if (main_ctx){
-    sync_with_global_vars(main_ctx);
-    minwords = caml_stat_minor_words
-               + (double) Wsize_bsize (main_ctx->caml_young_end - main_ctx->caml_young_ptr);
-  }else{
-    minwords  = caml_stat_minor_words
-                    + (double) Wsize_bsize (caml_young_end - caml_young_ptr);
-  }
+  minwords  = caml_stat_minor_words
+             + (double) Wsize_bsize (caml_young_end - caml_young_ptr);
 
-  if (main_ctx){
-    res = caml_alloc_tuple_r (main_ctx, 16);
-    Store_field (res, 0, caml_copy_double_r (main_ctx, minwords));
-    Store_field (res, 1, caml_copy_double_r (main_ctx, prowords));
-    Store_field (res, 2, caml_copy_double_r (main_ctx, majwords)); 
-  }else{
-    res = caml_alloc_tuple (16);
-    Store_field (res, 0, caml_copy_double (minwords));
-    Store_field (res, 1, caml_copy_double (prowords));
-    Store_field (res, 2, caml_copy_double (majwords)); 
-  }
+  res = caml_alloc_tuple (16);
+  Store_field (res, 0, caml_copy_double (minwords));
+  Store_field (res, 1, caml_copy_double (prowords));
+  Store_field (res, 2, caml_copy_double (majwords)); 
   Store_field (res, 3, Val_long (mincoll));
   Store_field (res, 4, Val_long (majcoll));
   Store_field (res, 5, Val_long (heap_words));
@@ -311,7 +297,47 @@ CAMLprim value caml_gc_quick_stat(value v)
   Store_field (res, 14, Val_long (top_heap_words));
   Store_field (res, 15, Val_long (caml_stack_usage()));
 
-//  sync_with_context(main_ctx);
+  CAMLreturn (res);
+}
+
+CAMLprim value caml_gc_quick_stat_r(pctxt ctx, value v)
+{
+  CAMLparam0 ();
+  CAMLlocal1 (res);
+
+  /* get a copy of these before allocating anything... */
+  double minwords;
+  double prowords = ctx->caml_stat_promoted_words;
+  double majwords = ctx->caml_stat_major_words + (double) ctx->caml_allocated_words;
+  intnat mincoll = ctx->caml_stat_minor_collections;
+  intnat majcoll = ctx->caml_stat_major_collections;
+  intnat heap_words = ctx->caml_stat_heap_size / sizeof (value);
+  intnat top_heap_words = ctx->caml_stat_top_heap_size / sizeof (value);
+  intnat cpct = ctx->caml_stat_compactions;
+  intnat heap_chunks = ctx->caml_stat_heap_chunks;
+
+  minwords = ctx->caml_stat_minor_words
+             + (double) Wsize_bsize (ctx->caml_young_end - ctx->caml_young_ptr);
+
+  res = caml_alloc_tuple_r (ctx, 16);
+  Store_field (res, 0, caml_copy_double_r (ctx, minwords));
+  Store_field (res, 1, caml_copy_double_r (ctx, prowords));
+  Store_field (res, 2, caml_copy_double_r (ctx, majwords)); 
+  
+  Store_field (res, 3, Val_long (mincoll));
+  Store_field (res, 4, Val_long (majcoll));
+  Store_field (res, 5, Val_long (heap_words));
+  Store_field (res, 6, Val_long (heap_chunks));
+  Store_field (res, 7, Val_long (0));
+  Store_field (res, 8, Val_long (0));
+  Store_field (res, 9, Val_long (0));
+  Store_field (res, 10, Val_long (0));
+  Store_field (res, 11, Val_long (0));
+  Store_field (res, 12, Val_long (0));
+  Store_field (res, 13, Val_long (cpct));
+  Store_field (res, 14, Val_long (top_heap_words));
+  Store_field (res, 15, Val_long (caml_stack_usage()));
+
   CAMLreturn (res);
 }
 

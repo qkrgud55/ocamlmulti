@@ -146,6 +146,7 @@ type control =
     [ocamlrun]. *)
 
 external stat : unit -> stat = "caml_gc_stat"
+external stat_r : unit -> stat = "caml_gc_stat_r" "reentrant"
 (** Return the current values of the memory management counters in a
    [stat] record.  This function examines every heap block to get the
    statistics. *)

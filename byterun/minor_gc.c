@@ -482,19 +482,19 @@ CAMLexport void caml_minor_collection_r (pctxt ctx)
 {
   intnat prev_alloc_words = ctx->caml_allocated_words;
 
-//  printf("caml_minor_collection_r > \n"); 
+  printf("caml_minor_collection_r > \n"); 
   caml_empty_minor_heap_r (ctx);
 
   ctx->caml_stat_promoted_words += ctx->caml_allocated_words - prev_alloc_words;
   ++ ctx->caml_stat_minor_collections;
-//  caml_major_collection_slice_r (ctx, 0);
+  caml_major_collection_slice_r (ctx, 0);
   ctx->caml_force_major_slice = 0;
 
   caml_final_do_calls_r (ctx);
 
   caml_empty_minor_heap_r (ctx);
 
-//  printf("caml_minor_collection_r < \n"); 
+  printf("caml_minor_collection_r < \n"); 
 }
 
 CAMLexport value caml_check_urgent_gc (value extra_root)
@@ -506,9 +506,9 @@ CAMLexport value caml_check_urgent_gc (value extra_root)
 
 CAMLexport value caml_check_urgent_gc_r (pctxt ctx, value extra_root)
 {
-  PHCparam1_r (ctx, extra_root);
-  if (caml_force_major_slice) caml_minor_collection_r(ctx);
-  PHCreturn_r (ctx, extra_root);
+  CAMLparam1_r (ctx, extra_root);
+  if (ctx->caml_force_major_slice) caml_minor_collection_r(ctx);
+  CAMLreturn_r (ctx, extra_root);
 }
 
 void caml_realloc_ref_table (struct caml_ref_table *tbl)
@@ -557,7 +557,7 @@ void caml_realloc_ref_table_r (pctxt ctx, struct caml_ref_table *tbl)
   }else{ /* This will almost never happen with the bytecode interpreter. */
     asize_t sz;
     asize_t cur_ptr = tbl->ptr - tbl->base;
-                                             Assert (caml_force_major_slice);
+                                             Assert (ctx->caml_force_major_slice);
 
     tbl->size *= 2;
     sz = (tbl->size + tbl->reserve) * sizeof (value *);

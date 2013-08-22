@@ -172,19 +172,18 @@ int caml_page_table_initialize(mlsize_t bytesize);
   }                                                                         \
 }while(0)
 
-// phc todo reentrant
 #define Modify_r(ctx, fp, val) do{                                          \
   value _old_ = *(fp);                                                      \
   *(fp) = (val);                                                            \
   if (Is_in_heap (fp)){                                                     \
-    if (caml_gc_phase == Phase_mark) caml_darken (_old_, NULL);             \
-    if (Is_block (val) && Is_young (val)                                    \
-        && ! (Is_block (_old_) && Is_young (_old_))){                       \
-      if (caml_ref_table.ptr >= caml_ref_table.limit){                      \
-        CAMLassert (caml_ref_table.ptr == caml_ref_table.limit);            \
-        caml_realloc_ref_table (&caml_ref_table);                           \
+    if (ctx->caml_gc_phase == Phase_mark) caml_darken_r (ctx, _old_, NULL); \
+    if (Is_block (val) && Is_young_r (ctx, val)                             \
+        && ! (Is_block (_old_) && Is_young_r (ctx, _old_))){                \
+      if (ctx->caml_ref_table.ptr >= ctx->caml_ref_table.limit){            \
+        CAMLassert (ctx->caml_ref_table.ptr == ctx->caml_ref_table.limit);  \
+        caml_realloc_ref_table_r (ctx, &ctx->caml_ref_table);               \
       }                                                                     \
-      *caml_ref_table.ptr++ = (fp);                                         \
+      *(ctx->caml_ref_table).ptr++ = (fp);                                  \
     }                                                                       \
   }                                                                         \
 }while(0)
@@ -376,32 +375,32 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
 
 
 // phc local roots
-#define PHCparam0_r(ctx) \
+#define CAMLparam0_r(ctx) \
   struct caml__roots_block *caml__frame = ctx->caml_local_roots
 
-#define PHCparam1_r(ctx, x) \
-  PHCparam0_r (ctx); \
-  PHCxparam1_r (ctx, x)
+#define CAMLparam1_r(ctx, x) \
+  CAMLparam0_r (ctx); \
+  CAMLxparam1_r (ctx, x)
 
-#define PHCparam2_r(ctx, x, y) \
-  PHCparam0_r (ctx); \
-  PHCxparam2_r (ctx, x, y)
+#define CAMLparam2_r(ctx, x, y) \
+  CAMLparam0_r (ctx); \
+  CAMLxparam2_r (ctx, x, y)
 
-#define PHCparam3_r(ctx, x, y, z) \
-  PHCparam0_r (ctx); \
-  PHCxparam3_r (ctx, x, y, z)
+#define CAMLparam3_r(ctx, x, y, z) \
+  CAMLparam0_r (ctx); \
+  CAMLxparam3_r (ctx, x, y, z)
 
-#define PHCparam4_r(ctx, x, y, z, t) \
-  PHCparam0_r (ctx); \
-  PHCxparam4_r (ctx, x, y, z, t)
+#define CAMLparam4_r(ctx, x, y, z, t) \
+  CAMLparam0_r (ctx); \
+  CAMLxparam4_r (ctx, x, y, z, t)
 
-#define PHCparam5_r(ctx, x, y, z, t, u) \
-  PHCparam0_r (ctx); \
-  PHCxparam5_r (ctx, x, y, z, t, u)
+#define CAMLparam5_r(ctx, x, y, z, t, u) \
+  CAMLparam0_r (ctx); \
+  CAMLxparam5_r (ctx, x, y, z, t, u)
 
-#define PHCparamN_r(ctx, x, size) \
-  PHCparam0_r (ctx); \
-  PHCxparamN_r (ctx, x, (size))
+#define CAMLparamN_r(ctx, x, size) \
+  CAMLparam0_r (ctx); \
+  CAMLxparamN_r (ctx, x, (size))
 
 
 #if defined (__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ > 7))
@@ -410,7 +409,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
   #define CAMLunused
 #endif
 
-#define PHCxparam1_r(ctx, x) \
+#define CAMLxparam1_r(ctx, x) \
   struct caml__roots_block caml__roots_##x; \
   CAMLunused int caml__dummy_##x = ( \
     (caml__roots_##x.next = ctx->caml_local_roots), \
@@ -420,7 +419,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
     (caml__roots_##x.tables [0] = &x), \
     0)
 
-#define PHCxparam2_r(ctx, x, y) \
+#define CAMLxparam2_r(ctx, x, y) \
   struct caml__roots_block caml__roots_##x; \
   CAMLunused int caml__dummy_##x = ( \
     (caml__roots_##x.next = ctx->caml_local_roots), \
@@ -431,7 +430,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
     (caml__roots_##x.tables [1] = &y), \
     0)
 
-#define PHCxparam3_r(ctx, x, y, z) \
+#define CAMLxparam3_r(ctx, x, y, z) \
   struct caml__roots_block caml__roots_##x; \
   CAMLunused int caml__dummy_##x = ( \
     (caml__roots_##x.next = ctx->caml_local_roots), \
@@ -443,7 +442,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
     (caml__roots_##x.tables [2] = &z), \
     0)
 
-#define PHCxparam4_r(ctx, x, y, z, t) \
+#define CAMLxparam4_r(ctx, x, y, z, t) \
   struct caml__roots_block caml__roots_##x; \
   CAMLunused int caml__dummy_##x = ( \
     (caml__roots_##x.next = ctx->caml_local_roots), \
@@ -456,7 +455,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
     (caml__roots_##x.tables [3] = &t), \
     0)
 
-#define PHCxparam5_r(ctx, x, y, z, t, u) \
+#define CAMLxparam5_r(ctx, x, y, z, t, u) \
   struct caml__roots_block caml__roots_##x; \
   CAMLunused int caml__dummy_##x = ( \
     (caml__roots_##x.next = ctx->caml_local_roots), \
@@ -470,7 +469,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
     (caml__roots_##x.tables [4] = &u), \
     0)
 
-#define PHCxparamN_r(ctx, x, size) \
+#define CAMLxparamN_r(ctx, x, size) \
   struct caml__roots_block caml__roots_##x; \
   CAMLunused int caml__dummy_##x = ( \
     (caml__roots_##x.next = ctx->caml_local_roots), \
@@ -480,45 +479,45 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
     (caml__roots_##x.tables[0] = &(x[0])), \
     0)
 
-#define PHClocal1_r(ctx, x) \
+#define CAMLlocal1_r(ctx, x) \
   value x = 0; \
-  PHCxparam1_r (ctx, x)
+  CAMLxparam1_r (ctx, x)
 
-#define PHClocal2_r(ctx, x, y) \
+#define CAMLlocal2_r(ctx, x, y) \
   value x = 0, y = 0; \
-  PHCxparam2_r (ctx, x, y)
+  CAMLxparam2_r (ctx, x, y)
 
-#define PHClocal3_r(ctx, x, y, z) \
+#define CAMLlocal3_r(ctx, x, y, z) \
   value x = 0, y = 0, z = 0; \
-  PHCxparam3_r (ctx, x, y, z)
+  CAMLxparam3_r (ctx, x, y, z)
 
-#define PHClocal4_r(ctx, x, y, z, t) \
+#define CAMLlocal4_r(ctx, x, y, z, t) \
   value x = 0, y = 0, z = 0, t = 0; \
-  PHCxparam4_r (ctx, x, y, z, t)
+  CAMLxparam4_r (ctx, x, y, z, t)
 
-#define PHClocal5_r(ctx, x, y, z, t, u) \
+#define CAMLlocal5_r(ctx, x, y, z, t, u) \
   value x = 0, y = 0, z = 0, t = 0, u = 0; \
-  PHCxparam5_r (ctx, x, y, z, t, u)
+  CAMLxparam5_r (ctx, x, y, z, t, u)
 
-#define PHClocalN_r(ctx, x, size) \
+#define CAMLlocalN_r(ctx, x, size) \
   value x [(size)] = { 0, /* 0, 0, ... */ }; \
-  PHCxparamN_r (ctx, x, (size))
+  CAMLxparamN_r (ctx, x, (size))
 
 
-#define PHCreturn0_r(ctx) do{ \
+#define CAMLreturn0_r(ctx) do{ \
   ctx->caml_local_roots = caml__frame; \
   return; \
 }while (0)
 
-#define PHCreturnT_r(ctx, type, result) do{ \
+#define CAMLreturnT_r(ctx, type, result) do{ \
   type caml__temp_result = (result); \
   ctx->caml_local_roots = caml__frame; \
   return (caml__temp_result); \
 }while(0)
 
-#define PHCreturn_r(ctx, result) PHCreturnT_r (ctx, value, result)
+#define CAMLreturn_r(ctx, result) CAMLreturnT_r (ctx, value, result)
 
-#define PHCnoreturn_r ((void) caml__frame)
+#define CAMLnoreturn_r ((void) caml__frame)
 
 
 /* convenience macro */

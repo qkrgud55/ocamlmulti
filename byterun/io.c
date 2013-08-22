@@ -624,8 +624,8 @@ CAMLprim value caml_ml_out_channels_list (value unit)
 
 CAMLprim value caml_ml_out_channels_list_r (pctxt ctx, value unit)
 {
-  PHCparam0_r (ctx);
-  PHClocal3_r (ctx, res, tail, chan);
+  CAMLparam0_r (ctx);
+  CAMLlocal3_r (ctx, res, tail, chan);
   struct channel * channel;
   
   res = Val_emptylist;
@@ -641,7 +641,7 @@ CAMLprim value caml_ml_out_channels_list_r (pctxt ctx, value unit)
       Field (res, 0) = chan;
       Field (res, 1) = tail;
     }
-  PHCreturn_r (ctx, res);
+  CAMLreturn_r (ctx, res);
 }
 
 CAMLprim value caml_channel_descriptor(value vchannel)
@@ -747,14 +747,14 @@ CAMLprim value caml_ml_flush(value vchannel)
 
 CAMLprim value caml_ml_flush_r(pctxt ctx, value vchannel)
 {
-  PHCparam1_r (ctx, vchannel);
+  CAMLparam1_r (ctx, vchannel);
   struct channel * channel = Channel(vchannel);
 
-  if (channel->fd == -1) PHCreturn_r(ctx, Val_unit);
+  if (channel->fd == -1) CAMLreturn_r(ctx, Val_unit);
   Lock_r(ctx, channel);
   caml_flush_r(ctx, channel);
   Unlock_r(ctx, channel);
-  PHCreturn_r (ctx, Val_unit);
+  CAMLreturn_r (ctx, Val_unit);
 }
 
 CAMLprim value caml_ml_output_char(value vchannel, value ch)
@@ -770,13 +770,13 @@ CAMLprim value caml_ml_output_char(value vchannel, value ch)
 
 CAMLprim value caml_ml_output_char_r(pctxt ctx, value vchannel, value ch)
 {
-  PHCparam2_r (ctx, vchannel, ch);
+  CAMLparam2_r (ctx, vchannel, ch);
   struct channel * channel = Channel(vchannel);
 
   Lock_r(ctx, channel);
   putch_r(ctx, channel, Long_val(ch));
   Unlock_r(ctx, channel);
-  PHCreturn_r (ctx, Val_unit);
+  CAMLreturn_r (ctx, Val_unit);
 }
 
 
@@ -825,7 +825,7 @@ CAMLprim value caml_ml_output(value vchannel, value buff, value start,
 CAMLprim value caml_ml_output_r(pctxt ctx, value vchannel, value buff, value start,
                               value length)
 {
-  PHCparam4_r (ctx, vchannel, buff, start, length);
+  CAMLparam4_r (ctx, vchannel, buff, start, length);
   struct channel * channel = Channel(vchannel);
   intnat pos = Long_val(start);
   intnat len = Long_val(length);
@@ -837,7 +837,7 @@ CAMLprim value caml_ml_output_r(pctxt ctx, value vchannel, value buff, value sta
       len -= written;
     }
 //  Unlock_r(ctx, channel);
-  PHCreturn_r (ctx, Val_unit);
+  CAMLreturn_r (ctx, Val_unit);
 }
 
 CAMLprim value caml_ml_seek_out(value vchannel, value pos)

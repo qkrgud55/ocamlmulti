@@ -586,7 +586,7 @@ static void mark_slice_r (pctxt ctx, intnat work)
   mlsize_t size, i;
 
   caml_gc_message (0x40, "Marking %ld words\n", work);
-  caml_gc_message (0x40, "Subphase = %ld\n", caml_gc_subphase);
+  caml_gc_message (0x40, "Subphase = %ld\n", ctx->caml_gc_subphase);
   // phc - gray_vals_cur represents the current stack top ptr over instances of mark_slice execution
   //       gray_vals_ptr represents the current stack top ptr inside each mark_slice fun,
   //         only valid inside mark slice (local var), see the end of mark_slice fun
@@ -880,7 +880,7 @@ intnat caml_major_collection_slice_r (pctxt ctx, intnat howmuch)
     caml_gc_message (0x02, "$", 0);
   }
 
-  if (ctx->caml_gc_phase == Phase_idle) caml_compact_heap_maybe_r (ctx);
+//  if (ctx->caml_gc_phase == Phase_idle) caml_compact_heap_maybe_r (ctx);
 
   ctx->caml_stat_major_words += ctx->caml_allocated_words;
   ctx->caml_allocated_words = 0;

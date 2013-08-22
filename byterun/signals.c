@@ -167,7 +167,6 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
 
 int volatile caml_force_major_slice = 0;
 
-// phc common
 void caml_urge_major_slice (void)
 {
   caml_force_major_slice = 1;
@@ -183,9 +182,10 @@ void caml_urge_major_slice (void)
 #endif
 }
 
+// phc todo
 void caml_urge_major_slice_r (pctxt ctx)
 {
-  caml_force_major_slice = 1;
+  ctx->caml_force_major_slice = 1;
 #ifndef NATIVE_CODE
   caml_something_to_do = 1;
 #else

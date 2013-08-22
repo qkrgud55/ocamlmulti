@@ -182,8 +182,8 @@ CAMLprim value caml_make_vect(value len, value init)
 
 CAMLprim value caml_make_vect_r(pctxt ctx, value len, value init)
 {
-  PHCparam2_r (ctx, len, init);
-  PHClocal1_r (ctx, res);
+  CAMLparam2_r (ctx, len, init);
+  CAMLlocal1_r (ctx, res);
   mlsize_t size, wsize, i;
   double d;
 
@@ -223,7 +223,7 @@ CAMLprim value caml_make_vect_r(pctxt ctx, value len, value init)
       caml_check_urgent_gc_r (ctx, res);
     }
   }
-  PHCreturn_r (ctx, res);
+  CAMLreturn_r (ctx, res);
 }
 
 CAMLprim value caml_make_array(value init)

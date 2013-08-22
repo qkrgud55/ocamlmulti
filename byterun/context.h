@@ -247,6 +247,9 @@ typedef struct phc_global_context {
 
   uintnat (*caml_stack_usage_hook)(struct phc_global_context *);
 
+  // compact.c
+  char *compact_fl;
+  uintnat caml_percent_max;
 
 } phc_global_context;
 

@@ -47,6 +47,7 @@ CAMLextern void caml_modify_r (pctxt, value *, value);
 CAMLextern void caml_initialize (value *, value);
 CAMLextern void caml_initialize_r (pctxt,value *, value);
 CAMLextern value caml_check_urgent_gc (value);
+CAMLextern value caml_check_urgent_gc_r (pctxt,value);
 CAMLextern void * caml_stat_alloc (asize_t);              /* Size in bytes. */
 CAMLextern void * caml_stat_alloc_r (pctxt,asize_t);              /* Size in bytes. */
 CAMLextern void caml_stat_free (void *);
@@ -629,6 +630,7 @@ CAMLextern void caml_register_global_root_r (pctxt ctx, value *);
    variable with [caml_register_global_root]. */
 
 CAMLextern void caml_remove_global_root (value *);
+CAMLextern void caml_remove_global_root_r (pctxt,value *);
 
 /* [caml_register_generational_global_root] registers a global C
    variable as a memory root for the duration of the program, or until

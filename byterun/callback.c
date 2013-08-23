@@ -102,15 +102,13 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   return res;
 }
 
-CAMLexport value caml_callback_exn(value closure, value arg1)
+// phc dummy reentrant (only for native code)
+CAMLexport value caml_callbackN_exn_r(pctxt ctx, value closure, int narg, value args[])
 {
-  value arg[1];
-  arg[0] = arg1;
-  return caml_callbackN_exn(closure, 1, arg);
+  return caml_callbackN_exn(closure, narg, args);
 }
 
-// phc todo reentrant
-CAMLexport value caml_callback_exn_r(pctxt ctx, value closure, value arg1)
+CAMLexport value caml_callback_exn(value closure, value arg1)
 {
   value arg[1];
   arg[0] = arg1;
@@ -126,6 +124,32 @@ CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
 }
 
 CAMLexport value caml_callback3_exn(value closure,
+                               value arg1, value arg2, value arg3)
+{
+  value arg[3];
+  arg[0] = arg1;
+  arg[1] = arg2;
+  arg[2] = arg3;
+  return caml_callbackN_exn(closure, 3, arg);
+}
+
+// phc dummy reentrant (only for native code)
+CAMLexport value caml_callback_exn_r(pctxt ctx, value closure, value arg1)
+{
+  value arg[1];
+  arg[0] = arg1;
+  return caml_callbackN_exn(closure, 1, arg);
+}
+
+CAMLexport value caml_callback2_exn_r(pctxt ctx, value closure, value arg1, value arg2)
+{
+  value arg[2];
+  arg[0] = arg1;
+  arg[1] = arg2;
+  return caml_callbackN_exn(closure, 2, arg);
+}
+
+CAMLexport value caml_callback3_exn_r(pctxt ctx, value closure,
                                value arg1, value arg2, value arg3)
 {
   value arg[3];
@@ -151,6 +175,7 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
     /* Pass as many arguments as possible */
     switch (narg - i) {
     case 1:
+      // phc - local_callback_code in amd64.S
       res = caml_callback_exn(res, args[i]);
       if (Is_exception_result(res)) CAMLreturn (res);
       i += 1;
@@ -169,6 +194,38 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   }
   CAMLreturn (res);
 }
+
+CAMLexport value caml_callbackN_exn_r(pctxt ctx, value closure, int narg, value args[])
+{
+  CAMLparam1_r (ctx, closure);
+  CAMLxparamN_r (ctx, args, narg);
+  CAMLlocal1_r (ctx, res);
+  int i;
+
+  res = closure;
+  for (i = 0; i < narg; /*nothing*/) {
+    /* Pass as many arguments as possible */
+    switch (narg - i) {
+    case 1:
+      res = caml_callback_exn_r(ctx, res, args[i]);
+      if (Is_exception_result(res)) CAMLreturn_r (ctx, res);
+      i += 1;
+      break;
+    case 2:
+      res = caml_callback2_exn_r(ctx, res, args[i], args[i + 1]);
+      if (Is_exception_result(res)) CAMLreturn_r (ctx, res);
+      i += 2;
+      break;
+    default:
+      res = caml_callback3_exn_r(ctx, res, args[i], args[i + 1], args[i + 2]);
+      if (Is_exception_result(res)) CAMLreturn_r (ctx, res);
+      i += 3;
+      break;
+    }
+  }
+  CAMLreturn_r (ctx, res);
+}
+
 
 #endif
 
@@ -203,12 +260,43 @@ CAMLexport value caml_callbackN (value closure, int narg, value args[])
   return res;
 }
 
+CAMLexport value caml_callback_r (pctxt ctx, value closure, value arg)
+{
+  value res = caml_callback_exn_r(ctx, closure, arg);
+  if (Is_exception_result(res)) caml_raise_r(ctx, Extract_exception(res));
+  return res;
+}
+
+CAMLexport value caml_callback2_r (pctxt ctx, value closure, value arg1, value arg2)
+{
+  value res = caml_callback2_exn_r(ctx, closure, arg1, arg2);
+  if (Is_exception_result(res)) caml_raise_r(ctx, Extract_exception(res));
+  return res;
+}
+
+CAMLexport value caml_callback3_r (pctxt ctx, value closure, value arg1, value arg2,
+                                 value arg3)
+{
+  value res = caml_callback3_exn_r(ctx, closure, arg1, arg2, arg3);
+  if (Is_exception_result(res)) caml_raise_r(ctx, Extract_exception(res));
+  return res;
+}
+
+CAMLexport value caml_callbackN_r (pctxt ctx, value closure, int narg, value args[])
+{
+  value res = caml_callbackN_exn_r(ctx, closure, narg, args);
+  if (Is_exception_result(res)) caml_raise_r(ctx, Extract_exception(res));
+  return res;
+}
+
+
 /* Naming of OCaml values */
 
 #define Named_value_size 13
 
 static struct named_value * named_value_table[Named_value_size] = { NULL, };
 
+// phc no ctx
 static unsigned int hash_value_name(char const *name)
 {
   unsigned int h;
@@ -251,7 +339,7 @@ CAMLprim value caml_register_named_value_r(pctxt ctx, value vname, value val)
     }
   }
   nv = (struct named_value *)
-         caml_stat_alloc(sizeof(struct named_value) + strlen(name));
+         caml_stat_alloc_r(ctx, sizeof(struct named_value) + strlen(name));
   strcpy(nv->name, name);
   nv->val = val;
   nv->next = ctx->named_value_table[h];
@@ -264,6 +352,17 @@ CAMLexport value * caml_named_value(char const *name)
 {
   struct named_value * nv;
   for (nv = named_value_table[hash_value_name(name)];
+       nv != NULL;
+       nv = nv->next) {
+    if (strcmp(name, nv->name) == 0) return &nv->val;
+  }
+  return NULL;
+}
+
+CAMLexport value * caml_named_value_r(pctxt ctx, char const *name)
+{
+  struct named_value * nv;
+  for (nv = ctx->named_value_table[hash_value_name(name)];
        nv != NULL;
        nv = nv->next) {
     if (strcmp(name, nv->name) == 0) return &nv->val;

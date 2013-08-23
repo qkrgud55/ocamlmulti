@@ -22,10 +22,6 @@ external unsafe_get: 'a array -> int -> 'a = "%array_unsafe_get"
 external unsafe_set: 'a array -> int -> 'a -> unit = "%array_unsafe_set"
 external make: int -> 'a -> 'a array = "caml_make_vect"
 external create: int -> 'a -> 'a array = "caml_make_vect"
-
-external make_r: int -> 'a -> 'a array = "caml_make_vect_r" "reentrant"
-external create_r: int -> 'a -> 'a array = "caml_make_vect_r" "reentrant"
-
 external unsafe_sub : 'a array -> int -> int -> 'a array = "caml_array_sub"
 external append_prim : 'a array -> 'a array -> 'a array = "caml_array_append"
 external concat : 'a array list -> 'a array = "caml_array_concat"

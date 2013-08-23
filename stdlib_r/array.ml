@@ -18,18 +18,17 @@
 external length : 'a array -> int = "%array_length"
 external get: 'a array -> int -> 'a = "%array_safe_get"
 external set: 'a array -> int -> 'a -> unit = "%array_safe_set"
+(* phc shared *)
 external unsafe_get: 'a array -> int -> 'a = "%array_unsafe_get"
+(* phc shared *)
 external unsafe_set: 'a array -> int -> 'a -> unit = "%array_unsafe_set"
-external make: int -> 'a -> 'a array = "caml_make_vect"
-external create: int -> 'a -> 'a array = "caml_make_vect"
+external make: int -> 'a -> 'a array = "caml_make_vect_r" "reentrant"
+external create: int -> 'a -> 'a array = "caml_make_vect_r" "reentrant"
 
-external make_r: int -> 'a -> 'a array = "caml_make_vect_r" "reentrant"
-external create_r: int -> 'a -> 'a array = "caml_make_vect_r" "reentrant"
-
-external unsafe_sub : 'a array -> int -> int -> 'a array = "caml_array_sub"
-external append_prim : 'a array -> 'a array -> 'a array = "caml_array_append"
-external concat : 'a array list -> 'a array = "caml_array_concat"
-external unsafe_blit : 'a array -> int -> 'a array -> int -> int -> unit = "caml_array_blit"
+external unsafe_sub : 'a array -> int -> int -> 'a array = "caml_array_sub_r" "reentrant"
+external append_prim : 'a array -> 'a array -> 'a array = "caml_array_append_r" "reentrant"
+external concat : 'a array list -> 'a array = "caml_array_concat_r" "reentrant"
+external unsafe_blit : 'a array -> int -> 'a array -> int -> int -> unit = "caml_array_blit_r" "reentrant"
 
 let init l f =
   if l = 0 then [||] else
@@ -68,6 +67,12 @@ let fill a ofs len v =
   else for i = ofs to ofs + len - 1 do unsafe_set a i v done
 
 let blit a1 ofs1 a2 ofs2 len =
+  if len < 0 || ofs1 < 0 || ofs1 > length a1 - len
+             || ofs2 < 0 || ofs2 > length a2 - len
+  then invalid_arg "Array.blit"
+  else unsafe_blit a1 ofs1 a2 ofs2 len
+
+let blit_r a1 ofs1 a2 ofs2 len =
   if len < 0 || ofs1 < 0 || ofs1 > length a1 - len
              || ofs2 < 0 || ofs2 > length a2 - len
   then invalid_arg "Array.blit"

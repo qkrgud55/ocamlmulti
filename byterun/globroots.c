@@ -249,6 +249,13 @@ CAMLexport void caml_remove_global_root(value *r)
   caml_delete_global_root(&caml_global_roots, r);
 }
 
+// phc todo reentrant 
+CAMLexport void caml_remove_global_root_r(pctxt ctx, value *r)
+{
+  caml_delete_global_root(&caml_global_roots, r);
+}
+
+
 /* Register a global C root of the generational kind */
 
 CAMLexport void caml_register_generational_global_root(value *r)

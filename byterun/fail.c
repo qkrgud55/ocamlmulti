@@ -117,9 +117,25 @@ CAMLexport void caml_invalid_argument (char const *msg)
   caml_raise_with_string(Field(caml_global_data, INVALID_EXN), msg);
 }
 
+// phc todo reentrant 
+CAMLexport void caml_invalid_argument_r (pctxt ctx, char const *msg)
+{
+  if (caml_global_data == 0) {
+    fprintf(stderr, "Fatal error: exception Invalid_argument(\"%s\")\n", msg);
+    exit(2);
+  }
+  caml_raise_with_string(Field(caml_global_data, INVALID_EXN), msg);
+}
+
+
 CAMLexport void caml_array_bound_error(void)
 {
   caml_invalid_argument("index out of bounds");
+}
+
+CAMLexport void caml_array_bound_error_r(pctxt ctx)
+{
+  caml_invalid_argument_r(ctx, "index out of bounds");
 }
 
 /* Problem: we can't use [caml_raise_constant], because it allocates and

@@ -35,8 +35,7 @@ external set : 'a array -> int -> 'a -> unit = "%array_safe_set"
    Raise [Invalid_argument "index out of bounds"]
    if [n] is outside the range 0 to [Array.length a - 1]. *)
 
-external make : int -> 'a -> 'a array = "caml_make_vect"
-external make_r : int -> 'a -> 'a array = "caml_make_vect_r" "reentrant"
+external make : int -> 'a -> 'a array = "caml_make_vect_r" "reentrant"
 (** [Array.make n x] returns a fresh array of length [n],
    initialized with [x].
    All the elements of this new array are initially
@@ -49,8 +48,7 @@ external make_r : int -> 'a -> 'a array = "caml_make_vect_r" "reentrant"
    If the value of [x] is a floating-point number, then the maximum
    size is only [Sys.max_array_length / 2].*)
 
-external create : int -> 'a -> 'a array = "caml_make_vect"
-external create_r : int -> 'a -> 'a array = "caml_make_vect_r" "reentrant"
+external create : int -> 'a -> 'a array = "caml_make_vect_r" "reentrant"
 (** @deprecated [Array.create] is an alias for {!Array.make}. *)
 
 val init : int -> (int -> 'a) -> 'a array
@@ -107,6 +105,7 @@ val fill : 'a array -> int -> int -> 'a -> unit
    designate a valid subarray of [a]. *)
 
 val blit : 'a array -> int -> 'a array -> int -> int -> unit
+val blit_r : 'a array -> int -> 'a array -> int -> int -> unit
 (** [Array.blit v1 o1 v2 o2 len] copies [len] elements
    from array [v1], starting at element number [o1], to array [v2],
    starting at element number [o2]. It works correctly even if

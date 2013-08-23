@@ -745,15 +745,6 @@ FUNCTION(G(caml_callback_exn))
         movq    0(%rbx), %r12      /* code pointer */
         jmp     LBL(caml_start_program)
 
-FUNCTION(G(caml_callback_exn_r))
-    /* Save callee-save registers */
-        PUSH_CALLEE_SAVE_REGS
-    /* Initial loading of arguments */
-        movq    C_ARG_1, %rbx      /* closure */
-        movq    C_ARG_2, %rax      /* argument */
-        movq    0(%rbx), %r12      /* code pointer */
-        jmp     LBL(caml_start_program)
-
 FUNCTION(G(caml_callback2_exn))
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
@@ -778,6 +769,42 @@ FUNCTION(G(caml_callback3_exn))
 FUNCTION(G(caml_ml_array_bound_error))
         leaq    GCALL(caml_array_bound_error)(%rip), %rax
         jmp     LBL(caml_c_call)
+
+/* phc todo reentrant */
+FUNCTION(G(caml_callback_exn_r))
+    /* Save callee-save registers */
+        PUSH_CALLEE_SAVE_REGS
+    /* Initial loading of arguments */
+        movq    C_ARG_1, %rbx      /* closure */
+        movq    C_ARG_2, %rax      /* argument */
+        movq    0(%rbx), %r12      /* code pointer */
+        jmp     LBL(caml_start_program)
+
+FUNCTION(G(caml_callback2_exn_r))
+    /* Save callee-save registers */
+        PUSH_CALLEE_SAVE_REGS
+    /* Initial loading of arguments */
+        movq    C_ARG_1, %rdi      /* closure -- no op with Unix conventions */
+        movq    C_ARG_2, %rax      /* first argument */
+        movq    C_ARG_3, %rbx      /* second argument */
+        leaq    GCALL(caml_apply2)(%rip), %r12  /* code pointer */
+        jmp     LBL(caml_start_program)
+
+FUNCTION(G(caml_callback3_exn_r))
+    /* Save callee-save registers */
+        PUSH_CALLEE_SAVE_REGS
+    /* Initial loading of arguments */
+        movq    C_ARG_2, %rax      /* first argument */
+        movq    C_ARG_3, %rbx      /* second argument */
+        movq    C_ARG_1, %rsi      /* closure */
+        movq    C_ARG_4, %rdi      /* third argument */
+        leaq    GCALL(caml_apply3)(%rip), %r12  /* code pointer */
+        jmp     LBL(caml_start_program)
+
+FUNCTION(G(caml_ml_array_bound_error_r))
+        leaq    GCALL(caml_array_bound_error_r)(%rip), %rax
+        jmp     LBL(caml_c_call_r)
+
 
         .globl  G(caml_system__code_end)
 G(caml_system__code_end):

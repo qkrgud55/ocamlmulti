@@ -8,8 +8,28 @@
 #include "misc.h"
 #include "mlvalues.h"
 
+#include <setjmp.h>
+
 #define NULL_CTX 0
 #define MAX_TH 16
+
+// fail.h
+
+#ifndef PHC_CTX_LOGNJUMP
+#define PHC_CTX_LOGNJUMP
+#ifdef POSIX_SIGNALS
+struct longjmp_buffer {
+  sigjmp_buf buf;
+};
+#else
+struct longjmp_buffer {
+  jmp_buf buf;
+};
+#define sigsetjmp(buf,save) setjmp(buf)
+#define siglongjmp(buf,val) longjmp(buf,val)
+#endif
+#endif
+
 
 // stack.h
 typedef struct {
@@ -250,6 +270,24 @@ typedef struct phc_global_context {
   // compact.c
   char *compact_fl;
   uintnat caml_percent_max;
+
+  // backtrace.c
+  int caml_backtrace_active;
+  int caml_backtrace_pos;
+  code_t * caml_backtrace_buffer;
+  value caml_backtrace_last_exn;
+
+  // meta.c
+  value * caml_stack_low;
+  value * caml_stack_high;
+  value * caml_stack_threshold;
+  value * caml_extern_sp;
+  value * caml_trapsp;
+  int caml_callback_depth;
+  int volatile caml_something_to_do;
+  void (*volatile caml_async_action_hook)(void);
+  struct longjmp_buffer * caml_external_raise;
+
 
 } phc_global_context;
 

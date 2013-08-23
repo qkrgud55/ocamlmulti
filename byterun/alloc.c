@@ -247,7 +247,6 @@ CAMLexport int caml_convert_flag_list(value list, int *flags)
   return res;
 }
 
-
 /* For compiling let rec over values */
 
 CAMLprim value caml_alloc_dummy(value size)

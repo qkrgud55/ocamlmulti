@@ -41,6 +41,8 @@
 #define ASSERT_FAILURE_EXN 10   /* "Assert_failure" */
 #define UNDEFINED_RECURSIVE_MODULE_EXN 11 /* "Undefined_recursive_module" */
 
+#ifndef PHC_CTX_LOGNJUMP
+#define PHC_CTX_LOGNJUMP
 #ifdef POSIX_SIGNALS
 struct longjmp_buffer {
   sigjmp_buf buf;
@@ -51,6 +53,7 @@ struct longjmp_buffer {
 };
 #define sigsetjmp(buf,save) setjmp(buf)
 #define siglongjmp(buf,val) longjmp(buf,val)
+#endif
 #endif
 
 CAMLextern struct longjmp_buffer * caml_external_raise;
@@ -71,6 +74,7 @@ CAMLextern void caml_raise_with_args (value tag, int nargs, value arg[]) Noretur
 CAMLextern void caml_raise_with_string (value tag, char const * msg) Noreturn;
 CAMLextern void caml_failwith (char const *) Noreturn;
 CAMLextern void caml_invalid_argument (char const *) Noreturn;
+CAMLextern void caml_invalid_argument_r (pctxt,char const *) Noreturn;
 CAMLextern void caml_raise_out_of_memory (void) Noreturn;
 CAMLextern void caml_raise_stack_overflow (void) Noreturn;
 CAMLextern void caml_raise_sys_error (value) Noreturn;
@@ -79,6 +83,7 @@ CAMLextern void caml_raise_zero_divide (void) Noreturn;
 CAMLextern void caml_raise_not_found (void) Noreturn;
 CAMLextern void caml_init_exceptions (void);
 CAMLextern void caml_array_bound_error (void) Noreturn;
+CAMLextern void caml_array_bound_error_r (pctxt) Noreturn;
 CAMLextern void caml_raise_sys_blocked_io (void) Noreturn;
 
 #ifdef __cplusplus

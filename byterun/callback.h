@@ -35,17 +35,30 @@ CAMLextern value caml_callback3 (value closure, value arg1, value arg2,
 CAMLextern value caml_callbackN (value closure, int narg, value args[]);
 
 CAMLextern value caml_callback_exn (value closure, value arg);
-CAMLextern value caml_callback_exn_r (pctxt ctx, value closure, value arg);
 CAMLextern value caml_callback2_exn (value closure, value arg1, value arg2);
 CAMLextern value caml_callback3_exn (value closure,
                                      value arg1, value arg2, value arg3);
 CAMLextern value caml_callbackN_exn (value closure, int narg, value args[]);
+
+CAMLextern value caml_callback_r (pctxt,value closure, value arg);
+CAMLextern value caml_callback2_r (pctxt,value closure, value arg1, value arg2);
+CAMLextern value caml_callback3_r (pctxt,value closure, value arg1, value arg2,
+                                 value arg3);
+CAMLextern value caml_callbackN_r (pctxt,value closure, int narg, value args[]);
+
+CAMLextern value caml_callback_exn_r (pctxt,value closure, value arg);
+CAMLextern value caml_callback2_exn_r (pctxt,value closure, value arg1, value arg2);
+CAMLextern value caml_callback3_exn_r (pctxt,value closure,
+                                     value arg1, value arg2, value arg3);
+CAMLextern value caml_callbackN_exn_r (pctxt,value closure, int narg, value args[]);
+
 
 #define Make_exception_result(v) ((v) | 2)
 #define Is_exception_result(v) (((v) & 3) == 2)
 #define Extract_exception(v) ((v) & ~3)
 
 CAMLextern value * caml_named_value (char const * name);
+CAMLextern value * caml_named_value_r (pctxt ctx, char const * name);
 
 CAMLextern void caml_main (char ** argv);
 CAMLextern void caml_startup (char ** argv);

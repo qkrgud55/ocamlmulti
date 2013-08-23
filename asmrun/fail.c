@@ -147,6 +147,13 @@ void caml_invalid_argument (char const *msg)
   caml_raise_with_string((value) caml_exn_Invalid_argument, msg);
 }
 
+// phc todo reentrant
+void caml_invalid_argument_r (pctxt ctx, char const *msg)
+{
+  caml_raise_with_string((value) caml_exn_Invalid_argument, msg);
+}
+
+
 /* To raise [Out_of_memory], we can't use [caml_raise_constant],
    because it allocates and we're out of memory...
    We therefore use a statically-allocated bucket constructed
@@ -228,6 +235,27 @@ void caml_array_bound_error(void)
   }
   caml_raise((value) &array_bound_error_bucket.exn);
 }
+
+// phc todo reentrant
+void caml_array_bound_error_r(pctxt ctx)
+{
+  if (! array_bound_error_bucket_inited) {
+    mlsize_t wosize = (BOUND_MSG_LEN + sizeof(value)) / sizeof(value);
+    mlsize_t offset_index = Bsize_wsize(wosize) - 1;
+    array_bound_error_msg.hdr = Make_header(wosize, String_tag, Caml_white);
+    array_bound_error_msg.data[offset_index] = offset_index - BOUND_MSG_LEN;
+    array_bound_error_bucket.hdr = Make_header(2, 0, Caml_white);
+    array_bound_error_bucket.exn = (value) caml_exn_Invalid_argument;
+    array_bound_error_bucket.arg = (value) array_bound_error_msg.data;
+    array_bound_error_bucket_inited = 1;
+    caml_page_table_add(In_static_data,
+                        &array_bound_error_msg,
+                        &array_bound_error_msg + 1);
+    array_bound_error_bucket_inited = 1;
+  }
+  caml_raise((value) &array_bound_error_bucket.exn);
+}
+
 
 int caml_is_special_exception(value exn) {
   return exn == (value) caml_exn_Match_failure

@@ -508,7 +508,6 @@ void caml_do_roots (scanning_action f)
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f);
 }
 
-// phc todo reentrant
 void caml_do_roots_r (pctxt ctx, scanning_action_r f)
 {
   int i, j;

@@ -880,7 +880,7 @@ intnat caml_major_collection_slice_r (pctxt ctx, intnat howmuch)
     caml_gc_message (0x02, "$", 0);
   }
 
-//  if (ctx->caml_gc_phase == Phase_idle) caml_compact_heap_maybe_r (ctx);
+  if (ctx->caml_gc_phase == Phase_idle) caml_compact_heap_maybe_r (ctx);
 
   ctx->caml_stat_major_words += ctx->caml_allocated_words;
   ctx->caml_allocated_words = 0;

@@ -55,7 +55,6 @@ extern void caml_shrink_heap_r (pctxt,char *);              /* memory.c */
 
 typedef uintnat word;
 
-// phc no ctx
 static void invert_pointer_at (word *p)
 {
   word q = *p;
@@ -110,10 +109,68 @@ static void invert_pointer_at (word *p)
   }
 }
 
-// phc no ctx
+static void invert_pointer_at_r (pctxt ctx, word *p)
+{
+  word q = *p;
+                                            Assert (Ecolor ((intnat) p) == 0);
+
+  /* Use Ecolor (q) == 0 instead of Is_block (q) because q could be an
+     inverted pointer for an infix header (with Ecolor == 2). */
+  if (Ecolor (q) == 0 && (Classify_addr (q) & In_heap)){
+    switch (Ecolor (Hd_val (q))){
+    case 0:
+    case 3: /* Pointer or header: insert in inverted list. */
+      *p = Hd_val (q);
+      Hd_val (q) = (header_t) p;
+      break;
+    case 1: /* Infix header: make inverted infix list. */
+      /* Double inversion: the last of the inverted infix list points to
+         the next infix header in this block.  The last of the last list
+         contains the original block header. */
+      {
+        /* This block as a value. */
+        value val = (value) q - Infix_offset_val (q);
+        /* Get the block header. */
+        word *hp = (word *) Hp_val (val);
+
+        while (Ecolor (*hp) == 0) hp = (word *) *hp;
+                                                   Assert (Ecolor (*hp) == 3);
+        if (Tag_ehd (*hp) == Closure_tag){
+          /* This is the first infix found in this block. */
+          /* Save original header. */
+          *p = *hp;
+          /* Link inverted infix list. */
+          Hd_val (q) = (header_t) ((word) p | 2);
+          /* Change block header's tag to Infix_tag, and change its size
+             to point to the infix list. */
+          *hp = Make_ehd (Wosize_bhsize (q - val), Infix_tag, 3);
+        }else{                            Assert (Tag_ehd (*hp) == Infix_tag);
+          /* Point the last of this infix list to the current first infix
+             list of the block. */
+          *p = (word) &Field (val, Wosize_ehd (*hp)) | 1;
+          /* Point the head of this infix list to the above. */
+          Hd_val (q) = (header_t) ((word) p | 2);
+          /* Change block header's size to point to this infix list. */
+          *hp = Make_ehd (Wosize_bhsize (q - val), Infix_tag, 3);
+        }
+      }
+      break;
+    case 2: /* Inverted infix list: insert. */
+      *p = Hd_val (q);
+      Hd_val (q) = (header_t) ((word) p | 2);
+      break;
+    }
+  }
+}
+
 static void invert_root (value v, value *p)
 {
   invert_pointer_at ((word *) p);
+}
+
+static void invert_root_r (pctxt ctx, value v, value *p)
+{
+  invert_pointer_at_r (ctx, (word *) p);
 }
 
 static char *compact_fl;
@@ -584,8 +641,8 @@ static void do_compaction_r (pctxt ctx)
     /* Invert roots first because the threads library needs some heap
        data structures to find its roots.  Fortunately, it doesn't need
        the headers (see above). */
-    caml_do_roots_r (ctx, invert_root);
-    caml_final_do_weak_roots_r (ctx, invert_root);
+    caml_do_roots_r (ctx, invert_root_r);
+    caml_final_do_weak_roots_r (ctx, invert_root_r);
 
     ch = ctx->caml_heap_start;
     while (ch != NULL){
@@ -612,7 +669,7 @@ static void do_compaction_r (pctxt ctx)
         }
 
         if (t < No_scan_tag){
-          for (i = 1; i < sz; i++) invert_pointer_at (&(p[i]));
+          for (i = 1; i < sz; i++) invert_pointer_at_r (ctx, &(p[i]));
         }
         p += sz;
       }
@@ -632,11 +689,11 @@ static void do_compaction_r (pctxt ctx)
         while (Ecolor (q) == 0) q = * (word *) q;
         sz = Wosize_ehd (q);
         for (i = 1; i < sz; i++){
-          if (Field (p,i) != caml_weak_none){
-            invert_pointer_at ((word *) &(Field (p,i)));
+          if (Field (p,i) != ctx->caml_weak_none){
+            invert_pointer_at_r (ctx, (word *) &(Field (p,i)));
           }
         }
-        invert_pointer_at ((word *) pp);
+        invert_pointer_at_r (ctx, (word *) pp);
         pp = &Field (p, 0);
       }
     }
@@ -778,7 +835,7 @@ static void do_compaction_r (pctxt ctx)
   /* Rebuild the free list. */
   {
     ch = ctx->caml_heap_start;
-    caml_fl_reset ();
+    caml_fl_reset_r (ctx);
     while (ch != NULL){
       if (Chunk_size (ch) > Chunk_alloc (ch)){
         caml_make_free_blocks_r (ctx, (value *) (ch + Chunk_alloc (ch)),

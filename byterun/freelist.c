@@ -1013,7 +1013,7 @@ void caml_make_free_blocks_r (pctxt ctx, value *p, mlsize_t size, int do_merge, 
       sz = size;
     }
     *(header_t *)p = Make_header (Wosize_whsize (sz), 0, color);
-    if (do_merge) caml_fl_merge_block (Bp_hp (p));
+    if (do_merge) caml_fl_merge_block_r (ctx, Bp_hp (p));
     size -= sz;
     p += sz;
   }

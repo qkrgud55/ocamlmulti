@@ -155,6 +155,15 @@ CAMLexport void caml_raise_out_of_memory(void)
   caml_raise((value) &(out_of_memory_bucket.exn));
 }
 
+// phc todo reentrant
+CAMLexport void caml_raise_out_of_memory_r(pctxt ctx)
+{
+  if (out_of_memory_bucket.exn == 0)
+    caml_fatal_error
+      ("Fatal error: out of memory while raising Out_of_memory\n");
+  caml_raise((value) &(out_of_memory_bucket.exn));
+}
+
 CAMLexport void caml_raise_stack_overflow(void)
 {
   caml_raise_constant(Field(caml_global_data, STACK_OVERFLOW_EXN));

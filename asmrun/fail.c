@@ -167,6 +167,13 @@ void caml_raise_out_of_memory(void)
   caml_raise((value) &caml_bucket_Out_of_memory);
 }
 
+// phc todo reentrant
+void caml_raise_out_of_memory_r(pctxt ctx)
+{
+  caml_raise((value) &caml_bucket_Out_of_memory);
+}
+
+
 void caml_raise_stack_overflow(void)
 {
   caml_raise((value) &caml_bucket_Stack_overflow);

@@ -142,6 +142,14 @@ typedef struct sentinel_t{
   value filler2; /* Make sure the sentinel is never adjacent to any block. */
 } sentinel_t;
 
+// compare.c
+
+struct compare_item { value * v1, * v2; mlsize_t count; };
+
+#define COMPARE_STACK_INIT_SIZE 256
+#define COMPARE_STACK_MAX_SIZE (1024*1024)
+
+
 #define FLP_MAX 1000
 
 typedef struct phc_global_context {
@@ -288,6 +296,10 @@ typedef struct phc_global_context {
   void (*volatile caml_async_action_hook)(void);
   struct longjmp_buffer * caml_external_raise;
 
+  struct compare_item compare_stack_init[COMPARE_STACK_INIT_SIZE];
+  struct compare_item *compare_stack;
+  struct compare_item *compare_stack_limit;
+  int caml_compare_unordered;
 
 } phc_global_context;
 

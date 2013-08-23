@@ -76,6 +76,7 @@ CAMLextern void caml_failwith (char const *) Noreturn;
 CAMLextern void caml_invalid_argument (char const *) Noreturn;
 CAMLextern void caml_invalid_argument_r (pctxt,char const *) Noreturn;
 CAMLextern void caml_raise_out_of_memory (void) Noreturn;
+CAMLextern void caml_raise_out_of_memory_r (pctxt) Noreturn;
 CAMLextern void caml_raise_stack_overflow (void) Noreturn;
 CAMLextern void caml_raise_sys_error (value) Noreturn;
 CAMLextern void caml_raise_end_of_file (void) Noreturn;

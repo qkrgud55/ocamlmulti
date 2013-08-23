@@ -99,8 +99,11 @@ pctxt create_empty_context(void){
   res->caml_stat_compactions       = 0;
   res->caml_stat_heap_chunks       = 0;
 
+  res->caml_last_return_address = 1;
 
-  res-> caml_last_return_address = 1;
+  res->compare_stack = res->compare_stack_init;
+  res->compare_stack_limit = res->compare_stack_init + COMPARE_STACK_INIT_SIZE;
+
 
   if (main_ctx==NULL){
     main_ctx = res;

@@ -23,17 +23,19 @@
 #include "mlvalues.h"
 #include "context.h"
 
+/*
 struct custom_operations {
   char *identifier;
   void (*finalize)(value v);
   int (*compare)(value v1, value v2);
   intnat (*hash)(value v);
   void (*serialize)(value v,
-                    /*out*/ uintnat * wsize_32 /*size in bytes*/,
-                    /*out*/ uintnat * wsize_64 /*size in bytes*/);
+                    uintnat * wsize_32,
+                    uintnat * wsize_64);
   uintnat (*deserialize)(void * dst);
   int (*compare_ext)(value v1, value v2);
 };
+*/
 
 #define custom_finalize_default NULL
 #define custom_compare_default NULL
@@ -60,16 +62,21 @@ CAMLextern value caml_alloc_custom_r(pctxt ctx, struct custom_operations * ops,
 
 
 CAMLextern void caml_register_custom_operations(struct custom_operations * ops);
+CAMLextern void caml_register_custom_operations_r(pctxt ctx, struct custom_operations * ops);
 
 CAMLextern int caml_compare_unordered;
   /* Used by custom comparison to report unordered NaN-like cases. */
 
 /* <private> */
 extern struct custom_operations * caml_find_custom_operations(char * ident);
+extern struct custom_operations * caml_find_custom_operations_r(pctxt ctx, char * ident);
 extern struct custom_operations *
           caml_final_custom_operations(void (*fn)(value));
+extern struct custom_operations *
+          caml_final_custom_operations_r(pctxt ctx, void (*fn)(value));
 
 extern void caml_init_custom_operations(void);
+extern void caml_init_custom_operations_r(pctxt ctx);
 /* </private> */
 
 #ifdef __cplusplus

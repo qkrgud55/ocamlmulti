@@ -182,7 +182,6 @@ void caml_urge_major_slice (void)
 #endif
 }
 
-// phc todo
 void caml_urge_major_slice_r (pctxt ctx)
 {
   ctx->caml_force_major_slice = 1;

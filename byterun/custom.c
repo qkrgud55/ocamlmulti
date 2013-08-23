@@ -42,8 +42,6 @@ CAMLexport value caml_alloc_custom(struct custom_operations * ops,
   return result;
 }
 
-
-// phc todo tmp
 CAMLexport value caml_alloc_custom_r(pctxt ctx, struct custom_operations * ops,
                                    uintnat size,
                                    mlsize_t mem,
@@ -53,23 +51,24 @@ CAMLexport value caml_alloc_custom_r(pctxt ctx, struct custom_operations * ops,
   value result;
 
   wosize = 1 + (size + sizeof(value) - 1) / sizeof(value);
-//  if (ops->finalize == NULL && wosize <= Max_young_wosize) {
+  if (ops->finalize == NULL && wosize <= Max_young_wosize) {
     result = caml_alloc_small_r(ctx, wosize, Custom_tag);
     Custom_ops_val(result) = ops;
-/*  } else {
-    result = caml_alloc_shr(wosize, Custom_tag);
+  } else {
+    result = caml_alloc_shr_r(ctx, wosize, Custom_tag);
     Custom_ops_val(result) = ops;
-    caml_adjust_gc_speed(mem, max);
-    result = caml_check_urgent_gc(result);
-  } */
+    caml_adjust_gc_speed_r(ctx, mem, max);
+    result = caml_check_urgent_gc_r(ctx, result);
+  }
   return result;
 }
 
+/*
 struct custom_operations_list {
   struct custom_operations * ops;
   struct custom_operations_list * next;
 };
-
+*/
 static struct custom_operations_list * custom_ops_table = NULL;
 
 CAMLexport void caml_register_custom_operations(struct custom_operations * ops)
@@ -124,3 +123,54 @@ void caml_init_custom_operations(void)
   caml_register_custom_operations(&caml_nativeint_ops);
   caml_register_custom_operations(&caml_int64_ops);
 }
+
+
+CAMLexport void caml_register_custom_operations_r(pctxt ctx, struct custom_operations * ops)
+{
+  struct custom_operations_list * l =
+    caml_stat_alloc_r(ctx, sizeof(struct custom_operations_list));
+  Assert(ops->identifier != NULL);
+  Assert(ops->deserialize != NULL);
+  l->ops = ops;
+  l->next = ctx->custom_ops_table;
+  ctx->custom_ops_table = l;
+}
+
+struct custom_operations * caml_find_custom_operations_r(pctxt ctx, char * ident)
+{
+  struct custom_operations_list * l;
+  for (l = ctx->custom_ops_table; l != NULL; l = l->next)
+    if (strcmp(l->ops->identifier, ident) == 0) return l->ops;
+  return NULL;
+}
+
+// static struct custom_operations_list * custom_ops_final_table = NULL;
+
+struct custom_operations * caml_final_custom_operations_r(pctxt ctx, final_fun fn)
+{
+  struct custom_operations_list * l;
+  struct custom_operations * ops;
+  for (l = ctx->custom_ops_final_table; l != NULL; l = l->next)
+    if (l->ops->finalize == fn) return l->ops;
+  ops = caml_stat_alloc_r(ctx, sizeof(struct custom_operations));
+  ops->identifier = "_final";
+  ops->finalize = fn;
+  ops->compare = custom_compare_default;
+  ops->hash = custom_hash_default;
+  ops->serialize = custom_serialize_default;
+  ops->deserialize = custom_deserialize_default;
+  ops->compare_ext = custom_compare_ext_default;
+  l = caml_stat_alloc_r(ctx, sizeof(struct custom_operations_list));
+  l->ops = ops;
+  l->next = ctx->custom_ops_final_table;
+  ctx->custom_ops_final_table = l;
+  return ops;
+}
+
+void caml_init_custom_operations_r(pctxt ctx)
+{
+  caml_register_custom_operations_r(ctx, &caml_int32_ops);
+  caml_register_custom_operations_r(ctx, &caml_nativeint_ops);
+  caml_register_custom_operations_r(ctx, &caml_int64_ops);
+}
+

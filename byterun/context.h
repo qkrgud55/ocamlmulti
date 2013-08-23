@@ -149,6 +149,26 @@ struct compare_item { value * v1, * v2; mlsize_t count; };
 #define COMPARE_STACK_INIT_SIZE 256
 #define COMPARE_STACK_MAX_SIZE (1024*1024)
 
+// custom.c
+
+struct custom_operations {
+  char *identifier;
+  void (*finalize)(value v);
+  int (*compare)(value v1, value v2);
+  intnat (*hash)(value v);
+  void (*serialize)(value v,
+                    uintnat * wsize_32,
+                    uintnat * wsize_64);
+  uintnat (*deserialize)(void * dst);
+  int (*compare_ext)(value v1, value v2);
+};
+
+struct custom_operations_list {
+  struct custom_operations * ops;
+  struct custom_operations_list * next;
+};
+
+
 
 #define FLP_MAX 1000
 
@@ -296,10 +316,15 @@ typedef struct phc_global_context {
   void (*volatile caml_async_action_hook)(void);
   struct longjmp_buffer * caml_external_raise;
 
+  // compare.c
   struct compare_item compare_stack_init[COMPARE_STACK_INIT_SIZE];
   struct compare_item *compare_stack;
   struct compare_item *compare_stack_limit;
   int caml_compare_unordered;
+
+  // custom.c
+  struct custom_operations_list * custom_ops_table;
+  struct custom_operations_list * custom_ops_final_table;
 
 } phc_global_context;
 

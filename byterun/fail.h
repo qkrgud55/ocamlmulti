@@ -69,23 +69,35 @@ extern "C" {
 CAMLextern void caml_raise (value bucket) Noreturn;
 CAMLextern void caml_raise_r (pctxt, value bucket) Noreturn;
 CAMLextern void caml_raise_constant (value tag) Noreturn;
+CAMLextern void caml_raise_constant_r (pctxt,value tag) Noreturn;
 CAMLextern void caml_raise_with_arg (value tag, value arg) Noreturn;
+CAMLextern void caml_raise_with_arg_r (pctxt, value tag, value arg) Noreturn;
 CAMLextern void caml_raise_with_args (value tag, int nargs, value arg[]) Noreturn;
+CAMLextern void caml_raise_with_args_r (pctxt, value tag, int nargs, value arg[]) Noreturn;
 CAMLextern void caml_raise_with_string (value tag, char const * msg) Noreturn;
+CAMLextern void caml_raise_with_string_r (pctxt, value tag, char const * msg) Noreturn;
 CAMLextern void caml_failwith (char const *) Noreturn;
+CAMLextern void caml_failwith_r (pctxt, char const *) Noreturn;
 CAMLextern void caml_invalid_argument (char const *) Noreturn;
 CAMLextern void caml_invalid_argument_r (pctxt,char const *) Noreturn;
 CAMLextern void caml_raise_out_of_memory (void) Noreturn;
 CAMLextern void caml_raise_out_of_memory_r (pctxt) Noreturn;
 CAMLextern void caml_raise_stack_overflow (void) Noreturn;
+CAMLextern void caml_raise_stack_overflow_r (pctxt) Noreturn;
 CAMLextern void caml_raise_sys_error (value) Noreturn;
+CAMLextern void caml_raise_sys_error_r (pctxt, value) Noreturn;
 CAMLextern void caml_raise_end_of_file (void) Noreturn;
+CAMLextern void caml_raise_end_of_file_r (pctxt) Noreturn;
 CAMLextern void caml_raise_zero_divide (void) Noreturn;
+CAMLextern void caml_raise_zero_divide_r (pctxt) Noreturn;
 CAMLextern void caml_raise_not_found (void) Noreturn;
+CAMLextern void caml_raise_not_found_r (pctxt) Noreturn;
 CAMLextern void caml_init_exceptions (void);
+CAMLextern void caml_init_exceptions_r (pctxt);
 CAMLextern void caml_array_bound_error (void) Noreturn;
 CAMLextern void caml_array_bound_error_r (pctxt) Noreturn;
 CAMLextern void caml_raise_sys_blocked_io (void) Noreturn;
+CAMLextern void caml_raise_sys_blocked_io_r (pctxt) Noreturn;
 
 #ifdef __cplusplus
 }

@@ -666,6 +666,7 @@ LBL(108):
 #define C_ARG_2 %rsi
 #define C_ARG_3 %rdx
 #define C_ARG_4 %rcx
+#define C_ARG_5 %r8
 #endif
 
 /* Raise an exception from OCaml */
@@ -733,6 +734,37 @@ LBL(111):
         popq    %r14                  /* Recover previous exception handler */
         LOAD_VAR(caml_young_ptr,%r15)  /* Reload alloc ptr */
         ret
+
+FUNCTION(G(caml_raise_exception_r))
+        testl   $1, 96(%rdi)
+        jne     LBL(211)
+        movq    C_ARG_2, %rax
+    /*  LOAD_VAR(caml_exception_pointer, %rsp) */ /* Cut stack */
+        movq    104(%rdi), %rsp
+        popq    %r14                  /* Recover previous exception handler */
+    /*  LOAD_VAR(caml_young_ptr, %r15) /* Reload alloc ptr */
+        movq    (%rdi), %r15
+        ret
+LBL(211):
+        movq    C_ARG_2, %r12            /* Save exception bucket */
+                                      /* arg 1: exception bucket */
+    /*  LOAD_VAR(caml_last_return_address,C_ARG_2) */  /* arg 2: pc of raise */
+    /*  LOAD_VAR(caml_bottom_of_stack,C_ARG_3)     */  /* arg 3: sp of raise */
+    /*  LOAD_VAR(caml_exception_pointer,C_ARG_4)   */  /* arg 4: sp of handler */
+        movq    72(%rdi), C_ARG_3
+        movq    80(%rdi), C_ARG_4
+        movq    104(%rdi), C_ARG_5
+        subq    $8, %rsp              /* PR#5700: maintain stack alignment */
+        PREPARE_FOR_C_CALL            /* no need to cleanup after */
+        call    GCALL(caml_stash_backtrace_r)
+    /*  LOAD_VAR(caml_exception_pointer,%rsp)     */
+        movq    104(%rax), %rsp
+        popq    %r14                  /* Recover previous exception handler */
+    /*  LOAD_VAR(caml_young_ptr,%r15) */  /* Reload alloc ptr */
+        movq    (%rax), %r15
+        movq    %r12, %rax            /* Recover exception bucket */
+        ret
+
 
 /* Callback from C to OCaml */
 

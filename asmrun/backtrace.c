@@ -251,7 +251,9 @@ CAMLprim value caml_backtrace_status_r(pctxt ctx, value vunit)
 /* Store the return addresses contained in the given stack fragment
    into the backtrace array */
 
-void caml_stash_backtrace_r(pctxt ctx, value exn, uintnat pc, char * sp, char * trapsp)
+// phc - called by amd64.S, C call to this function will remove context ptr in %rdi
+// this function returns context ptr
+pctxt caml_stash_backtrace_r(pctxt ctx, value exn, uintnat pc, char * sp, char * trapsp)
 {
   frame_descr * d;
   uintnat h;
@@ -262,7 +264,7 @@ void caml_stash_backtrace_r(pctxt ctx, value exn, uintnat pc, char * sp, char * 
   }
   if (ctx->caml_backtrace_buffer == NULL) {
     ctx->caml_backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
-    if (ctx->caml_backtrace_buffer == NULL) return;
+    if (ctx->caml_backtrace_buffer == NULL) return ctx;
   }
   if (ctx->caml_frame_descriptors == NULL) caml_init_frame_descriptors_r(ctx);
 
@@ -271,14 +273,14 @@ void caml_stash_backtrace_r(pctxt ctx, value exn, uintnat pc, char * sp, char * 
     h = Hash_retaddr(pc);
     while(1) {
       d = ctx->caml_frame_descriptors[h];
-      if (d == 0) return; /* can happen if some code not compiled with -g */
+      if (d == 0) return ctx; /* can happen if some code not compiled with -g */
       if (d->retaddr == pc) break;
       h = (h+1) & ctx->caml_frame_descriptors_mask;
     }
     /* Skip to next frame */
     if (d->frame_size != 0xFFFF) {
       /* Regular frame, store its descriptor in the backtrace buffer */
-      if (ctx->caml_backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
+      if (ctx->caml_backtrace_pos >= BACKTRACE_BUFFER_SIZE) return ctx;
       ctx->caml_backtrace_buffer[ctx->caml_backtrace_pos++] = (code_t) d;
 #ifndef Stack_grows_upwards
       sp += (d->frame_size & 0xFFFC);
@@ -296,13 +298,13 @@ void caml_stash_backtrace_r(pctxt ctx, value exn, uintnat pc, char * sp, char * 
       sp = next_context->bottom_of_stack;
       pc = next_context->last_retaddr;
       /* A null sp means no more ML stack chunks; stop here. */
-      if (sp == NULL) return;
+      if (sp == NULL) return ctx;
     }
     /* Stop when we reach the current exception handler */
 #ifndef Stack_grows_upwards
-    if (sp > trapsp) return;
+    if (sp > trapsp) return ctx;
 #else
-    if (sp < trapsp) return;
+    if (sp < trapsp) return ctx;
 #endif
   }
 }

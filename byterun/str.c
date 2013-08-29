@@ -25,6 +25,7 @@
 #include <locale.h>
 #endif
 
+// phc no ctx
 CAMLexport mlsize_t caml_string_length(value s)
 {
   mlsize_t temp;

@@ -133,7 +133,7 @@ static void caml_insert_global_root_r(pctxt ctx,
       update[i] = (struct global_root *) rootlist;
     rootlist->level = new_level;
   }
-  e = caml_stat_alloc(sizeof(struct global_root) +
+  e = caml_stat_alloc_r(ctx, sizeof(struct global_root) +
                       new_level * sizeof(struct global_root *));
   e->root = r;
   for (i = 0; i <= new_level; i++) {
@@ -143,7 +143,6 @@ static void caml_insert_global_root_r(pctxt ctx,
 }
 
 /* Deletion in a global root list */
-
 static void caml_delete_global_root(struct global_root_list * rootlist,
                                     value * r)
 {
@@ -177,6 +176,41 @@ static void caml_delete_global_root(struct global_root_list * rootlist,
          rootlist->forward[rootlist->level] == NULL)
     rootlist->level--;
 }
+
+static void caml_delete_global_root_r(pctxt ctx, struct global_root_list * rootlist,
+                                    value * r)
+{
+  struct global_root * update[NUM_LEVELS];
+  struct global_root * e, * f;
+  int i;
+
+  /* Init "cursor" to list head */
+  e = (struct global_root *) rootlist;
+  /* Find element in list */
+  for (i = rootlist->level; i >= 0; i--) {
+    while (1) {
+      f = e->forward[i];
+      if (f == NULL || f->root >= r) break;
+      e = f;
+    }
+    update[i] = e;
+  }
+  e = e->forward[0];
+  /* If not found, nothing to do */
+  if (e == NULL || e->root != r) return;
+  /* Rebuild list without node */
+  for (i = 0; i <= rootlist->level; i++) {
+    if (update[i]->forward[i] == e)
+      update[i]->forward[i] = e->forward[i];
+  }
+  /* Reclaim list element */
+  caml_stat_free(e);
+  /* Down-correct list level */
+  while (rootlist->level > 0 &&
+         rootlist->forward[rootlist->level] == NULL)
+    rootlist->level--;
+}
+
 
 /* Iterate over a global root list */
 
@@ -235,11 +269,10 @@ CAMLexport void caml_register_global_root(value *r)
   caml_insert_global_root(&caml_global_roots, r);
 }
 
-// phc todo reentrant
 CAMLexport void caml_register_global_root_r(pctxt ctx, value *r)
 {
   Assert (((intnat) r & 3) == 0);  /* compact.c demands this (for now) */
-  caml_insert_global_root_r(ctx, &caml_global_roots, r);
+  caml_insert_global_root_r(ctx, &ctx->caml_global_roots, r);
 }
 
 /* Un-register a global C root of the mutable kind */
@@ -249,15 +282,13 @@ CAMLexport void caml_remove_global_root(value *r)
   caml_delete_global_root(&caml_global_roots, r);
 }
 
-// phc todo reentrant 
 CAMLexport void caml_remove_global_root_r(pctxt ctx, value *r)
 {
-  caml_delete_global_root(&caml_global_roots, r);
+  caml_delete_global_root_r(ctx, &ctx->caml_global_roots, r);
 }
 
 
 /* Register a global C root of the generational kind */
-
 CAMLexport void caml_register_generational_global_root(value *r)
 {
   value v = *r;
@@ -270,8 +301,19 @@ CAMLexport void caml_register_generational_global_root(value *r)
   }
 }
 
-/* Un-register a global C root of the generational kind */
+CAMLexport void caml_register_generational_global_root_r(pctxt ctx, value *r)
+{
+  value v = *r;
+  Assert (((intnat) r & 3) == 0);  /* compact.c demands this (for now) */
+  if (Is_block(v)) {
+    if (Is_young_r(ctx, v))
+      caml_insert_global_root_r(ctx, &ctx->caml_global_roots_young, r);
+    else if (Is_in_heap(v))
+      caml_insert_global_root_r(ctx, &ctx->caml_global_roots_old, r);
+  }
+}
 
+/* Un-register a global C root of the generational kind */
 CAMLexport void caml_remove_generational_global_root(value *r)
 {
   value v = *r;
@@ -282,6 +324,18 @@ CAMLexport void caml_remove_generational_global_root(value *r)
       caml_delete_global_root(&caml_global_roots_old, r);
   }
 }
+
+CAMLexport void caml_remove_generational_global_root_r(pctxt ctx, value *r)
+{
+  value v = *r;
+  if (Is_block(v)) {
+    if (Is_young_r(ctx, v))
+      caml_delete_global_root_r(ctx, &ctx->caml_global_roots_young, r);
+    else if (Is_in_heap(v))
+      caml_delete_global_root_r(ctx, &ctx->caml_global_roots_old, r);
+  }
+}
+
 
 /* Modify the value of a global C root of the generational kind */
 
@@ -323,6 +377,47 @@ CAMLexport void caml_modify_generational_global_root(value *r, value newval)
   *r = newval;
 }
 
+CAMLexport void caml_modify_generational_global_root_r(pctxt ctx, 
+   value *r, value newval)
+{
+  value oldval = *r;
+
+  /* It is OK to have a root in roots_young that suddenly points to
+     the old generation -- the next minor GC will take care of that.
+     What needs corrective action is a root in roots_old that suddenly
+     points to the young generation. */
+  if (Is_block(newval) && Is_young_r(ctx, newval) &&
+      Is_block(oldval) && Is_in_heap(oldval)) {
+    caml_delete_global_root_r(ctx, &ctx->caml_global_roots_old, r);
+    caml_insert_global_root_r(ctx, &ctx->caml_global_roots_young, r);
+  }
+  /* PR#4704 */
+  else if (!Is_block(oldval) && Is_block(newval)) {
+    /* The previous value in the root was unboxed but now it is boxed.
+       The root won't appear in any of the root lists thus far (by virtue
+       of the operation of [caml_register_generational_global_root]), so we
+       need to make sure it gets in, or else it will never be scanned. */
+    if (Is_young_r(ctx, newval))
+      caml_insert_global_root_r(ctx, &ctx->caml_global_roots_young, r);
+    else if (Is_in_heap(newval))
+      caml_insert_global_root_r(ctx, &ctx->caml_global_roots_old, r);
+  }
+  else if (Is_block(oldval) && !Is_block(newval)) {
+    /* The previous value in the root was boxed but now it is unboxed, so
+       the root should be removed. If [oldval] is young, this will happen
+       anyway at the next minor collection, but it is safer to delete it
+       here. */
+    if (Is_young_r(ctx, oldval))
+      caml_delete_global_root_r(ctx, &ctx->caml_global_roots_young, r);
+    else if (Is_in_heap(oldval))
+      caml_delete_global_root_r(ctx, &ctx->caml_global_roots_old, r);
+  }
+  /* end PR#4704 */
+  *r = newval;
+}
+
+
+
 /* Scan all global roots */
 
 void caml_scan_global_roots(scanning_action f)
@@ -355,7 +450,6 @@ void caml_scan_global_young_roots(scanning_action f)
   caml_empty_global_roots(&caml_global_roots_young);
 }
 
-// phc todo reentrant
 void caml_scan_global_young_roots_r(pctxt ctx, scanning_action_r f)
 {
   struct global_root * gr;

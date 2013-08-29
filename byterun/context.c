@@ -104,6 +104,7 @@ pctxt create_empty_context(void){
   res->compare_stack = res->compare_stack_init;
   res->compare_stack_limit = res->compare_stack_init + COMPARE_STACK_INIT_SIZE;
 
+  strcpy(res->array_bound_error_msg.data, BOUND_MSG);
 
   if (main_ctx==NULL){
     main_ctx = res;

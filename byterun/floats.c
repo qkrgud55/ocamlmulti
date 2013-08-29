@@ -36,6 +36,7 @@
 
 #ifdef ARCH_ALIGN_DOUBLE
 
+// phc no ctx
 CAMLexport double caml_Double_val(value val)
 {
   union { value v[2]; double d; } buffer;
@@ -46,6 +47,7 @@ CAMLexport double caml_Double_val(value val)
   return buffer.d;
 }
 
+// phc no ctx
 CAMLexport void caml_Store_double_val(value val, double dbl)
 {
   union { value v[2]; double d; } buffer;
@@ -162,8 +164,6 @@ CAMLprim value caml_format_float_r(pctxt ctx, value fmt, value arg)
   value res;
   double d = Double_val(arg);
 
-  sync_with_global_vars(ctx);
-
 #ifdef HAS_BROKEN_PRINTF
   if (isfinite(d)) {
 #endif
@@ -185,7 +185,7 @@ CAMLprim value caml_format_float_r(pctxt ctx, value fmt, value arg)
   if (prec < sizeof(format_buffer)) {
     dest = format_buffer;
   } else {
-    dest = caml_stat_alloc(prec);
+    dest = caml_stat_alloc_r(ctx, prec);
   }
   sprintf(dest, String_val(fmt), d);
   res = caml_copy_string_r(ctx, dest);
@@ -211,39 +211,7 @@ CAMLprim value caml_format_float_r(pctxt ctx, value fmt, value arg)
     }
   }
 #endif
-  sync_with_context(ctx);
   return res;
-}
-
-/*CAMLprim*/ value caml_float_of_substring(value vs, value idx, value l)
-{
-  char parse_buffer[64];
-  char * buf, * src, * dst, * end;
-  mlsize_t len, lenvs;
-  double d;
-  intnat flen = Long_val(l);
-  intnat fidx = Long_val(idx);
-
-  lenvs = caml_string_length(vs);
-  len =
-    fidx >= 0 && fidx < lenvs && flen > 0 && flen <= lenvs - fidx
-    ? flen : 0;
-  buf = len < sizeof(parse_buffer) ? parse_buffer : caml_stat_alloc(len + 1);
-  src = String_val(vs) + fidx;
-  dst = buf;
-  while (len--) {
-    char c = *src++;
-    if (c != '_') *dst++ = c;
-  }
-  *dst = 0;
-  if (dst == buf) goto error;
-  d = strtod((const char *) buf, &end);
-  if (end != dst) goto error;
-  if (buf != parse_buffer) caml_stat_free(buf);
-  return caml_copy_double(d);
- error:
-  if (buf != parse_buffer) caml_stat_free(buf);
-  caml_failwith("float_of_string");
 }
 
 CAMLprim value caml_float_of_string(value vs)
@@ -272,6 +240,33 @@ CAMLprim value caml_float_of_string(value vs)
   caml_failwith("float_of_string");
 }
 
+CAMLprim value caml_float_of_string_r(pctxt ctx, value vs)
+{
+  char parse_buffer[64];
+  char * buf, * src, * dst, * end;
+  mlsize_t len;
+  double d;
+
+  len = caml_string_length(vs);
+  buf = len < sizeof(parse_buffer) ? parse_buffer : caml_stat_alloc_r(ctx, len + 1);
+  src = String_val(vs);
+  dst = buf;
+  while (len--) {
+    char c = *src++;
+    if (c != '_') *dst++ = c;
+  }
+  *dst = 0;
+  if (dst == buf) goto error;
+  d = strtod((const char *) buf, &end);
+  if (end != dst) goto error;
+  if (buf != parse_buffer) caml_stat_free(buf);
+  return caml_copy_double_r(ctx, d);
+ error:
+  if (buf != parse_buffer) caml_stat_free(buf);
+  caml_failwith_r(ctx, "float_of_string");
+}
+
+// phc no ctx
 CAMLprim value caml_int_of_float(value f)
 {
   return Val_long((intnat) Double_val(f));
@@ -435,6 +430,167 @@ CAMLprim value caml_ceil_float(value f)
   return caml_copy_double(ceil(Double_val(f)));
 }
 
+
+CAMLprim value caml_float_of_int_r(pctxt ctx, value n)
+{
+  return caml_copy_double_r(ctx, (double) Long_val(n));
+}
+
+CAMLprim value caml_neg_float_r(pctxt ctx, value f)
+{
+  return caml_copy_double_r(ctx, - Double_val(f));
+}
+
+CAMLprim value caml_abs_float_r(pctxt ctx, value f)
+{
+  return caml_copy_double_r(ctx, fabs(Double_val(f)));
+}
+
+CAMLprim value caml_add_float_r(pctxt ctx, value f, value g)
+{
+  return caml_copy_double_r(ctx, Double_val(f) + Double_val(g));
+}
+
+CAMLprim value caml_sub_float_r(pctxt ctx, value f, value g)
+{
+  return caml_copy_double_r(ctx, Double_val(f) - Double_val(g));
+}
+
+CAMLprim value caml_mul_float_r(pctxt ctx, value f, value g)
+{
+  return caml_copy_double_r(ctx, Double_val(f) * Double_val(g));
+}
+
+CAMLprim value caml_div_float_r(pctxt ctx, value f, value g)
+{
+  return caml_copy_double_r(ctx, Double_val(f) / Double_val(g));
+}
+
+CAMLprim value caml_exp_float_r(pctxt ctx, value f)
+{
+  return caml_copy_double_r(ctx, exp(Double_val(f)));
+}
+
+CAMLprim value caml_floor_float_r(pctxt ctx, value f)
+{
+  return caml_copy_double_r(ctx, floor(Double_val(f)));
+}
+
+CAMLprim value caml_fmod_float_r(pctxt ctx, value f1, value f2)
+{
+  return caml_copy_double_r(ctx, fmod(Double_val(f1), Double_val(f2)));
+}
+
+CAMLprim value caml_frexp_float_r(pctxt ctx, value f)
+{
+  CAMLparam1 (f);
+  CAMLlocal2 (res, mantissa);
+  int exponent;
+
+  mantissa = caml_copy_double_r(ctx, frexp (Double_val(f), &exponent));
+  res = caml_alloc_tuple_r(ctx, 2);
+  Field(res, 0) = mantissa;
+  Field(res, 1) = Val_int(exponent);
+  CAMLreturn (res);
+}
+
+CAMLprim value caml_ldexp_float_r(pctxt ctx, value f, value i)
+{
+  return caml_copy_double_r(ctx, ldexp(Double_val(f), Int_val(i)));
+}
+
+CAMLprim value caml_log_float_r(pctxt ctx, value f)
+{
+  return caml_copy_double_r(ctx, log(Double_val(f)));
+}
+
+CAMLprim value caml_log10_float_r(pctxt ctx, value f)
+{
+  return caml_copy_double_r(ctx, log10(Double_val(f)));
+}
+
+CAMLprim value caml_modf_float_r(pctxt ctx, value f)
+{
+  double frem;
+
+  CAMLparam1 (f);
+  CAMLlocal3 (res, quo, rem);
+
+  quo = caml_copy_double_r(ctx, modf (Double_val(f), &frem));
+  rem = caml_copy_double_r(ctx, frem);
+  res = caml_alloc_tuple(2);
+  Field(res, 0) = quo;
+  Field(res, 1) = rem;
+  CAMLreturn (res);
+}
+
+CAMLprim value caml_sqrt_float_r(pctxt ctx, value f)
+{
+  return caml_copy_double_r(ctx, sqrt(Double_val(f)));
+}
+
+CAMLprim value caml_power_float_r(pctxt ctx, value f, value g)
+{
+  return caml_copy_double_r(ctx, pow(Double_val(f), Double_val(g)));
+}
+
+CAMLprim value caml_sin_float_r(pctxt ctx, value f)
+{
+  return caml_copy_double_r(ctx, sin(Double_val(f)));
+}
+
+CAMLprim value caml_sinh_float_r(pctxt ctx, value f)
+{
+  return caml_copy_double_r(ctx, sinh(Double_val(f)));
+}
+
+CAMLprim value caml_cos_float_r(pctxt ctx, value f)
+{
+  return caml_copy_double_r(ctx, cos(Double_val(f)));
+}
+
+CAMLprim value caml_cosh_float_r(pctxt ctx, value f)
+{
+  return caml_copy_double_r(ctx, cosh(Double_val(f)));
+}
+
+CAMLprim value caml_tan_float_r(pctxt ctx, value f)
+{
+  return caml_copy_double_r(ctx, tan(Double_val(f)));
+}
+
+CAMLprim value caml_tanh_float_r(pctxt ctx, value f)
+{
+  return caml_copy_double_r(ctx, tanh(Double_val(f)));
+}
+
+CAMLprim value caml_asin_float_r(pctxt ctx, value f)
+{
+  return caml_copy_double_r(ctx, asin(Double_val(f)));
+}
+
+CAMLprim value caml_acos_float_r(pctxt ctx, value f)
+{
+  return caml_copy_double_r(ctx, acos(Double_val(f)));
+}
+
+CAMLprim value caml_atan_float_r(pctxt ctx, value f)
+{
+  return caml_copy_double_r(ctx, atan(Double_val(f)));
+}
+
+CAMLprim value caml_atan2_float_r(pctxt ctx, value f, value g)
+{
+  return caml_copy_double_r(ctx, atan2(Double_val(f), Double_val(g)));
+}
+
+CAMLprim value caml_ceil_float_r(pctxt ctx, value f)
+{
+  return caml_copy_double_r(ctx, ceil(Double_val(f)));
+}
+
+
+// phc no ctx
 CAMLexport double caml_hypot(double x, double y)
 {
 #ifdef HAS_C99_FLOAT_OPS
@@ -456,8 +612,14 @@ CAMLprim value caml_hypot_float(value f, value g)
   return caml_copy_double(caml_hypot(Double_val(f), Double_val(g)));
 }
 
+CAMLprim value caml_hypot_float_r(pctxt ctx, value f, value g)
+{
+  return caml_copy_double_r(ctx, caml_hypot(Double_val(f), Double_val(g)));
+}
+
 /* These emulations of expm1() and log1p() are due to William Kahan.
    See http://www.plunk.org/~hatch/rightway.php */
+// phc no ctx
 CAMLexport double caml_expm1(double x)
 {
 #ifdef HAS_C99_FLOAT_OPS
@@ -472,6 +634,7 @@ CAMLexport double caml_expm1(double x)
 #endif
 }
 
+// phc no ctx
 CAMLexport double caml_log1p(double x)
 {
 #ifdef HAS_C99_FLOAT_OPS
@@ -493,6 +656,16 @@ CAMLprim value caml_expm1_float(value f)
 CAMLprim value caml_log1p_float(value f)
 {
   return caml_copy_double(caml_log1p(Double_val(f)));
+}
+
+CAMLprim value caml_expm1_float_r(pctxt ctx, value f)
+{
+  return caml_copy_double_r(ctx, caml_expm1(Double_val(f)));
+}
+
+CAMLprim value caml_log1p_float_r(pctxt ctx, value f)
+{
+  return caml_copy_double_r(ctx, caml_log1p(Double_val(f)));
 }
 
 union double_as_two_int32 {
@@ -522,35 +695,40 @@ CAMLprim value caml_copysign_float(value f, value g)
 {
   return caml_copy_double(caml_copysign(Double_val(f), Double_val(g)));
 }
-
+// phc no ctx
 CAMLprim value caml_eq_float(value f, value g)
 {
   return Val_bool(Double_val(f) == Double_val(g));
 }
-
+// phc no ctx
 CAMLprim value caml_neq_float(value f, value g)
 {
   return Val_bool(Double_val(f) != Double_val(g));
 }
-
+// phc no ctx
 CAMLprim value caml_le_float(value f, value g)
 {
   return Val_bool(Double_val(f) <= Double_val(g));
 }
-
+// phc no ctx
 CAMLprim value caml_lt_float(value f, value g)
 {
   return Val_bool(Double_val(f) < Double_val(g));
 }
-
+// phc no ctx
 CAMLprim value caml_ge_float(value f, value g)
 {
   return Val_bool(Double_val(f) >= Double_val(g));
 }
-
+// phc no ctx
 CAMLprim value caml_gt_float(value f, value g)
 {
   return Val_bool(Double_val(f) > Double_val(g));
+}
+
+CAMLprim value caml_copysign_float_r(pctxt ctx, value f, value g)
+{
+  return caml_copy_double_r(ctx, caml_copysign(Double_val(f), Double_val(g)));
 }
 
 CAMLprim value caml_float_compare(value vf, value vg)

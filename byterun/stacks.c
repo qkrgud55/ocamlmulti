@@ -103,6 +103,20 @@ void caml_change_max_stack_size (uintnat new_max_size)
   caml_max_stack_size = new_max_size;
 }
 
+// phc dummy
+void caml_change_max_stack_size_r (pctxt ctx, uintnat new_max_size)
+{
+  asize_t size = caml_stack_high - caml_extern_sp
+                 + Stack_threshold / sizeof (value);
+
+  if (new_max_size < size) new_max_size = size;
+  if (new_max_size != caml_max_stack_size){
+    caml_gc_message (0x08, "Changing stack limit to %luk bytes\n",
+                     new_max_size * sizeof (value) / 1024);
+  }
+  caml_max_stack_size = new_max_size;
+}
+
 CAMLexport uintnat (*caml_stack_usage_hook)(void) = NULL;
 
 uintnat caml_stack_usage(void)

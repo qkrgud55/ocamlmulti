@@ -168,6 +168,20 @@ struct custom_operations_list {
   struct custom_operations_list * next;
 };
 
+// fail.c
+#define BOUND_MSG "index out of bounds"
+#define BOUND_MSG_LEN (sizeof(BOUND_MSG) - 1)
+
+typedef struct {
+  header_t hdr;
+  value exn;
+  value arg;
+} array_bound_error_bucket_t;
+
+typedef struct {
+  header_t hdr;
+  char data[BOUND_MSG_LEN + sizeof(value)];
+} array_bound_error_msg_t;// = { 0, BOUND_MSG };
 
 
 #define FLP_MAX 1000
@@ -189,6 +203,10 @@ typedef struct phc_global_context {
   char * caml_bottom_of_stack;      // 80   /* no stack initially */
 
   value * caml_gc_regs;             // 88
+
+  int caml_backtrace_active;        // 96
+  // phc todo
+  char *caml_exception_pointer;     // 104 
 
   int count_id;
 
@@ -300,7 +318,6 @@ typedef struct phc_global_context {
   uintnat caml_percent_max;
 
   // backtrace.c
-  int caml_backtrace_active;
   int caml_backtrace_pos;
   code_t * caml_backtrace_buffer;
   value caml_backtrace_last_exn;
@@ -325,6 +342,11 @@ typedef struct phc_global_context {
   // custom.c
   struct custom_operations_list * custom_ops_table;
   struct custom_operations_list * custom_ops_final_table;
+
+  // fail.c
+  array_bound_error_bucket_t  array_bound_error_bucket;
+  array_bound_error_msg_t     array_bound_error_msg;
+  int array_bound_error_bucket_inited;
 
 } phc_global_context;
 

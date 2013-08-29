@@ -49,6 +49,7 @@
   h *= 0xc2b2ae35; \
   h ^= h >> 16;
 
+// phc no ctx
 CAMLexport uint32 caml_hash_mix_uint32(uint32 h, uint32 d)
 {
   MIX(h, d);
@@ -57,6 +58,7 @@ CAMLexport uint32 caml_hash_mix_uint32(uint32 h, uint32 d)
 
 /* Mix a platform-native integer. */
 
+// phc no ctx
 CAMLexport uint32 caml_hash_mix_intnat(uint32 h, intnat d)
 {
   uint32 n;
@@ -77,6 +79,7 @@ CAMLexport uint32 caml_hash_mix_intnat(uint32 h, intnat d)
 
 /* Mix a 64-bit integer. */
 
+// phc no ctx
 CAMLexport uint32 caml_hash_mix_int64(uint32 h, int64 d)
 {
   uint32 hi, lo;
@@ -92,6 +95,7 @@ CAMLexport uint32 caml_hash_mix_int64(uint32 h, int64 d)
    Treats all NaNs identically.
 */
 
+// phc no ctx
 CAMLexport uint32 caml_hash_mix_double(uint32 hash, double d)
 {
   union {
@@ -125,6 +129,7 @@ CAMLexport uint32 caml_hash_mix_double(uint32 hash, double d)
    Treats all NaNs identically.
 */
 
+// phc no ctx
 CAMLexport uint32 caml_hash_mix_float(uint32 hash, float d)
 {
   union {
@@ -148,6 +153,7 @@ CAMLexport uint32 caml_hash_mix_float(uint32 hash, float d)
 
 /* Mix an OCaml string */
 
+// phc no ctx
 CAMLexport uint32 caml_hash_mix_string(uint32 h, value s)
 {
   mlsize_t len = caml_string_length(s);
@@ -185,6 +191,7 @@ CAMLexport uint32 caml_hash_mix_string(uint32 h, value s)
 
 /* The generic hash function */
 
+// phc no ctx
 CAMLprim value caml_hash(value count, value limit, value seed, value obj)
 {
   value queue[HASH_QUEUE_SIZE]; /* Queue of values to examine */

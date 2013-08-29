@@ -97,11 +97,13 @@ CAMLextern int caml_really_getblock (struct channel *, char *, intnat);
 /* The locking machinery */
 
 CAMLextern void (*caml_channel_mutex_free) (struct channel *);
+CAMLextern void (*caml_channel_mutex_free_r) (pctxt,struct channel *);
 CAMLextern void (*caml_channel_mutex_lock) (struct channel *);
 CAMLextern void (*caml_channel_mutex_lock_r) (pctxt, struct channel *);
 CAMLextern void (*caml_channel_mutex_unlock) (struct channel *);
 CAMLextern void (*caml_channel_mutex_unlock_r) (pctxt, struct channel *);
 CAMLextern void (*caml_channel_mutex_unlock_exn) (void);
+CAMLextern void (*caml_channel_mutex_unlock_exn_r) (pctxt);
 
 CAMLextern struct channel * caml_all_opened_channels;
 
@@ -115,6 +117,9 @@ CAMLextern struct channel * caml_all_opened_channels;
   if (caml_channel_mutex_unlock_r != NULL) (*caml_channel_mutex_unlock_r)(ctx, channel)
 #define Unlock_exn() \
   if (caml_channel_mutex_unlock_exn != NULL) (*caml_channel_mutex_unlock_exn)()
+#define Unlock_exn_r(ctx) \
+  if (caml_channel_mutex_unlock_exn != NULL) (*caml_channel_mutex_unlock_exn_r)(ctx)
+
 
 /* Conversion between file_offset and int64 */
 

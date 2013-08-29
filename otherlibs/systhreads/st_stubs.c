@@ -234,6 +234,12 @@ static void caml_io_mutex_free(struct channel *chan)
   if (mutex != NULL) st_mutex_destroy(mutex);
 }
 
+static void caml_io_mutex_free_r(pctxt ctx, struct channel *chan)
+{
+  st_mutex mutex = chan->mutex;
+  if (mutex != NULL) st_mutex_destroy(mutex);
+}
+
 static void caml_io_mutex_lock(struct channel *chan)
 {
   st_mutex mutex = chan->mutex;
@@ -296,12 +302,18 @@ static void caml_io_mutex_unlock_r(pctxt ctx, struct channel *chan)
   st_tls_set(last_channel_locked_key, NULL);
 }
 
-
 static void caml_io_mutex_unlock_exn(void)
 {
   struct channel * chan = st_tls_get(last_channel_locked_key);
   if (chan != NULL) caml_io_mutex_unlock(chan);
 }
+
+static void caml_io_mutex_unlock_exn_r(pctxt ctx)
+{
+  struct channel * chan = st_tls_get(last_channel_locked_key);
+  if (chan != NULL) caml_io_mutex_unlock(chan);
+}
+
 
 // phc mutex
 
@@ -493,11 +505,13 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   caml_phc_create_thread = st_phc_create_thread;
 
   caml_channel_mutex_free = caml_io_mutex_free;
+  caml_channel_mutex_free_r = caml_io_mutex_free_r;
   caml_channel_mutex_lock = caml_io_mutex_lock;
   caml_channel_mutex_lock_r = caml_io_mutex_lock_r;
   caml_channel_mutex_unlock = caml_io_mutex_unlock;
   caml_channel_mutex_unlock_r = caml_io_mutex_unlock_r;
   caml_channel_mutex_unlock_exn = caml_io_mutex_unlock_exn;
+  caml_channel_mutex_unlock_exn_r = caml_io_mutex_unlock_exn_r;
   prev_stack_usage_hook = caml_stack_usage_hook;
   caml_stack_usage_hook = caml_thread_stack_usage;
   /* Set up fork() to reinitialize the thread machinery in the child

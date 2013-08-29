@@ -502,6 +502,24 @@ CAMLprim value caml_gc_counters(value v)
   CAMLreturn (res);
 }
 
+CAMLprim value caml_gc_counters_r(pctxt ctx, value v)
+{
+  CAMLparam0_r (ctx);   /* v is ignored */
+  CAMLlocal1_r (ctx, res);
+
+  /* get a copy of these before allocating anything... */
+  double minwords = ctx->caml_stat_minor_words
+                    + (double) Wsize_bsize (ctx->caml_young_end - ctx->caml_young_ptr);
+  double prowords = ctx->caml_stat_promoted_words;
+  double majwords = ctx->caml_stat_major_words + (double) ctx->caml_allocated_words;
+
+  res = caml_alloc_tuple_r (ctx, 3);
+  Store_field (res, 0, caml_copy_double_r (ctx, minwords));
+  Store_field (res, 1, caml_copy_double_r (ctx, prowords));
+  Store_field (res, 2, caml_copy_double_r (ctx, majwords));
+  CAMLreturn_r (ctx, res);
+}
+
 CAMLprim value caml_gc_get(value v)
 {
   CAMLparam0 ();   /* v is ignored */
@@ -522,18 +540,42 @@ CAMLprim value caml_gc_get(value v)
   CAMLreturn (res);
 }
 
+CAMLprim value caml_gc_get_r(pctxt ctx, value v)
+{
+  CAMLparam0_r (ctx);   /* v is ignored */
+  CAMLlocal1_r (ctx, res);
+
+  res = caml_alloc_tuple_r (ctx, 7);
+  Store_field (res, 0, Val_long (Wsize_bsize (ctx->caml_minor_heap_size)));  /* s */
+  Store_field (res, 1,Val_long(Wsize_bsize(ctx->caml_major_heap_increment)));/* i */
+  Store_field (res, 2, Val_long (ctx->caml_percent_free));                   /* o */
+  Store_field (res, 3, Val_long (caml_verb_gc));                        /* v */
+  Store_field (res, 4, Val_long (ctx->caml_percent_max));                    /* O */
+#ifndef NATIVE_CODE
+  Store_field (res, 5, Val_long (caml_max_stack_size));                 /* l */
+#else
+  Store_field (res, 5, Val_long (0));
+#endif
+  Store_field (res, 6, Val_long (caml_allocation_policy));              /* a */
+  CAMLreturn (res);
+}
+
+
 #define Max(x,y) ((x) < (y) ? (y) : (x))
 
+// phc no ctx
 static uintnat norm_pfree (uintnat p)
 {
   return Max (p, 1);
 }
 
+// phc no ctx
 static uintnat norm_pmax (uintnat p)
 {
   return p;
 }
 
+// phc no ctx
 static intnat norm_heapincr (uintnat i)
 {
 #define Psv (Wsize_bsize (Page_size))
@@ -542,6 +584,7 @@ static intnat norm_heapincr (uintnat i)
   return i;
 }
 
+// phc no ctx
 static intnat norm_minsize (intnat s)
 {
   if (s < Minor_heap_min) s = Minor_heap_min;
@@ -608,7 +651,7 @@ CAMLprim value caml_gc_set_r(pctxt ctx, value v)
   caml_verb_gc = Long_val (Field (v, 3));
 
 #ifndef NATIVE_CODE
-  caml_change_max_stack_size (Long_val (Field (v, 5)));
+  caml_change_max_stack_size_r (ctx, Long_val (Field (v, 5)));
 #endif
 
   newpf = norm_pfree (Long_val (Field (v, 2)));
@@ -618,9 +661,9 @@ CAMLprim value caml_gc_set_r(pctxt ctx, value v)
   }
 
   newpm = norm_pmax (Long_val (Field (v, 4)));
-  if (newpm != caml_percent_max){
-    caml_percent_max = newpm;
-    caml_gc_message (0x20, "New max overhead: %d%%\n", caml_percent_max);
+  if (newpm != ctx->caml_percent_max){
+    ctx->caml_percent_max = newpm;
+    caml_gc_message (0x20, "New max overhead: %d%%\n", ctx->caml_percent_max);
   }
 
   newheapincr = Bsize_wsize (norm_heapincr (Long_val (Field (v, 1))));
@@ -630,7 +673,7 @@ CAMLprim value caml_gc_set_r(pctxt ctx, value v)
                      ctx->caml_major_heap_increment/1024);
   }
   oldpolicy = caml_allocation_policy;
-  caml_set_allocation_policy (Long_val (Field (v, 6)));
+  caml_set_allocation_policy_r (ctx, Long_val (Field (v, 6)));
   if (oldpolicy != caml_allocation_policy){
     caml_gc_message (0x20, "New allocation policy: %d\n",
                      caml_allocation_policy);
@@ -656,12 +699,11 @@ CAMLprim value caml_gc_minor(value v)
 
 CAMLprim value caml_gc_minor_r(pctxt ctx, value v)
 {                                                    Assert (v == Val_unit);
-//  sync_with_global_vars(ctx);
   caml_minor_collection_r (ctx);
-//  sync_with_context(ctx);
   return Val_unit;
 }
 
+// phc new
 CAMLprim value caml_print_globals(pctxt ctx, value v)
 {
   int i;
@@ -688,6 +730,22 @@ static void test_and_compact (void)
   if (fp >= caml_percent_max && caml_stat_heap_chunks > 1){
     caml_gc_message (0x200, "Automatic compaction triggered.\n", 0);
     caml_compact_heap ();
+  }
+}
+
+static void test_and_compact_r (pctxt ctx)
+{
+  float fp;
+
+  fp = 100.0 * ctx->caml_fl_cur_size
+       / (Wsize_bsize (caml_stat_heap_size) - ctx->caml_fl_cur_size);
+  if (fp > 999999.0) fp = 999999.0;
+  caml_gc_message (0x200, "Estimated overhead (lower bound) = %"
+                          ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
+                   (uintnat) fp);
+  if (fp >= ctx->caml_percent_max && ctx->caml_stat_heap_chunks > 1){
+    caml_gc_message (0x200, "Automatic compaction triggered.\n", 0);
+    caml_compact_heap_r (ctx);
   }
 }
 
@@ -721,13 +779,6 @@ CAMLprim value caml_gc_major_slice (value v)
   return Val_long (caml_major_collection_slice (Long_val (v)));
 }
 
-CAMLprim value caml_gc_major_slice_r (pctxt ctx, value v)
-{
-  Assert (Is_long (v));
-  caml_empty_minor_heap_r (ctx);
-  return Val_long (caml_major_collection_slice_r (ctx, Long_val (v)));
-}
-
 CAMLprim value caml_gc_compaction(value v)
 {                                                    Assert (v == Val_unit);
   caml_gc_message (0x10, "Heap compaction requested\n", 0);
@@ -740,6 +791,51 @@ CAMLprim value caml_gc_compaction(value v)
   caml_final_do_calls ();
   return Val_unit;
 }
+
+//// reentrant ////
+CAMLprim value caml_gc_major_r(pctxt ctx, value v)
+{                                                    Assert (v == Val_unit);
+  caml_gc_message (0x1, "Major GC cycle requested\n", 0);
+  caml_empty_minor_heap_r (ctx);
+  caml_finish_major_cycle_r (ctx);
+  test_and_compact_r (ctx);
+  caml_final_do_calls_r (ctx);
+  return Val_unit;
+}
+
+CAMLprim value caml_gc_full_major_r(pctxt ctx, value v)
+{                                                    Assert (v == Val_unit);
+  caml_gc_message (0x1, "Full major GC cycle requested\n", 0);
+  caml_empty_minor_heap_r (ctx);
+  caml_finish_major_cycle_r (ctx);
+  caml_final_do_calls_r (ctx);
+  caml_empty_minor_heap_r (ctx);
+  caml_finish_major_cycle_r (ctx);
+  test_and_compact_r (ctx);
+  caml_final_do_calls_r (ctx);
+  return Val_unit;
+}
+
+CAMLprim value caml_gc_major_slice_r (pctxt ctx, value v)
+{
+  Assert (Is_long (v));
+  caml_empty_minor_heap_r (ctx);
+  return Val_long (caml_major_collection_slice_r (ctx, Long_val (v)));
+}
+
+CAMLprim value caml_gc_compaction_r(pctxt ctx, value v)
+{                                                    Assert (v == Val_unit);
+  caml_gc_message (0x10, "Heap compaction requested\n", 0);
+  caml_empty_minor_heap_r (ctx);
+  caml_finish_major_cycle_r (ctx);
+  caml_final_do_calls_r (ctx);
+  caml_empty_minor_heap_r (ctx);
+  caml_finish_major_cycle_r (ctx);
+  caml_compact_heap_r (ctx);
+  caml_final_do_calls_r (ctx);
+  return Val_unit;
+}
+
 
 void caml_init_gc (uintnat minor_size, uintnat major_size,
                    uintnat major_incr, uintnat percent_fr,

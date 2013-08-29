@@ -108,6 +108,17 @@ CAMLexport void caml_failwith (char const *msg)
   caml_raise_with_string(Field(caml_global_data, FAILURE_EXN), msg);
 }
 
+// phc dummy
+CAMLexport void caml_failwith_r (pctxt ctx, char const *msg)
+{
+  if (caml_global_data == 0) {
+    fprintf(stderr, "Fatal error: exception Failure(\"%s\")\n", msg);
+    exit(2);
+  }
+  caml_raise_with_string(Field(caml_global_data, FAILURE_EXN), msg);
+}
+
+
 CAMLexport void caml_invalid_argument (char const *msg)
 {
   if (caml_global_data == 0) {
@@ -190,6 +201,37 @@ CAMLexport void caml_raise_not_found(void)
 }
 
 CAMLexport void caml_raise_sys_blocked_io(void)
+{
+  caml_raise_constant(Field(caml_global_data, SYS_BLOCKED_IO));
+}
+
+//// phc dummy ////
+CAMLexport void caml_raise_stack_overflow_r(pctxt ctx) 
+{
+  caml_raise_constant(Field(caml_global_data, STACK_OVERFLOW_EXN));
+}
+
+CAMLexport void caml_raise_sys_error_r(pctxt ctx, value msg)
+{
+  caml_raise_with_arg(Field(caml_global_data, SYS_ERROR_EXN), msg);
+}
+
+CAMLexport void caml_raise_end_of_file_r(pctxt ctx)
+{
+  caml_raise_constant(Field(caml_global_data, END_OF_FILE_EXN));
+}
+
+CAMLexport void caml_raise_zero_divide_r(pctxt ctx)
+{
+  caml_raise_constant(Field(caml_global_data, ZERO_DIVIDE_EXN));
+}
+
+CAMLexport void caml_raise_not_found_r(pctxt ctx)
+{
+  caml_raise_constant(Field(caml_global_data, NOT_FOUND_EXN));
+}
+
+CAMLexport void caml_raise_sys_blocked_io_r(pctxt ctx)
 {
   caml_raise_constant(Field(caml_global_data, SYS_BLOCKED_IO));
 }

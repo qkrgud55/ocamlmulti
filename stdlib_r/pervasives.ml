@@ -13,10 +13,13 @@
 
 (* $Id: pervasives.ml 12019 2012-01-12 15:46:51Z doligez $ *)
 
+(* init for multiruntime, register context ptr using pthread TLS *)
+external register_thread : unit -> unit = "caml_register_ctx" "reentrant"
+let _ = register_thread ()
+
 (* type 'a option = None | Some of 'a *)
 
 (* Exceptions *)
-
 external raise : exn -> 'a = "%raise"
 
 let failwith s = raise(Failure s)

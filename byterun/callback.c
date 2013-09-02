@@ -102,10 +102,52 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   return res;
 }
 
-// phc dummy reentrant (only for native code)
+// phc dummy for native mode
 CAMLexport value caml_callbackN_exn_r(pctxt ctx, value closure, int narg, value args[])
 {
-  return caml_callbackN_exn(closure, narg, args);
+  int i;
+  value res;
+
+  /* some alternate bytecode implementations (e.g. a JIT translator)
+     might require that the bytecode is kept in a local variable on
+     the C stack */
+#ifdef LOCAL_CALLBACK_BYTECODE
+  opcode_t local_callback_code[7];
+#endif
+
+  Assert(narg + 4 <= 256);
+
+  caml_extern_sp -= narg + 4;
+  for (i = 0; i < narg; i++) caml_extern_sp[i] = args[i]; /* arguments */
+#ifndef LOCAL_CALLBACK_BYTECODE
+  caml_extern_sp[narg] = (value) (callback_code + 4); /* return address */
+  caml_extern_sp[narg + 1] = Val_unit;    /* environment */
+  caml_extern_sp[narg + 2] = Val_long(0); /* extra args */
+  caml_extern_sp[narg + 3] = closure;
+  Init_callback();
+  callback_code[1] = narg + 3;
+  callback_code[3] = narg;
+  res = caml_interprete(callback_code, sizeof(callback_code));
+#else /*have LOCAL_CALLBACK_BYTECODE*/
+  caml_extern_sp[narg] = (value) (local_callback_code + 4); /* return address */
+  caml_extern_sp[narg + 1] = Val_unit;    /* environment */
+  caml_extern_sp[narg + 2] = Val_long(0); /* extra args */
+  caml_extern_sp[narg + 3] = closure;
+  local_callback_code[0] = ACC;
+  local_callback_code[1] = narg + 3;
+  local_callback_code[2] = APPLY;
+  local_callback_code[3] = narg;
+  local_callback_code[4] = POP;
+  local_callback_code[5] =  1;
+  local_callback_code[6] = STOP;
+#ifdef THREADED_CODE
+  caml_thread_code(local_callback_code, sizeof(local_callback_code));
+#endif /*THREADED_CODE*/
+  res = caml_interprete(local_callback_code, sizeof(local_callback_code));
+  caml_release_bytecode(local_callback_code, sizeof(local_callback_code));
+#endif /*LOCAL_CALLBACK_BYTECODE*/
+  if (Is_exception_result(res)) caml_extern_sp += narg + 4; /* PR#1228 */
+  return res;
 }
 
 CAMLexport value caml_callback_exn(value closure, value arg1)
@@ -138,7 +180,7 @@ CAMLexport value caml_callback_exn_r(pctxt ctx, value closure, value arg1)
 {
   value arg[1];
   arg[0] = arg1;
-  return caml_callbackN_exn(closure, 1, arg);
+  return caml_callbackN_exn_r(ctx, closure, 1, arg);
 }
 
 CAMLexport value caml_callback2_exn_r(pctxt ctx, value closure, value arg1, value arg2)

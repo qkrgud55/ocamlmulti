@@ -40,12 +40,12 @@
 #endif
 
 extern int caml_parser_trace;
+extern pctxt ctxl[MAX_TH];
+extern pthread_t thl[MAX_TH];
+
 CAMLexport header_t caml_atom_table[256];
 char * caml_code_area_start, * caml_code_area_end;
 int is_ctx = 0;
-
-pctxt ctxl[MAX_TH];
-pthread_t thl[MAX_TH];
 
 /* Initialize the atom table and the static data and code area limits. */
 
@@ -157,6 +157,7 @@ extern value caml_start_program (void);
 extern value caml_start_program_r (pctxt ctx);
 extern void caml_init_ieee_floats (void);
 extern void caml_init_signals (void);
+extern void caml_init_signals_r (pctxt ctx);
 
 void caml_start_program_r_wrapper(void *ctx){
   caml_start_program_r(ctx);
@@ -227,7 +228,8 @@ void caml_main(char **argv)
     }
   
     init_atoms();
-//    caml_init_signals();
+    init_phc_ctx_key();
+    caml_init_signals_r(NULL);
     caml_debugger_init (); /* force debugger.o stub to be linked */
     exe_name = argv[0];
     if (exe_name == NULL) exe_name = "";

@@ -93,3 +93,35 @@ int caml_set_signal_action(int signo, int action)
   else
     return 0;
 }
+
+// phc dummy for native
+int caml_set_signal_action_r(pctxt ctx, int signo, int action)
+{
+  void (*act)(int signo), (*oldact)(int signo);
+#ifdef POSIX_SIGNALS
+  struct sigaction sigact, oldsigact;
+#endif
+
+  switch (action) {
+  case 0:  act = SIG_DFL; break;
+  case 1:  act = SIG_IGN; break;
+  default: act = handle_signal; break;
+  }
+
+#ifdef POSIX_SIGNALS
+  sigact.sa_handler = act;
+  sigemptyset(&sigact.sa_mask);
+  sigact.sa_flags = 0;
+  if (sigaction(signo, &sigact, &oldsigact) == -1) return -1;
+  oldact = oldsigact.sa_handler;
+#else
+  oldact = signal(signo, act);
+  if (oldact == SIG_ERR) return -1;
+#endif
+  if (oldact == handle_signal)
+    return 2;
+  else if (oldact == SIG_IGN)
+    return 1;
+  else
+    return 0;
+}

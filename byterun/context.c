@@ -13,15 +13,46 @@
 int access_to_non_ctx = 0;
 pctxt main_ctx = NULL;
 int num_th = 0;
+pctxt ctxl[MAX_TH];
+pthread_t thl[MAX_TH];
 static int count_th = 0;
 static int count_start = 0;
 static pthread_mutex_t phc_mutex_;
 static pthread_mutex_t phc_cond_lock;
 static pthread_cond_t phc_cond_;
+static pthread_key_t phc_ctx_key;
 
 CAMLexport void (*caml_lock_phc_mutex_fptr)(void) = NULL;
 CAMLexport void (*caml_unlock_phc_mutex_fptr)(void) = NULL;
 CAMLexport void (*caml_phc_create_thread)(void *(*fn)(void*), void *arg) = NULL;
+
+void init_phc_ctx_key(void){
+  pthread_key_create(&phc_ctx_key, NULL);
+}
+
+CAMLprim value caml_register_ctx(pctxt ctx, value v){
+  int i;
+  for (i=0;i<num_th;i++)
+    if (ctx==ctxl[i])
+      thl[i] = pthread_self();
+  pthread_setspecific(phc_ctx_key, ctx);
+  return Val_unit;
+}
+
+pctxt get_ctx(void){
+  int i;
+  pthread_t self;
+  self = pthread_self();
+  for (i=0;i<num_th;i++)
+    if (thl[i]==self)
+      break;
+  return ctxl[i];
+//  return pthread_getspecific(phc_ctx_key);
+}
+
+CAMLprim value caml_get_ctx(value v){
+  return Val_int(get_ctx());
+}
 
 pctxt create_empty_context(void){
   phc_global_context* res = NULL;

@@ -369,6 +369,8 @@ CAMLextern void (*caml_unlock_phc_mutex_fptr)(void);
 
 void caml_enter_cond_lock(pctxt ctx);
 CAMLextern void (*caml_phc_create_thread)(void *(*fn)(void*), void *arg);
+void init_phc_ctx_key(void);
+pctxt get_ctx(void);
 
 
 #endif

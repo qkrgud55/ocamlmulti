@@ -604,7 +604,8 @@ FUNCTION(G(caml_start_program_r))  /* phc ctx */
         leaq    GCALL(caml_program)(%rip), %r12
         movq   %rdi, %r13          /* first arg from caml_main*/
     /* Common code for caml_start_program and caml_callback* */
-LBL(caml_start_program):  /* phc deprecated */
+LBL(caml_start_program):  
+LBL(caml_start_program_r):  
     /* Build a callback link */
         subq    $8, %rsp        /* stack 16-aligned */
     /*  PUSH_VAR(caml_gc_regs) */
@@ -807,10 +808,11 @@ FUNCTION(G(caml_callback_exn_r))
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
     /* Initial loading of arguments */
-        movq    C_ARG_1, %rbx      /* closure */
-        movq    C_ARG_2, %rax      /* argument */
+        movq    C_ARG_1, %r13      /* context ptr */
+        movq    C_ARG_2, %rbx      /* closure */
+        movq    C_ARG_3, %rax      /* argument */
         movq    0(%rbx), %r12      /* code pointer */
-        jmp     LBL(caml_start_program)
+        jmp     LBL(caml_start_program_r)
 
 FUNCTION(G(caml_callback2_exn_r))
     /* Save callee-save registers */

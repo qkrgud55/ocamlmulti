@@ -19,8 +19,8 @@
 
 (* System interface *)
 
-external get_config: unit -> string * int * bool = "caml_sys_get_config"
-external get_argv: unit -> string * string array = "caml_sys_get_argv"
+external get_config: unit -> string * int * bool = "caml_sys_get_config_r" "reentrant"
+external get_argv: unit -> string * string array = "caml_sys_get_argv_r" "reentrant"
 
 let (executable_name, argv) = get_argv()
 let (os_type, word_size, big_endian) = get_config()
@@ -46,7 +46,7 @@ type signal_behavior =
   | Signal_handle of (int -> unit)
 
 external signal : int -> signal_behavior -> signal_behavior
-                = "caml_install_signal_handler"
+                = "caml_install_signal_handler_r" "reentrant"
 
 let set_signal sig_num sig_beh = ignore(signal sig_num sig_beh)
 

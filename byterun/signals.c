@@ -135,6 +135,7 @@ CAMLexport void caml_leave_blocking_section(void)
 /* Execute a signal handler immediately */
 
 static value caml_signal_handlers = 0;
+pctxt handler_ctx = NULL;
 
 void caml_execute_signal(int signal_number, int in_signal_handler)
 {
@@ -163,6 +164,33 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
   if (Is_exception_result(res)) caml_raise(Extract_exception(res));
 }
 
+// phc todo reentrant
+void caml_execute_signal_r(pctxt ctx, int signal_number, int in_signal_handler)
+{
+  value res;
+#ifdef POSIX_SIGNALS
+  sigset_t sigs;
+  /* Block the signal before executing the handler, and record in sigs
+     the original signal mask */
+  sigemptyset(&sigs);
+  sigaddset(&sigs, signal_number);
+  sigprocmask(SIG_BLOCK, &sigs, &sigs);
+#endif
+  res = caml_callback_exn_r(ctx, 
+           Field(caml_signal_handlers, signal_number),
+           Val_int(caml_rev_convert_signal_number(signal_number)));
+#ifdef POSIX_SIGNALS
+  if (! in_signal_handler) {
+    /* Restore the original signal mask */
+    sigprocmask(SIG_SETMASK, &sigs, NULL);
+  } else if (Is_exception_result(res)) {
+    /* Restore the original signal mask and unblock the signal itself */
+    sigdelset(&sigs, signal_number);
+    sigprocmask(SIG_SETMASK, &sigs, NULL);
+  }
+#endif
+  if (Is_exception_result(res)) caml_raise_r(ctx, Extract_exception(res));
+}
 /* Arrange for a garbage collection to be performed as soon as possible */
 
 int volatile caml_force_major_slice = 0;
@@ -351,7 +379,7 @@ CAMLprim value caml_install_signal_handler_r(pctxt ctx, value signal_number, val
     act = 2;
     break;
   }
-  oldact = caml_set_signal_action(sig, act);
+  oldact = caml_set_signal_action_r(ctx, sig, act);
   switch (oldact) {
   case 0:                       /* was Signal_default */
     res = Val_int(0);
@@ -372,6 +400,7 @@ CAMLprim value caml_install_signal_handler_r(pctxt ctx, value signal_number, val
       caml_register_global_root_r(ctx,&caml_signal_handlers);
     }
     caml_modify_r(ctx,&Field(caml_signal_handlers, sig), Field(action, 0));
+    handler_ctx = ctx;
   }
   caml_process_pending_signals();
   CAMLreturn_r (ctx,res);

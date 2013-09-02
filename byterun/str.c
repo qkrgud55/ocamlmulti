@@ -33,7 +33,7 @@ CAMLexport mlsize_t caml_string_length(value s)
   Assert (Byte (s, temp - Byte (s, temp)) == 0);
   return temp - Byte (s, temp);
 }
-
+// phc no ctx
 CAMLprim value caml_ml_string_length(value s)
 {
   mlsize_t temp;
@@ -65,7 +65,7 @@ CAMLprim value caml_string_set(value str, value index, value newval)
   Byte_u(str, idx) = Int_val(newval);
   return Val_unit;
 }
-
+// phc no ctx
 CAMLprim value caml_string_equal(value s1, value s2)
 {
   mlsize_t sz1, sz2;
@@ -79,12 +79,12 @@ CAMLprim value caml_string_equal(value s1, value s2)
     if (*p1 != *p2) return Val_false;
   return Val_true;
 }
-
+// phc no ctx
 CAMLprim value caml_string_notequal(value s1, value s2)
 {
   return Val_not(caml_string_equal(s1, s2));
 }
-
+// phc no ctx
 CAMLprim value caml_string_compare(value s1, value s2)
 {
   mlsize_t len1, len2;
@@ -101,26 +101,31 @@ CAMLprim value caml_string_compare(value s1, value s2)
   return Val_int(0);
 }
 
+// phc no ctx
 CAMLprim value caml_string_lessthan(value s1, value s2)
 {
   return caml_string_compare(s1, s2) < Val_int(0) ? Val_true : Val_false;
 }
 
+// phc no ctx
 CAMLprim value caml_string_lessequal(value s1, value s2)
 {
   return caml_string_compare(s1, s2) <= Val_int(0) ? Val_true : Val_false;
 }
 
+// phc no ctx
 CAMLprim value caml_string_greaterthan(value s1, value s2)
 {
   return caml_string_compare(s1, s2) > Val_int(0) ? Val_true : Val_false;
 }
 
+// phc no ctx
 CAMLprim value caml_string_greaterequal(value s1, value s2)
 {
   return caml_string_compare(s1, s2) >= Val_int(0) ? Val_true : Val_false;
 }
 
+// phc no ctx
 CAMLprim value caml_blit_string(value s1, value ofs1, value s2, value ofs2,
                                 value n)
 {
@@ -128,12 +133,14 @@ CAMLprim value caml_blit_string(value s1, value ofs1, value s2, value ofs2,
   return Val_unit;
 }
 
+// phc no ctx
 CAMLprim value caml_fill_string(value s, value offset, value len, value init)
 {
   memset(&Byte(s, Long_val(offset)), Int_val(init), Long_val(len));
   return Val_unit;
 }
 
+// phc no ctx
 CAMLprim value caml_is_printable(value chr)
 {
   int c;
@@ -149,8 +156,35 @@ CAMLprim value caml_is_printable(value chr)
   return Val_bool(isprint(c));
 }
 
+// phc no ctx
 CAMLprim value caml_bitvect_test(value bv, value n)
 {
   int pos = Int_val(n);
   return Val_int(Byte_u(bv, pos >> 3) & (1 << (pos & 7)));
 }
+
+
+CAMLprim value caml_create_string_r(pctxt ctx, value len)
+{
+  mlsize_t size = Long_val(len);
+  if (size > Bsize_wsize (Max_wosize) - 1){
+    caml_invalid_argument_r(ctx,"String.create");
+  }
+  return caml_alloc_string_r(ctx,size);
+}
+
+CAMLprim value caml_string_get_r(pctxt ctx, value str, value index)
+{
+  intnat idx = Long_val(index);
+  if (idx < 0 || idx >= caml_string_length(str)) caml_array_bound_error_r(ctx);
+  return Val_int(Byte_u(str, idx));
+}
+
+CAMLprim value caml_string_set_r(pctxt ctx, value str, value index, value newval)
+{
+  intnat idx = Long_val(index);
+  if (idx < 0 || idx >= caml_string_length(str)) caml_array_bound_error_r(ctx);
+  Byte_u(str, idx) = Int_val(newval);
+  return Val_unit;
+}
+

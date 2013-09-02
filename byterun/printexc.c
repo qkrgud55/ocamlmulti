@@ -31,12 +31,12 @@ struct stringbuf {
   char * end;
   char data[256];
 };
-
+// phc no ctx
 static void add_char(struct stringbuf *buf, char c)
 {
   if (buf->ptr < buf->end) *(buf->ptr++) = c;
 }
-
+// phc no ctx
 static void add_string(struct stringbuf *buf, char *s)
 {
   int len = strlen(s);
@@ -44,7 +44,7 @@ static void add_string(struct stringbuf *buf, char *s)
   if (len > 0) memmove(buf->ptr, s, len);
   buf->ptr += len;
 }
-
+// phc no ctx
 CAMLexport char * caml_format_exception(value exn)
 {
   mlsize_t start, i;
@@ -126,7 +126,6 @@ void caml_fatal_uncaught_exception(value exn)
   exit(2);
 }
 
-// phc todo reentrant
 void caml_fatal_uncaught_exception_r(pctxt ctx, value exn)
 {
   char * msg;
@@ -137,23 +136,23 @@ void caml_fatal_uncaught_exception_r(pctxt ctx, value exn)
   msg = caml_format_exception(exn);
   /* Perform "at_exit" processing, ignoring all exceptions that may
      be triggered by this */
-  saved_backtrace_active = caml_backtrace_active;
-  saved_backtrace_pos = caml_backtrace_pos;
-  caml_backtrace_active = 0;
-  at_exit = caml_named_value("Pervasives.do_at_exit");
-  if (at_exit != NULL) caml_callback_exn(*at_exit, Val_unit);
-  caml_backtrace_active = saved_backtrace_active;
-  caml_backtrace_pos = saved_backtrace_pos;
+  saved_backtrace_active = ctx->caml_backtrace_active;
+  saved_backtrace_pos = ctx->caml_backtrace_pos;
+  ctx->caml_backtrace_active = 0;
+  at_exit = caml_named_value_r(ctx,"Pervasives.do_at_exit");
+  if (at_exit != NULL) caml_callback_exn_r(ctx, *at_exit, Val_unit);
+  ctx->caml_backtrace_active = saved_backtrace_active;
+  ctx->caml_backtrace_pos = saved_backtrace_pos;
   /* Display the uncaught exception */
   fprintf(stderr, "Fatal error: exception %s\n", msg);
   free(msg);
   /* Display the backtrace if available */
-  if (caml_backtrace_active
+  if (ctx->caml_backtrace_active
 #ifndef NATIVE_CODE
       && !caml_debugger_in_use
 #endif
       ) {
-    caml_print_exception_backtrace();
+    caml_print_exception_backtrace_r(ctx);
   }
   /* Terminate the process */
   exit(2);

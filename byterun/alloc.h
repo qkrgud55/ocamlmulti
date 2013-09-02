@@ -50,7 +50,7 @@ CAMLextern value caml_copy_nativeint (intnat);         /* defined in [ints.c] */
 CAMLextern value caml_copy_nativeint_r (pctxt,intnat); /* defined in [ints.c] */ 
 CAMLextern value caml_alloc_array (value (*funct) (char const *),
                                    char const ** array);
-CAMLextern value caml_alloc_array_r (pctxt, value (*funct) (char const *),
+CAMLextern value caml_alloc_array_r (pctxt, value (*funct) (pctxt, char const *),
                                    char const ** array);
 
 typedef void (*final_fun)(value);

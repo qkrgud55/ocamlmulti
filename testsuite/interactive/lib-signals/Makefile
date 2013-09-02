@@ -1,4 +1,5 @@
 BASEDIR=../..
+BASEDIR1=../../..
 
 default:
 	@$(OCAMLC) -o program.byte signals.ml
@@ -6,7 +7,9 @@ default:
 	@$(OCAMLOPT) -o program.native signals.ml
 	@./program.native
 
+phc:
+	$(BASEDIR1)/bin/ocamlopt -cclib '-pthread' -phcr -nostdlib -I $(BASEDIR1)/stdlib_r -o signals signals.ml
+
 clean: defaultclean
-	@rm -fr program.*
 
 include $(BASEDIR)/makefiles/Makefile.common

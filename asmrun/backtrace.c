@@ -367,7 +367,6 @@ static void print_location_r(pctxt ctx, struct loc_info * li, int index)
 }
 
 /* Print a backtrace */
-
 void caml_print_exception_backtrace_r(pctxt ctx)
 {
   int i;

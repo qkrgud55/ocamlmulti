@@ -200,7 +200,7 @@ CAMLexport value caml_alloc_array(value (*funct)(char const *),
   }
 }
 
-CAMLexport value caml_alloc_array_r(pctxt ctx, value (*funct)(char const *),
+CAMLexport value caml_alloc_array_r(pctxt ctx, value (*funct)(pctxt, char const *),
                                   char const ** arr)
 {
   CAMLparam0_r (ctx);
@@ -217,7 +217,7 @@ CAMLexport value caml_alloc_array_r(pctxt ctx, value (*funct)(char const *),
       /* The two statements below must be separate because of evaluation
          order (don't take the address &Field(result, n) before
          calling funct, which may cause a GC and move result). */
-      v = funct(arr[n]); // phc todo reentrant
+      v = funct(ctx,arr[n]); // phc todo reentrant
       caml_modify_r(ctx, &Field(result, n), v);
     }
     CAMLreturn_r (ctx, result);
@@ -232,7 +232,7 @@ CAMLexport value caml_copy_string_array(char const ** arr)
 
 CAMLexport value caml_copy_string_array_r(pctxt ctx, char const ** arr)
 {
-  return caml_alloc_array_r(ctx, caml_copy_string, arr);
+  return caml_alloc_array_r(ctx, caml_copy_string_r, arr);
 }
 
 // phc no ctx

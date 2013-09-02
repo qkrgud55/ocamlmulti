@@ -20,6 +20,7 @@
 
 #ifdef DEBUG
 
+// phc no ctx
 int caml_failed_assert (char * expr, char * file, int line)
 {
   fprintf (stderr, "file %s; line %d ### Assertion failed: %s\n",
@@ -29,6 +30,7 @@ int caml_failed_assert (char * expr, char * file, int line)
   return 1; /* not reached */
 }
 
+// phc no ctx
 void caml_set_fields (char *bp, unsigned long start, unsigned long filler)
 {
   mlsize_t i;
@@ -40,7 +42,7 @@ void caml_set_fields (char *bp, unsigned long start, unsigned long filler)
 #endif /* DEBUG */
 
 uintnat caml_verb_gc = 0;
-
+// phc no ctx
 void caml_gc_message (int level, char *msg, uintnat arg)
 {
   if (level < 0 || (caml_verb_gc & level) != 0){
@@ -49,18 +51,19 @@ void caml_gc_message (int level, char *msg, uintnat arg)
   }
 }
 
+// phc no ctx
 CAMLexport void caml_fatal_error (char *msg)
 {
   fprintf (stderr, "%s", msg);
   exit(2);
 }
-
+// phc no ctx
 CAMLexport void caml_fatal_error_arg (char *fmt, char *arg)
 {
   fprintf (stderr, fmt, arg);
   exit(2);
 }
-
+// phc no ctx
 CAMLexport void caml_fatal_error_arg2 (char *fmt1, char *arg1,
                                        char *fmt2, char *arg2)
 {
@@ -95,14 +98,14 @@ char *caml_aligned_malloc (asize_t size, int modulo, void **block)
 #endif
   return (char *) (aligned_mem - modulo);
 }
-
+// phc no ctx
 void caml_ext_table_init(struct ext_table * tbl, int init_capa)
 {
   tbl->size = 0;
   tbl->capacity = init_capa;
   tbl->contents = caml_stat_alloc(sizeof(void *) * init_capa);
 }
-
+// phc no ctx
 int caml_ext_table_add(struct ext_table * tbl, void * data)
 {
   int res;
@@ -116,7 +119,7 @@ int caml_ext_table_add(struct ext_table * tbl, void * data)
   tbl->size++;
   return res;
 }
-
+// phc no ctx
 void caml_ext_table_free(struct ext_table * tbl, int free_entries)
 {
   int i;

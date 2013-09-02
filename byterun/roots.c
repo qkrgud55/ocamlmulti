@@ -99,7 +99,7 @@ void caml_darken_all_roots (void)
   caml_do_roots (caml_darken);
 }
 
-// phc todo reentrant
+// phc dummy reentrant
 void caml_darken_all_roots_r (pctxt ctx)
 {
   caml_do_roots_r (ctx, caml_darken_r);
@@ -154,7 +154,7 @@ CAMLexport void caml_do_local_roots (scanning_action f, value *stack_low,
   }
 }
 
-// phc todo reentrant
+// phc dummy reentrant
 CAMLexport void caml_do_local_roots_r (pctxt ctx, 
                                      scanning_action f, value *stack_low,
                                      value *stack_high,

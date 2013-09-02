@@ -38,7 +38,7 @@ CAMLexport intnat volatile caml_signals_are_pending = 0;
 CAMLexport intnat volatile caml_pending_signals[NSIG];
 
 /* Execute all pending signals */
-
+// phc todo - is there a signal handled by these functions?
 void caml_process_pending_signals(void)
 {
   int i;
@@ -285,7 +285,6 @@ CAMLexport int caml_rev_convert_signal_number(int signo)
 }
 
 /* Installation of a signal handler (as per [Sys.signal]) */
-
 CAMLprim value caml_install_signal_handler(value signal_number, value action)
 {
   CAMLparam2 (signal_number, action);
@@ -330,4 +329,50 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
   }
   caml_process_pending_signals();
   CAMLreturn (res);
+}
+
+CAMLprim value caml_install_signal_handler_r(pctxt ctx, value signal_number, value action)
+{
+  CAMLparam2_r (ctx,signal_number, action);
+  CAMLlocal1_r (ctx,res);
+  int sig, act, oldact;
+
+  sig = caml_convert_signal_number(Int_val(signal_number));
+  if (sig < 0 || sig >= NSIG)
+    caml_invalid_argument_r(ctx,"Sys.signal: unavailable signal");
+  switch(action) {
+  case Val_int(0):              /* Signal_default */
+    act = 0;
+    break;
+  case Val_int(1):              /* Signal_ignore */
+    act = 1;
+    break;
+  default:                      /* Signal_handle */
+    act = 2;
+    break;
+  }
+  oldact = caml_set_signal_action(sig, act);
+  switch (oldact) {
+  case 0:                       /* was Signal_default */
+    res = Val_int(0);
+    break;
+  case 1:                       /* was Signal_ignore */
+    res = Val_int(1);
+    break;
+  case 2:                       /* was Signal_handle */
+    res = caml_alloc_small_r (ctx,1, 0);
+    Field(res, 0) = Field(caml_signal_handlers, sig);
+    break;
+  default:                      /* error in caml_set_signal_action */
+    caml_sys_error_r(ctx,NO_ARG);
+  }
+  if (Is_block(action)) {
+    if (caml_signal_handlers == 0) {
+      caml_signal_handlers = caml_alloc_r(ctx,NSIG, 0);
+      caml_register_global_root_r(ctx,&caml_signal_handlers);
+    }
+    caml_modify_r(ctx,&Field(caml_signal_handlers, sig), Field(action, 0));
+  }
+  caml_process_pending_signals();
+  CAMLreturn_r (ctx,res);
 }

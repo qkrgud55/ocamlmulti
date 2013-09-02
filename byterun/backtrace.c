@@ -273,6 +273,25 @@ CAMLexport void caml_print_exception_backtrace(void)
     print_location(&li, i);
   }
 }
+// phc dummy 
+CAMLexport void caml_print_exception_backtrace_r(pctxt ctx)
+{
+  value events;
+  int i;
+  struct loc_info li;
+
+  events = read_debug_info();
+  if (events == Val_false) {
+    fprintf(stderr,
+            "(Program not linked with -g, cannot print stack backtrace)\n");
+    return;
+  }
+  for (i = 0; i < caml_backtrace_pos; i++) {
+    extract_location_info(events, caml_backtrace_buffer[i], &li);
+    print_location(&li, i);
+  }
+}
+
 
 /* Convert the backtrace to a data structure usable from OCaml */
 

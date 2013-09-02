@@ -94,7 +94,7 @@ DECLARE_SIGNAL_HANDLER(handle_signal)
     caml_execute_signal(sig, 1);
     caml_enter_blocking_section_hook();
   } else {
-    // phc 
+    // phc todo
     if (main_ctx) caml_record_signal_r(main_ctx, sig);
     else caml_record_signal(sig);
   /* Some ports cache [caml_young_limit] in a register.

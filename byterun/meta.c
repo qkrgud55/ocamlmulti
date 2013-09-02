@@ -15,6 +15,8 @@
 
 /* Primitives for the toplevel */
 
+// phc no ctx file
+
 #include <string.h>
 #include "alloc.h"
 #include "config.h"
@@ -139,7 +141,7 @@ CAMLprim value caml_invoke_traced_function(value codeptr, value env, value arg)
   return Val_unit;
 }
 
-#else
+#else // NATIVE 
 
 /* Dummy definitions to support compilation of ocamlc.opt */
 

@@ -17,6 +17,7 @@
 #define CAML_BACKTRACE_H
 
 #include "mlvalues.h"
+#include "context.h"
 
 CAMLextern int caml_backtrace_active;
 CAMLextern int caml_backtrace_pos;
@@ -29,5 +30,6 @@ CAMLprim value caml_record_backtrace(value vflag);
 extern void caml_stash_backtrace(value exn, code_t pc, value * sp);
 #endif
 CAMLextern void caml_print_exception_backtrace(void);
+CAMLextern void caml_print_exception_backtrace_r(pctxt ctx);
 
 #endif /* CAML_BACKTRACE_H */

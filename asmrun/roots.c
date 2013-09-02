@@ -469,7 +469,6 @@ void caml_darken_all_roots (void)
   caml_do_roots (caml_darken);
 }
 
-// phc todo reentrant
 void caml_darken_all_roots_r (pctxt ctx)
 {
   caml_do_roots_r (ctx, caml_darken_r);

@@ -74,7 +74,6 @@ void caml_record_signal(int signal_number)
 
 void caml_record_signal_r(pctxt ctx, int signal_number)
 {
-  printf("unexpected caml_record_signal_r\n");
   caml_pending_signals[signal_number] = 1;
   caml_signals_are_pending = 1;
 #ifndef NATIVE_CODE

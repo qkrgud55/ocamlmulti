@@ -2,7 +2,7 @@ let rec tak (x, y, z) =
   if x > y then tak(tak (x-1, y, z), tak (y-1, z, x), tak (z-1, x, y))
            else z
 
-let break_handler _ =
+let break_handle _ =
   print_string "Thank you for pressing ctrl-C."; print_newline();
   print_string "Allocating a bit..."; flush stdout;
   ignore (tak(18,12,6)); print_string "done."; print_newline()

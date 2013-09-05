@@ -366,6 +366,8 @@ extern void sync_with_context(pctxt ctx);
 
 CAMLextern void (*caml_lock_phc_mutex_fptr)(void);
 CAMLextern void (*caml_unlock_phc_mutex_fptr)(void);
+extern void caml_phc_io_lock(void);
+extern void caml_phc_io_unlock(void);
 
 void caml_enter_cond_lock(pctxt ctx);
 CAMLextern void (*caml_phc_create_thread)(void *(*fn)(void*), void *arg);

@@ -230,6 +230,7 @@ void caml_main(char **argv)
     init_atoms();
     init_phc_ctx_key();
     caml_init_signals_r(NULL);
+    caml_register_ctx(ctxl[0], 0);
     caml_debugger_init (); /* force debugger.o stub to be linked */
     exe_name = argv[0];
     if (exe_name == NULL) exe_name = "";

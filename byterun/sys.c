@@ -175,6 +175,7 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
   if (fd == -1) caml_sys_error(path);
   CAMLreturn(Val_long(fd));
 }
+
 CAMLprim value caml_sys_open_r(pctxt ctx, value path, value vflags, value vperm)
 {
   CAMLparam3_r(ctx,path, vflags, vperm);

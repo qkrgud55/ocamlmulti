@@ -169,11 +169,16 @@ CAMLprim value caml_int_compare(value v1, value v2)
   return Val_int(res);
 }
 
-// phc no ctx
 CAMLprim value caml_int_of_string(value s)
 {
   return Val_long(parse_intnat(s, 8 * sizeof(value) - 1));
 }
+
+CAMLprim value caml_int_of_string_r(pctxt ctx, value s)
+{
+  return Val_long(parse_intnat_r(ctx, s, 8 * sizeof(value) - 1));
+}
+
 
 #define FORMAT_BUFFER_SIZE 32
 

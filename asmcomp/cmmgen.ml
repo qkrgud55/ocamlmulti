@@ -23,6 +23,7 @@ open Lambda
 open Clambda
 open Cmm
 open Cmx_format
+open Clflags
 
 (* Local binding of complex expressions *)
 
@@ -313,6 +314,19 @@ let float_array_length hdr = Cop(Clsr, [hdr; Cconst_int numfloat_shift])
 let lsl_const c n =
   Cop(Clsl, [c; Cconst_int n])
 
+let transl_constant = function
+    Const_base(Const_int n) ->
+      int_const n
+  | Const_base(Const_char c) ->
+      Cconst_int(((Char.code c) lsl 1) + 1)
+  | Const_pointer n ->
+      if n <= max_repr_int && n >= min_repr_int
+      then Cconst_pointer((n lsl 1) + 1)
+      else Cconst_natpointer
+              (Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n)
+  | cst ->
+      Cconst_symbol (Compilenv.new_structured_constant cst false)
+
 let array_indexing log2size ptr ofs =
   match ofs with
     Cconst_int n ->
@@ -337,6 +351,10 @@ let float_array_ref arr ofs =
 let addr_array_set arr ofs newval =
   Cop(Cextcall("caml_modify", typ_void, false, false, Debuginfo.none),
       [array_indexing log2_size_addr arr ofs; newval])
+let addr_array_set_r arr ofs newval =
+  Cop(Cextcall("caml_modify_r", typ_void, true (* phc todo unnecessary? *), true, Debuginfo.none),
+      (transl_constant (Const_base(Const_int 0)))::[array_indexing log2_size_addr arr ofs; newval])
+
 let int_array_set arr ofs newval =
   Cop(Cstore Word, [array_indexing log2_size_addr arr ofs; newval])
 let float_array_set arr ofs newval =
@@ -379,7 +397,6 @@ let call_cached_method obj tag cache pos args dbg =
       obj :: tag :: cache :: args)
 
 (* Allocation *)
-
 let make_alloc_generic set_fn tag wordsize args =
   if wordsize <= Config.max_young_wosize then
     Cop(Calloc, Cconst_natint(block_header tag wordsize) :: args)
@@ -395,11 +412,32 @@ let make_alloc_generic set_fn tag wordsize args =
          fill_fields 1 args)
   end
 
+let make_alloc_generic_r set_fn tag wordsize args =
+  if wordsize <= Config.max_young_wosize then
+    Cop(Calloc, Cconst_natint(block_header tag wordsize) :: args)
+  else begin
+    let id = Ident.create "alloc" in
+    let rec fill_fields idx = function
+      [] -> Cvar id
+    | e1::el -> Csequence(set_fn (Cvar id) (Cconst_int idx) e1,
+                          fill_fields (idx + 2) el) in
+    Clet(id,
+         Cop(Cextcall("caml_alloc_r", typ_addr, true, true, Debuginfo.none),
+                 [Cconst_int 0; Cconst_int wordsize; Cconst_int tag]),
+         fill_fields 1 args)
+  end
+
 let make_alloc tag args =
   make_alloc_generic addr_array_set tag (List.length args) args
+let make_alloc_r tag args =
+  make_alloc_generic_r addr_array_set_r tag (List.length args) args
 let make_float_alloc tag args =
   make_alloc_generic float_array_set tag
                      (List.length args * size_float / size_addr) args
+let make_float_alloc_r tag args =
+  make_alloc_generic_r float_array_set tag
+                     (List.length args * size_float / size_addr) args
+
 
 (* Bounds checking *)
 
@@ -475,19 +513,6 @@ let new_const_symbol () =
 
 let structured_constants = ref ([] : (string * structured_constant) list)
 *)
-
-let transl_constant = function
-    Const_base(Const_int n) ->
-      int_const n
-  | Const_base(Const_char c) ->
-      Cconst_int(((Char.code c) lsl 1) + 1)
-  | Const_pointer n ->
-      if n <= max_repr_int && n >= min_repr_int
-      then Cconst_pointer((n lsl 1) + 1)
-      else Cconst_natpointer
-              (Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n)
-  | cst ->
-      Cconst_symbol (Compilenv.new_structured_constant cst false)
 
 (* Translate constant closures *)
 
@@ -658,6 +683,11 @@ let default_prim name =
     prim_alloc = true; prim_ctx = false; 
     prim_native_name = ""; prim_native_float = false }
 
+let default_prim_r name =
+  { prim_name = name; prim_arity = 0 (*ignored*);
+    prim_alloc = true; prim_ctx = true; 
+    prim_native_name = ""; prim_native_float = false }
+
 let simplif_primitive_32bits = function
     Pbintofint Pint64 -> Pccall (default_prim "caml_int64_of_int")
   | Pintofbint Pint64 -> Pccall (default_prim "caml_int64_to_int")
@@ -694,7 +724,12 @@ let simplif_primitive_32bits = function
 let simplif_primitive p =
   match p with
   | Pduprecord _ ->
-      Pccall (default_prim "caml_obj_dup")
+      if !Clflags.phcr then 
+        let _ = print_endline "caml_obj_dup_r in simplif_primitive" in
+           Pccall (default_prim_r "caml_obj_dup_r")
+      else 
+        let _ = print_endline "caml_obj_dup in simplif_primitive" in
+           Pccall (default_prim "caml_obj_dup")
   | Pbigarrayref(unsafe, n, Pbigarray_unknown, layout) ->
       Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
   | Pbigarrayset(unsafe, n, Pbigarray_unknown, layout) ->
@@ -931,7 +966,7 @@ let rec transl = function
       | (Pmakeblock(tag, mut), []) ->
           transl_constant(Const_block(tag, []))
       | (Pmakeblock(tag, mut), args) ->
-          make_alloc tag (List.map transl args)
+          (if !Clflags.phcr then make_alloc_r else make_alloc) tag (List.map transl args)
       | (Pccall prim, args) when prim.prim_ctx -> (* phc ctx *)
           print_endline ("cmmgen UPrim.Pccal " ^ prim.prim_name);
           let args = (Uconst (Const_base(Const_int 0),None))::args in
@@ -955,6 +990,17 @@ let rec transl = function
                 List.map transl args)
       | (Pmakearray kind, []) ->
           transl_constant(Const_block(0, []))
+      | (Pmakearray kind, args) when !Clflags.phcr ->
+          begin match kind with
+            Pgenarray ->
+              Cop(Cextcall("caml_make_array_r", typ_addr, true, true, Debuginfo.none),
+                  (Cconst_int 0)::[make_alloc_r 0 (List.map transl args)])
+          | Paddrarray | Pintarray ->
+              make_alloc_r 0 (List.map transl args)
+          | Pfloatarray ->
+              make_float_alloc_r Obj.double_array_tag
+                                 (List.map transl_unbox_float args)
+          end
       | (Pmakearray kind, args) ->
           begin match kind with
             Pgenarray ->
@@ -1182,7 +1228,13 @@ and transl_prim_1 p arg dbg =
 and transl_prim_2 p arg1 arg2 dbg =
   match p with
   (* Heap operations *)
-    Psetfield(n, ptr) ->
+    Psetfield(n, ptr) when !Clflags.phcr ->
+      if ptr then
+        return_unit(Cop(Cextcall("caml_modify_r", typ_void, true, true, Debuginfo.none),
+                        (Cconst_int 0)::[field_address (transl arg1) n; transl arg2]))
+      else
+        return_unit(set_field (transl arg1) n (transl arg2))
+  | Psetfield(n, ptr) ->
       if ptr then
         return_unit(Cop(Cextcall("caml_modify", typ_void, false, false, Debuginfo.none),
                         [field_address (transl arg1) n; transl arg2]))
@@ -1386,10 +1438,12 @@ and transl_prim_3 p arg1 arg2 arg3 dbg =
             bind "index" (transl arg2) (fun index ->
               bind "arr" (transl arg1) (fun arr ->
                 Cifthenelse(is_addr_array_ptr arr,
-                            addr_array_set arr index newval,
+                            (if !Clflags.phcr then addr_array_set_r else addr_array_set)
+                               arr index newval,
                             float_array_set arr index (unbox_float newval)))))
       | Paddrarray ->
-          addr_array_set (transl arg1) (transl arg2) (transl arg3)
+          (if !Clflags.phcr then addr_array_set_r else addr_array_set)
+             (transl arg1) (transl arg2) (transl arg3)
       | Pintarray ->
           int_array_set (transl arg1) (transl arg2) (transl arg3)
       | Pfloatarray ->
@@ -1405,13 +1459,15 @@ and transl_prim_3 p arg1 arg2 arg3 dbg =
             if wordsize_shift = numfloat_shift then
               Csequence(make_checkbound dbg [addr_array_length hdr; idx],
                         Cifthenelse(is_addr_array_hdr hdr,
-                                    addr_array_set arr idx newval,
+                                    (if !Clflags.phcr then addr_array_set_r else addr_array_set)
+                                       arr idx newval,
                                     float_array_set arr idx
                                                     (unbox_float newval)))
             else
               Cifthenelse(is_addr_array_hdr hdr,
                 Csequence(make_checkbound dbg [addr_array_length hdr; idx],
-                          addr_array_set arr idx newval),
+                          (if !Clflags.phcr then addr_array_set_r else addr_array_set)
+                             arr idx newval),
                 Csequence(make_checkbound dbg [float_array_length hdr; idx],
                           float_array_set arr idx
                                           (unbox_float newval)))))))
@@ -1420,7 +1476,8 @@ and transl_prim_3 p arg1 arg2 arg3 dbg =
           bind "index" (transl arg2) (fun idx ->
           bind "arr" (transl arg1) (fun arr ->
             Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
-                      addr_array_set arr idx newval))))
+                      (if !Clflags.phcr then addr_array_set_r else addr_array_set)
+                         arr idx newval))))
       | Pintarray ->
           bind "newval" (transl arg3) (fun newval ->
           bind "index" (transl arg2) (fun idx ->
@@ -1573,9 +1630,17 @@ and transl_switch arg index cases = match Array.length cases with
 and transl_letrec bindings cont =
   let bsz = List.map (fun (id, exp) -> (id, exp, expr_size exp)) bindings in
   let op_alloc prim sz =
-    Cop(Cextcall(prim, typ_addr, true, false, Debuginfo.none), [int_const sz]) in
+    if !Clflags.phcr then
+      Cop(Cextcall(prim, typ_addr, true, false, Debuginfo.none), [int_const sz]) 
+    else
+      Cop(Cextcall(prim, typ_addr, true, true, Debuginfo.none), 
+            (Cconst_int 0)::[int_const sz]) in
   let rec init_blocks = function
     | [] -> fill_nonrec bsz
+    | (id, exp, RHS_block sz) :: rem when !Clflags.phcr ->
+        Clet(id, op_alloc "caml_alloc_dummy_r" sz, init_blocks rem)
+    | (id, exp, RHS_floatblock sz) :: rem when !Clflags.phcr->
+        Clet(id, op_alloc "caml_alloc_dummy_float_r" sz, init_blocks rem)
     | (id, exp, RHS_block sz) :: rem ->
         Clet(id, op_alloc "caml_alloc_dummy" sz, init_blocks rem)
     | (id, exp, RHS_floatblock sz) :: rem ->
@@ -1590,6 +1655,11 @@ and transl_letrec bindings cont =
         Clet (id, transl exp, fill_nonrec rem)
   and fill_blocks = function
     | [] -> cont
+    | (id, exp, (RHS_block _ | RHS_floatblock _)) :: rem when !Clflags.phcr ->
+        let op =
+          Cop(Cextcall("caml_update_dummy_r", typ_void, false, false, Debuginfo.none),
+              (Cconst_int 0)::[Cvar id; transl exp]) in
+        Csequence(op, fill_blocks rem)
     | (id, exp, (RHS_block _ | RHS_floatblock _)) :: rem ->
         let op =
           Cop(Cextcall("caml_update_dummy", typ_void, false, false, Debuginfo.none),

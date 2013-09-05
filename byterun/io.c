@@ -269,10 +269,10 @@ static int do_write_r(pctxt ctx, int fd, char *p, int n)
 
 again:
 //  caml_enter_blocking_section();
-  caml_lock_phc_mutex(ctx, Val_unit);
+//  caml_lock_phc_mutex(ctx, Val_unit);
   retcode = write(fd, p, n);
 //  caml_leave_blocking_section();
-  caml_unlock_phc_mutex(ctx, Val_unit);
+//  caml_unlock_phc_mutex(ctx, Val_unit);
   if (retcode == -1) {
     if (errno == EINTR) goto again;
     if ((errno == EAGAIN || errno == EWOULDBLOCK) && n > 1) {
@@ -1200,13 +1200,13 @@ CAMLprim value caml_ml_seek_out_64(value vchannel, value pos)
 
 CAMLprim value caml_ml_seek_out_64_r(pctxt ctx, value vchannel, value pos)
 {
-  CAMLparam2 (vchannel, pos);
+  CAMLparam2_r (ctx, vchannel, pos);
   struct channel * channel = Channel(vchannel);
 
   Lock_r(ctx, channel);
   caml_seek_out_r(ctx, channel, File_offset_val(pos));
   Unlock_r(ctx, channel);
-  CAMLreturn (Val_unit);
+  CAMLreturn_r (ctx, Val_unit);
 }
 
 CAMLprim value caml_ml_pos_out(value vchannel)

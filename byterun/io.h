@@ -110,11 +110,13 @@ CAMLextern struct channel * caml_all_opened_channels;
 #define Lock(channel) \
   if (caml_channel_mutex_lock != NULL) (*caml_channel_mutex_lock)(channel)
 #define Lock_r(ctx, channel) \
-  if (caml_channel_mutex_lock_r != NULL) (*caml_channel_mutex_lock_r)(ctx, channel)
+  caml_phc_io_lock()
+//  if (caml_channel_mutex_lock_r != NULL) (*caml_channel_mutex_lock_r)(ctx, channel)
 #define Unlock(channel) \
   if (caml_channel_mutex_unlock != NULL) (*caml_channel_mutex_unlock)(channel)
 #define Unlock_r(ctx, channel) \
-  if (caml_channel_mutex_unlock_r != NULL) (*caml_channel_mutex_unlock_r)(ctx, channel)
+  caml_phc_io_unlock()
+//  if (caml_channel_mutex_unlock_r != NULL) (*caml_channel_mutex_unlock_r)(ctx, channel)
 #define Unlock_exn() \
   if (caml_channel_mutex_unlock_exn != NULL) (*caml_channel_mutex_unlock_exn)()
 #define Unlock_exn_r(ctx) \

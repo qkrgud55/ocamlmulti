@@ -91,12 +91,12 @@ let reset_labels () =
 let string s = Lconst (Const_base (Const_string s))
 let int n = Lconst (Const_base (Const_int n))
 
-let prim_makearray =
-  if !Clflags.phcr then
+let prim_makearray_r =
   { prim_name = "caml_make_vect_r"; prim_arity = 2; 
     prim_alloc = true; prim_ctx = true;
     prim_native_name = ""; prim_native_float = false }
-  else
+
+let prim_makearray =
   { prim_name = "caml_make_vect"; prim_arity = 2; 
     prim_alloc = true; prim_ctx = false;
     prim_native_name = ""; prim_native_float = false }

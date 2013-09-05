@@ -182,7 +182,7 @@ external major_slice : int -> int = "caml_gc_major_slice";;
 external major : unit -> unit = "caml_gc_major"
 (** Do a minor collection and finish the current major collection cycle. *)
 
-external full_major : unit -> unit = "caml_gc_full_major"
+external full_major : unit -> unit = "caml_gc_full_major_r" "reentrant"
 (** Do a minor collection, finish the current major collection cycle,
    and perform a complete new cycle.  This will collect all currently
    unreachable blocks. *)

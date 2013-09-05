@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-// phc todo file
-
 /* $Id: obj.c 12149 2012-02-10 16:15:24Z doligez $ */
 
 /* Operations on objects */
@@ -29,11 +27,13 @@
 #include "mlvalues.h"
 #include "prims.h"
 
+// phc no ctx
 CAMLprim value caml_static_alloc(value size)
 {
   return (value) caml_stat_alloc((asize_t) Long_val(size));
 }
 
+// phc no ctx
 CAMLprim value caml_static_free(value blk)
 {
   caml_stat_free((void *) blk);
@@ -44,6 +44,7 @@ CAMLprim value caml_static_free(value blk)
    needed (before freeing it) - this might be useful for a JIT
    implementation */
 
+// phc no ctx
 CAMLprim value caml_static_release_bytecode(value blk, value size)
 {
 #ifndef NATIVE_CODE
@@ -54,17 +55,19 @@ CAMLprim value caml_static_release_bytecode(value blk, value size)
   return Val_unit;
 }
 
-
+// phc no ctx
 CAMLprim value caml_static_resize(value blk, value new_size)
 {
   return (value) caml_stat_resize((char *) blk, (asize_t) Long_val(new_size));
 }
 
+// phc no ctx
 CAMLprim value caml_obj_is_block(value arg)
 {
   return Val_bool(Is_block(arg));
 }
 
+// phc no ctx
 CAMLprim value caml_obj_tag(value arg)
 {
   if (Is_long (arg)){
@@ -78,6 +81,7 @@ CAMLprim value caml_obj_tag(value arg)
   }
 }
 
+// phc no ctx
 CAMLprim value caml_obj_set_tag (value arg, value new_tag)
 {
   Tag_val (arg) = Int_val (new_tag);
@@ -94,6 +98,22 @@ CAMLprim value caml_obj_block(value tag, value size)
   tg = Long_val(tag);
   if (sz == 0) return Atom(tg);
   res = caml_alloc(sz, tg);
+  for (i = 0; i < sz; i++)
+    Field(res, i) = Val_long(0);
+
+  return res;
+}
+
+CAMLprim value caml_obj_block_r(pctxt ctx, value tag, value size)
+{
+  value res;
+  mlsize_t sz, i;
+  tag_t tg;
+
+  sz = Long_val(size);
+  tg = Long_val(tag);
+  if (sz == 0) return Atom(tg);
+  res = caml_alloc_r(ctx, sz, tg);
   for (i = 0; i < sz; i++)
     Field(res, i) = Val_long(0);
 
@@ -122,6 +142,30 @@ CAMLprim value caml_obj_dup(value arg)
   }
   CAMLreturn (res);
 }
+
+CAMLprim value caml_obj_dup_r(pctxt ctx, value arg)
+{
+  CAMLparam1_r (ctx, arg);
+  CAMLlocal1_r (ctx, res);
+  mlsize_t sz, i;
+  tag_t tg;
+
+  sz = Wosize_val(arg);
+  if (sz == 0) CAMLreturn_r (ctx, arg);
+  tg = Tag_val(arg);
+  if (tg >= No_scan_tag) {
+    res = caml_alloc_r(ctx, sz, tg);
+    memcpy(Bp_val(res), Bp_val(arg), sz * sizeof(value));
+  } else if (sz <= Max_young_wosize) {
+    res = caml_alloc_small_r(ctx, sz, tg);
+    for (i = 0; i < sz; i++) Field(res, i) = Field(arg, i);
+  } else {
+    res = caml_alloc_shr_r(ctx, sz, tg);
+    for (i = 0; i < sz; i++) caml_initialize_r(ctx, &Field(res, i), Field(arg, i));
+  }
+  CAMLreturn_r (ctx, res);
+}
+
 
 /* Shorten the given block to the given size and return void.
    Raise Invalid_argument if the given size is less than or equal
@@ -167,6 +211,42 @@ CAMLprim value caml_obj_truncate (value v, value newsize)
   return Val_unit;
 }
 
+CAMLprim value caml_obj_truncate_r (pctxt ctx, value v, value newsize)
+{
+  mlsize_t new_wosize = Long_val (newsize);
+  header_t hd = Hd_val (v);
+  tag_t tag = Tag_hd (hd);
+  color_t color = Color_hd (hd);
+  mlsize_t wosize = Wosize_hd (hd);
+  mlsize_t i;
+
+  if (tag == Double_array_tag) new_wosize *= Double_wosize;  /* PR#156 */
+
+  if (new_wosize <= 0 || new_wosize > wosize){
+    caml_invalid_argument_r (ctx, "Obj.truncate");
+  }
+  if (new_wosize == wosize) return Val_unit;
+  /* PR#61: since we're about to lose our references to the elements
+     beyond new_wosize in v, erase them explicitly so that the GC
+     can darken them as appropriate. */
+  if (tag < No_scan_tag) {
+    for (i = new_wosize; i < wosize; i++){
+      caml_modify_r(ctx, &Field(v, i), Val_unit);
+#ifdef DEBUG
+      Field (v, i) = Debug_free_truncate;
+#endif
+    }
+  }
+  /* We must use an odd tag for the header of the leftovers so it does not
+     look like a pointer because there may be some references to it in
+     ref_table. */
+  Field (v, new_wosize) =
+    Make_header (Wosize_whsize (wosize-new_wosize), 1, Caml_white);
+  Hd_val (v) = Make_header (new_wosize, tag, color);
+  return Val_unit;
+}
+
+// phc no ctx
 CAMLprim value caml_obj_add_offset (value v, value offset)
 {
   return v + (unsigned long) Int32_val (offset);
@@ -177,6 +257,7 @@ CAMLprim value caml_obj_add_offset (value v, value offset)
    to the GC.
  */
 
+// phc no ctx
 CAMLprim value caml_lazy_follow_forward (value v)
 {
   if (Is_block (v) && Is_in_value_area(v)
@@ -197,10 +278,20 @@ CAMLprim value caml_lazy_make_forward (value v)
   CAMLreturn (res);
 }
 
+CAMLprim value caml_lazy_make_forward_r (pctxt ctx, value v)
+{
+  CAMLparam1_r (ctx, v);
+  CAMLlocal1_r (ctx, res);
+
+  res = caml_alloc_small_r (ctx, 1, Forward_tag);
+  Field (res, 0) = v;
+  CAMLreturn_r (ctx, res);
+}
+
 /* For mlvalues.h and camlinternalOO.ml
    See also GETPUBMET in interp.c
  */
-
+// phc no ctx
 CAMLprim value caml_get_public_method (value obj, value tag)
 {
   value meths = Field (obj, 0);
@@ -222,6 +313,7 @@ CAMLprim value caml_get_public_method (value obj, value tag)
 #else
 #define MARK 0
 #endif
+// phc no ctx
 value caml_cache_public_method (value meths, value tag, value *cache)
 {
   int li = 3, hi = Field(meths,0), mi;
@@ -233,7 +325,7 @@ value caml_cache_public_method (value meths, value tag, value *cache)
   *cache = (li-3)*sizeof(value) + MARK;
   return Field (meths, li-1);
 }
-
+// phc no ctx
 value caml_cache_public_method2 (value *meths, value tag, value *cache)
 {
   value ofs = *cache & meths[1];

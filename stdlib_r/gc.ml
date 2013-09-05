@@ -54,7 +54,7 @@ external minor : unit -> unit = "caml_gc_minor";;
 external minor_r : unit -> unit = "caml_gc_minor_r" "reentrant";;
 external major_slice : int -> int = "caml_gc_major_slice";;
 external major : unit -> unit = "caml_gc_major";;
-external full_major : unit -> unit = "caml_gc_full_major";;
+external full_major : unit -> unit = "caml_gc_full_major_r" "reentrant";;
 external compact : unit -> unit = "caml_gc_compaction";;
 
 external phc_context : unit -> unit = "caml_print_context" "reentrant";;

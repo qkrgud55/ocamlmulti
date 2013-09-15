@@ -1631,10 +1631,10 @@ and transl_letrec bindings cont =
   let bsz = List.map (fun (id, exp) -> (id, exp, expr_size exp)) bindings in
   let op_alloc prim sz =
     if !Clflags.phcr then
-      Cop(Cextcall(prim, typ_addr, true, false, Debuginfo.none), [int_const sz]) 
-    else
       Cop(Cextcall(prim, typ_addr, true, true, Debuginfo.none), 
-            (Cconst_int 0)::[int_const sz]) in
+            (Cconst_int 0)::[int_const sz])
+    else
+      Cop(Cextcall(prim, typ_addr, true, false, Debuginfo.none), [int_const sz]) in
   let rec init_blocks = function
     | [] -> fill_nonrec bsz
     | (id, exp, RHS_block sz) :: rem when !Clflags.phcr ->
@@ -1657,7 +1657,7 @@ and transl_letrec bindings cont =
     | [] -> cont
     | (id, exp, (RHS_block _ | RHS_floatblock _)) :: rem when !Clflags.phcr ->
         let op =
-          Cop(Cextcall("caml_update_dummy_r", typ_void, false, false, Debuginfo.none),
+          Cop(Cextcall("caml_update_dummy_r", typ_void, true, true, Debuginfo.none),
               (Cconst_int 0)::[Cvar id; transl exp]) in
         Csequence(op, fill_blocks rem)
     | (id, exp, (RHS_block _ | RHS_floatblock _)) :: rem ->

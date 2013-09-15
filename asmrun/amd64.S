@@ -351,10 +351,10 @@ LBL(caml_call_gc_r):
         addq    $32768, %rsp
 #endif
     /* Build array of registers, save it into caml_gc_regs */
+        pushq   %r13  
         pushq   %r11
         pushq   %r10
         pushq   %rbp
-    /*  pushq   %r13  */   /* phc todo */
         pushq   %r12
         pushq   %r9
         pushq   %r8
@@ -369,7 +369,8 @@ LBL(caml_call_gc_r):
     /* Save caml_young_ptr, caml_exception_pointer */
     /*    STORE_VAR(%r15, caml_young_ptr)  */
         movq    %r15, (%r13)
-        STORE_VAR(%r14, caml_exception_pointer)
+    /*  STORE_VAR(%r14, caml_exception_pointer) */
+        movq    %r14, 104(%r13)
     /* Save floating-point registers */
         subq    $(16*8), %rsp
         CFI_ADJUST(232)
@@ -393,11 +394,13 @@ LBL(caml_call_gc_r):
         PREPARE_FOR_C_CALL
         movq    %r13, %rdi
         call    GCALL(caml_garbage_collection_r)
+    /* phc todo reset %r13 */
         CLEANUP_AFTER_C_CALL
     /* Restore caml_young_ptr, caml_exception_pointer */
     /*  LOAD_VAR(caml_young_ptr, %r15) */
         movq    (%r13), %r15
-        LOAD_VAR(caml_exception_pointer, %r14)
+    /*  LOAD_VAR(caml_exception_pointer, %r14) */
+        movq    104(%r13), %r14
     /* Restore all regs used by the code generator */
         movsd   0*8(%rsp), %xmm0
         movsd   1*8(%rsp), %xmm1
@@ -425,10 +428,10 @@ LBL(caml_call_gc_r):
         popq    %r8
         popq    %r9
         popq    %r12
-    /*  popq    %r13  */
         popq    %rbp
         popq    %r10
         popq    %r11
+        popq    %r13  
         CFI_ADJUST(-232)
     /* Return to caller */
         ret
@@ -584,7 +587,8 @@ LBL(caml_c_call_r):
     /* Make the exception handler and alloc ptr available to the C code */
     /*    STORE_VAR(%r15, caml_young_ptr) */
         movq    %r15, (%r13) 
-        STORE_VAR(%r14, caml_exception_pointer)
+    /*  STORE_VAR(%r14, caml_exception_pointer)  */
+        movq    %r14, 104(%r13)
     /* Call the function (address in %rax) */
     /* No need to PREPARE_FOR_C_CALL since the caller already
        reserved the stack space if needed (cf. amd64/proc.ml) */
@@ -618,7 +622,8 @@ LBL(caml_start_program_r):
     /* Setup alloc ptr and exception ptr */
     /*  LOAD_VAR(caml_young_ptr, %r15)  */
         movq    (%r13), %r15
-        LOAD_VAR(caml_exception_pointer, %r14)  /* phc TODO */
+    /*  LOAD_VAR(caml_exception_pointer, %r14)  */ 
+        movq    104(%r13), %r14
     /* Build an exception handler */
         lea     LBL(108)(%rip), %rdi
         pushq   %rdi
@@ -633,9 +638,13 @@ LBL(107):
         popq    %r12    /* dummy register */
         CFI_ADJUST(-16)
 LBL(109):
+    /*  phc - load r13 from stack  */
+        movq    -0xB8(%rsp), %r13
     /* Update alloc ptr and exception ptr */
-        STORE_VAR(%r15,caml_young_ptr)
-        STORE_VAR(%r14,caml_exception_pointer)
+    /*  STORE_VAR(%r15,caml_young_ptr)  */
+        movq    %r15, (%r13)
+    /*  STORE_VAR(%r14,caml_exception_pointer)  */
+        movq    %r14, 104(%r13)
     /* Pop the callback link, restoring the global variables */
     /*  POP_VAR(caml_bottom_of_stack)
         POP_VAR(caml_last_return_address)
@@ -749,9 +758,6 @@ FUNCTION(G(caml_raise_exception_r))
 LBL(211):
         movq    C_ARG_2, %r12            /* Save exception bucket */
                                       /* arg 1: exception bucket */
-    /*  LOAD_VAR(caml_last_return_address,C_ARG_2) */  /* arg 2: pc of raise */
-    /*  LOAD_VAR(caml_bottom_of_stack,C_ARG_3)     */  /* arg 3: sp of raise */
-    /*  LOAD_VAR(caml_exception_pointer,C_ARG_4)   */  /* arg 4: sp of handler */
         movq    72(%rdi), C_ARG_3
         movq    80(%rdi), C_ARG_4
         movq    104(%rdi), C_ARG_5

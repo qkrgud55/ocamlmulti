@@ -17,8 +17,8 @@ include Makefile.shared
 
 #allopt-$(PROFILING)
 allopt: stdlib.cmxa std_exit.cmx 
-	cd ../asmrun; make all
 	cp ../asmrun/libasmrun.a ./libasmrun.a
+#	cd ../asmrun; make all
 
 allopt-noprof:
 

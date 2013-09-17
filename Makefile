@@ -17,7 +17,8 @@
 include config/Makefile
 include stdlib/StdlibModules
 
-CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot
+#CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot
+CAMLC=ocamlc
 CAMLOPT=boot/ocamlrun ./ocamlopt -nostdlib -I stdlib -I otherlibs/dynlink
 COMPFLAGS= -strict-sequence -warn-error A $(INCLUDES)
 LINKFLAGS=
@@ -104,6 +105,16 @@ NATTOPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) \
 
 PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
 
+cross-phc:
+	@echo "phc cross-compiles reentrant multi runtime ocamlopt"
+	make runtimeopt
+	make compilerlibs/ocamlcommon.cma
+	cp ~/.opam/4.00.1/bin/ocamlrun ./byterun/
+	make compilerlibs/ocamloptcomp.cma
+	make driver/optmain.cmo
+	ocamlc -o ocamlopt compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma driver/optmain.cmo
+	cd stdlib_r; make allopt
+	cp asmrun/libasmrun.a ./stdlib_r
 
 phc:
 	@echo "phc reentrant multi runtime ocamlopt"

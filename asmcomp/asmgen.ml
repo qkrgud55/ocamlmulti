@@ -148,17 +148,14 @@ let compile_implementation ?toplevel prefixname ppf (size, lam) =
     raise x
   end;
   if !Clflags.phcr && not !Clflags.compile_only then begin
-    print_endline "compile_implementation 1";
     Proc.assemble_file_cmd asmfile (prefixname ^ ext_obj);
     Cmm.phc_asmfiles := asmfile::!Cmm.phc_asmfiles
   end else if !Clflags.index_file==None then begin
-    print_endline "compile_implementation 2";
     let _ = Ccomp.command ("mv "^asmfile^".tmp "^asmfile) in
     if Proc.assemble_file asmfile (prefixname ^ ext_obj) <> 0
     then raise(Error(Assembler_error asmfile));
     if !keep_asm_file then () else remove_file asmfile
   end else begin
-    print_endline "compile_implementation 3";
     let _ = build_and_exec_index_cmd asmfile in 
     if Proc.assemble_file asmfile (prefixname ^ ext_obj) <> 0
     then raise(Error(Assembler_error asmfile));

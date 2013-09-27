@@ -17,7 +17,11 @@ try ignore (Length.make (-1)); assert false with
 
 
 (* We can build a positive length. *)
-let l3 = Length.make 3 in
+let n = 3;;
+let l3 = Length.make n in
 
 (* and use the associated injection and projection functions. *)
-Length.make (Length.from l3 + Length.from l3);;
+let l4 = Length.make (Length.from l3 + Length.from l3) in
+
+Printf.printf "%d + %d = " n n;
+print_int (Length.from l4);;

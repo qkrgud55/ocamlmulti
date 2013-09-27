@@ -968,7 +968,8 @@ let rec transl = function
       | (Pmakeblock(tag, mut), args) ->
           (if !Clflags.phcr then make_alloc_r else make_alloc) tag (List.map transl args)
       | (Pccall prim, args) when prim.prim_ctx -> (* phc ctx *)
-          print_endline ("cmmgen UPrim.Pccal " ^ prim.prim_name);
+          (* phc print
+          print_endline ("cmmgen UPrim.Pccal " ^ prim.prim_name); *)
           let args = (Uconst (Const_base(Const_int 0),None))::args in
           if prim.prim_native_float then
             box_float

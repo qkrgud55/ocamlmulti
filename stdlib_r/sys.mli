@@ -24,43 +24,43 @@ val argv : string array
 val executable_name : string
 (** The name of the file containing the executable currently running. *)
 
-external file_exists : string -> bool = "caml_sys_file_exists"
+external file_exists : string -> bool = "caml_sys_file_exists_n" "reentrant"
 (** Test if a file with the given name exists. *)
 
-external is_directory : string -> bool = "caml_sys_is_directory"
+external is_directory : string -> bool = "caml_sys_is_directory_r" "reentrant"
 (** Returns [true] if the given name refers to a directory,
     [false] if it refers to another kind of file.
     Raise [Sys_error] if no file exists with the given name.
     @since 3.10.0
 *)
 
-external remove : string -> unit = "caml_sys_remove"
+external remove : string -> unit = "caml_sys_remove_r" "reentrant"
 (** Remove the given file name from the file system. *)
 
-external rename : string -> string -> unit = "caml_sys_rename"
+external rename : string -> string -> unit = "caml_sys_rename_r" "reentrant"
 (** Rename a file. The first argument is the old name and the
    second is the new name. If there is already another file
    under the new name, [rename] may replace it, or raise an
    exception, depending on your operating system. *)
 
-external getenv : string -> string = "caml_sys_getenv"
+external getenv : string -> string = "caml_sys_getenv_r" "reentrant"
 (** Return the value associated to a variable in the process
    environment. Raise [Not_found] if the variable is unbound. *)
 
-external command : string -> int = "caml_sys_system_command"
+external command : string -> int = "caml_sys_system_command_r" "reentrant"
 (** Execute the given shell command and return its exit code. *)
 
-external time : unit -> float = "caml_sys_time"
+external time : unit -> float = "caml_sys_time_r" "reentrant"
 (** Return the processor time, in seconds, used by the program
    since the beginning of execution. *)
 
-external chdir : string -> unit = "caml_sys_chdir"
+external chdir : string -> unit = "caml_sys_chdir_r" "reentrant"
 (** Change the current working directory of the process. *)
 
-external getcwd : unit -> string = "caml_sys_getcwd"
+external getcwd : unit -> string = "caml_sys_getcwd_r" "reentrant"
 (** Return the current working directory of the process. *)
 
-external readdir : string -> string array = "caml_sys_read_directory"
+external readdir : string -> string array = "caml_sys_read_directory_r" "reentrant"
 (** Return the names of all files present in the given directory.
    Names denoting the current directory and the parent directory
    (["."] and [".."] in Unix) are not returned.  Each string in the

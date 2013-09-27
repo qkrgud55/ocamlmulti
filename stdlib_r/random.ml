@@ -25,7 +25,7 @@
    passes all the Diehard tests.
 *)
 
-external random_seed: unit -> int array = "caml_sys_random_seed";;
+external random_seed: unit -> int array = "caml_sys_random_seed_r" "reentrant";;
 
 module State = struct
 

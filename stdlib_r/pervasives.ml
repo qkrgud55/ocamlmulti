@@ -233,7 +233,7 @@ type open_flag =
   | Open_creat | Open_trunc | Open_excl
   | Open_binary | Open_text | Open_nonblock
 
-external open_desc : string -> open_flag list -> int -> int = "caml_sys_open_r"
+external open_desc : string -> open_flag list -> int -> int = "caml_sys_open_r" "reentrant"
 
 let open_out_gen mode perm name =
   open_descriptor_out(open_desc name mode perm)

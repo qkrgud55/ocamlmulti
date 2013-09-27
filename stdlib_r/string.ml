@@ -18,7 +18,7 @@
 external length : string -> int = "%string_length"
 external get : string -> int -> char = "%string_safe_get"
 external set : string -> int -> char -> unit = "%string_safe_set"
-external create : int -> string = "caml_create_string"
+external create : int -> string = "caml_create_string_r" "reentrant"
 external unsafe_get : string -> int -> char = "%string_unsafe_get"
 external unsafe_set : string -> int -> char -> unit = "%string_unsafe_set"
 external unsafe_blit : string -> int -> string -> int -> int -> unit
@@ -81,7 +81,7 @@ let concat sep l =
         tl;
       r
 
-external is_printable: char -> bool = "caml_is_printable"
+external is_printable: char -> bool = "caml_is_printable_n" "reentrant"
 external char_code: char -> int = "%identity"
 external char_chr: int -> char = "%identity"
 

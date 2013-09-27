@@ -82,7 +82,7 @@ CAMLprim value caml_obj_tag(value arg)
 }
 
 // phc no ctx
-CAMLprim value caml_obj_set_tag (value arg, value new_tag)
+CAMLprim value caml_obj_set_tag_n (pctxt ctx, value arg, value new_tag)
 {
   Tag_val (arg) = Int_val (new_tag);
   return Val_unit;

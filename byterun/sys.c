@@ -202,13 +202,13 @@ CAMLprim value caml_sys_open_r(pctxt ctx, value path, value vflags, value vperm)
   CAMLreturn_r(ctx,Val_long(fd));
 }
 // phc no ctx
-CAMLprim value caml_sys_close(value fd)
+CAMLprim value caml_sys_close_n(pctxt ctx, value fd)
 {
   close(Int_val(fd));
   return Val_unit;
 }
 // phc no ctx
-CAMLprim value caml_sys_file_exists(value name)
+CAMLprim value caml_sys_file_exists_n(pctxt ctx, value name)
 {
   struct stat st;
   return Val_bool(stat(String_val(name), &st) == 0);

@@ -19,7 +19,7 @@ type t = string
 
 let compare = String.compare
 
-external unsafe_string: string -> int -> int -> t = "caml_md5_string"
+external unsafe_string: string -> int -> int -> t = "caml_md5_string_r" "reentrant"
 external channel: in_channel -> int -> t = "caml_md5_chan"
 
 let string str =

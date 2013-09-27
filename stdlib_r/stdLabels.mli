@@ -107,7 +107,7 @@ module String :
     external length : string -> int = "%string_length"
     external get : string -> int -> char = "%string_safe_get"
     external set : string -> int -> char -> unit = "%string_safe_set"
-    external create : int -> string = "caml_create_string"
+    external create : int -> string = "caml_create_string_r" "reentrant"
     val make : int -> char -> string
     val copy : string -> string
     val sub : string -> pos:int -> len:int -> string

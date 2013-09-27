@@ -70,7 +70,7 @@ external set : string -> int -> char -> unit = "%string_safe_set"
 
    Raise [Invalid_argument] if [n] is not a valid character number in [s]. *)
 
-external create : int -> string = "caml_create_string"
+external create : int -> string = "caml_create_string_r" "reentrant"
 (** [String.create n] returns a fresh string of length [n].
    The string initially contains arbitrary characters.
 

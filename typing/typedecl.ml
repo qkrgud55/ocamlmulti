@@ -159,7 +159,7 @@ let transl_declaration env (name, sdecl) id =
           cstrs;
         if List.length
           (List.filter (fun (_, args, _, _) -> args <> []) cstrs)
-          > (Config.max_tag + 1) then
+          > (Pobj.max_tag + 1) then
           raise(Error(sdecl.ptype_loc, Too_many_constructors));
         let make_cstr (lid, args, ret_type, loc) =
           let name = Ident.create lid.txt in
@@ -1080,7 +1080,7 @@ let report_error ppf = function
   | Too_many_constructors ->
       fprintf ppf
         "@[Too many non-constant constructors@ -- maximum is %i %s@]"
-        (Config.max_tag + 1) "non-constant constructors"
+        (Pobj.max_tag + 1) "non-constant constructors"
   | Duplicate_label s ->
       fprintf ppf "Two labels are named %s" s
   | Recursive_abbrev s ->

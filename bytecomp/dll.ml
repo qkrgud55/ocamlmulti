@@ -93,7 +93,7 @@ let find_primitive prim_name =
       raise Not_found
   | dll :: rem ->
       let addr = dll_sym dll prim_name in
-      if addr == Obj.magic () then find (dll :: seen) rem else begin
+      if addr == Obj.magic () then find (dll :: seen) rem else begin(* must use Obj, not Pobj *)
         if seen <> [] then opened_dlls := dll :: List.rev_append seen rem;
         addr
       end in

@@ -41,22 +41,22 @@ let bind_nonvar name arg fn =
 
 (* Block headers. Meaning of the tag field: see stdlib/obj.ml *)
 
-let float_tag = Cconst_int Obj.double_tag
-let floatarray_tag = Cconst_int Obj.double_array_tag
+let float_tag = Cconst_int Pobj.double_tag
+let floatarray_tag = Cconst_int Pobj.double_array_tag
 
 let block_header tag sz =
   Nativeint.add (Nativeint.shift_left (Nativeint.of_int sz) 10)
                 (Nativeint.of_int tag)
-let closure_header sz = block_header Obj.closure_tag sz
-let infix_header ofs = block_header Obj.infix_tag ofs
-let float_header = block_header Obj.double_tag (size_float / size_addr)
+let closure_header sz = block_header Pobj.closure_tag sz
+let infix_header ofs = block_header Pobj.infix_tag ofs
+let float_header = block_header Pobj.double_tag (size_float / size_addr)
 let floatarray_header len =
-      block_header Obj.double_array_tag (len * size_float / size_addr)
+      block_header Pobj.double_array_tag (len * size_float / size_addr)
 let string_header len =
-      block_header Obj.string_tag ((len + size_addr) / size_addr)
-let boxedint32_header = block_header Obj.custom_tag 2
-let boxedint64_header = block_header Obj.custom_tag (1 + 8 / size_addr)
-let boxedintnat_header = block_header Obj.custom_tag 2
+      block_header Pobj.string_tag ((len + size_addr) / size_addr)
+let boxedint32_header = block_header Pobj.custom_tag 2
+let boxedint64_header = block_header Pobj.custom_tag (1 + 8 / size_addr)
+let boxedintnat_header = block_header Pobj.custom_tag 2
 
 let alloc_block_header tag sz = Cconst_natint(block_header tag sz)
 let alloc_float_header = Cconst_natint(float_header)
@@ -999,7 +999,7 @@ let rec transl = function
           | Paddrarray | Pintarray ->
               make_alloc_r 0 (List.map transl args)
           | Pfloatarray ->
-              make_float_alloc_r Obj.double_array_tag
+              make_float_alloc_r Pobj.double_array_tag
                                  (List.map transl_unbox_float args)
           end
       | (Pmakearray kind, args) ->
@@ -1010,7 +1010,7 @@ let rec transl = function
           | Paddrarray | Pintarray ->
               make_alloc 0 (List.map transl args)
           | Pfloatarray ->
-              make_float_alloc Obj.double_array_tag
+              make_float_alloc Pobj.double_array_tag
                               (List.map transl_unbox_float args)
           end
       | (Pbigarrayref(unsafe, num_dims, elt_kind, layout), arg1 :: argl) ->

@@ -443,7 +443,7 @@ let link_bytecode_as_c ppf tolink outfile =
     (* The sections *)
     let sections =
       [ "SYMB", Symtable.data_global_map();
-        "PRIM", Obj.repr(Symtable.data_primitive_names());
+        "PRIM", Obj.repr(Symtable.data_primitive_names());  (* must use Obj, not Pobj *)
         "CRCS", Obj.repr(extract_crc_interfaces()) ] in
     output_string outchan "static char caml_sections[] = {\n";
     output_data_string outchan

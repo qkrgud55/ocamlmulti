@@ -11,8 +11,10 @@ int main(int argc, char ** argv)
 {
   printf("Initializing OCaml code...\n");
 #ifdef NO_BYTECODE_FILE
+  printf("caml_startup\n");
   caml_startup(argv);
 #else
+  printf("caml_main\n");
   caml_main(argv);
 #endif
   printf("Back in C code...\n");

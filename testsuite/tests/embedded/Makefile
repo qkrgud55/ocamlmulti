@@ -1,6 +1,14 @@
 BASEDIR=../..
 
-default: compile run
+POCAMLOPT=/home/phc/ocaml_internal/ocamlmulti/ocamlopt -cclib '-pthread' -phcr -nostdlib -I /home/phc/ocaml_internal/ocamlmulti/stdlib_r
+
+default: compilep run
+
+compilep: 
+	$(POCAMLOPT) -ccopt -g -ccopt -I -ccopt $(TOPDIR)/byterun cmstub.c
+	$(POCAMLOPT) -ccopt -g cmmain.c
+	$(POCAMLOPT) -c -g -index_file index cmcaml.ml
+	$(POCAMLOPT) -g -o program cmstub.o cmcaml.cmx cmmain.o
 
 compile:
 	@$(OCAMLC) -ccopt -I -ccopt $(TOPDIR)/byterun cmstub.c

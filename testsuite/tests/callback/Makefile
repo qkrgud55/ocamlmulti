@@ -1,6 +1,6 @@
 BASEDIR=../..
 
-CC=$(NATIVECC) -I $(TOPDIR)/byterun
+C=$(NATIVECC) -I $(TOPDIR)/byterun
 
 POCAMLOPT=/home/phc/ocaml_internal/ocamlmulti/ocamlopt -cclib '-pthread' -phcr -nostdlib -I /home/phc/ocaml_internal/ocamlmulti/stdlib_r
 

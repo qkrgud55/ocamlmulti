@@ -376,6 +376,7 @@ void caml_oldify_local_roots_r (pctxt ctx)
  // printf("ctx->caml_frame_descriptors   = %p\n", ctx->caml_frame_descriptors);
  // printf("ctx->caml_frame_descriptors_mask = %p\n", ctx->caml_frame_descriptors_mask);
 
+//  printf("start backtraceing frames\n");
   sp = ctx->caml_bottom_of_stack;
   retaddr = ctx->caml_last_return_address;
   regs = ctx->caml_gc_regs;
@@ -383,11 +384,12 @@ void caml_oldify_local_roots_r (pctxt ctx)
     while (1) {
       /* Find the descriptor corresponding to the return address */
       h = Hash_retaddr_r(ctx, retaddr);
+//      printf("%p %p\n", retaddr, h);
       while(1) {
         d = ctx->caml_frame_descriptors[h];
         if (d==NULL){
-         // printf("descr==NULL\n");
-         // printf("retaddr = %p h = %p d = %p\n", retaddr, h, d);
+//          printf("descr==NULL\n");
+//          printf("retaddr = %p h = %p d = %p\n", retaddr, h, d);
         }
         if (d->retaddr == retaddr) break;
         h = (h+1) & (ctx->caml_frame_descriptors_mask);

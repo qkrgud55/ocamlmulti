@@ -8,8 +8,9 @@ POCAMLOPT=/home/phc/ocaml_internal/ocamlmulti/ocamlopt -cclib '-pthread' -phcr -
 
 tbuffer: tbuffer.ml
 	if test -f index; then rm index; else :; fi
-	$(POCAMLOPT) -c tbuffer.ml
+	$(POCAMLOPT) -c testing.mli
 	$(POCAMLOPT) -c testing.ml
+	$(POCAMLOPT) -c tbuffer.ml
 	$(POCAMLOPT) testing.cmx tbuffer.cmx
 	cp index ../../../stdlib_r
 	cd ../../.. ; make cross-phc ; cd -

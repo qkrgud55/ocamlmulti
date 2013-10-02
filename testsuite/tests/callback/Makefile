@@ -2,6 +2,26 @@ BASEDIR=../..
 
 CC=$(NATIVECC) -I $(TOPDIR)/byterun
 
+POCAMLOPT=/home/phc/ocaml_internal/ocamlmulti/ocamlopt -cclib '-pthread' -phcr -nostdlib -I /home/phc/ocaml_internal/ocamlmulti/stdlib_r
+
+tcallback: tcallback.ml callbackprim.o
+	$(POCAMLOPT) -c -index_file index testing.ml
+	$(POCAMLOPT) -c -index_file index tcallback.ml
+	$(POCAMLOPT) callbackprim.o testing.cmx tcallback.cmx
+	./a.out
+
+callbackprim.o: callbackprim.c
+	gcc -I ../../../byterun -c callbackprim.c
+
+init:
+	if test -f index; then rm index; else :; fi
+	$(POCAMLOPT) -c tcallback.ml
+	$(POCAMLOPT) -c testing.mli
+	$(POCAMLOPT) -c testing.ml
+	$(POCAMLOPT) callbackprim.o testing.cmx tcallback.cmx
+	cp index ../../../stdlib_r
+	cd ../../.. ; make cross-phc ; cd -
+
 default: run-byte run-opt
 
 common:

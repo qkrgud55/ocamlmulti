@@ -550,8 +550,10 @@ FUNCTION(G(caml_c_call))
 LBL(caml_c_call):
     /* Record lowest stack address and return address */
         popq    %r12
-        STORE_VAR(%r12, caml_last_return_address)
-        STORE_VAR(%rsp, caml_bottom_of_stack)
+/*      STORE_VAR(%r12, caml_last_return_address)
+        STORE_VAR(%rsp, caml_bottom_of_stack) */
+        movq    %r12, 72(%r13)
+        movq    %rsp, 80(%r13)
         pushq    %r12
 #ifndef SYS_mingw64
     /* Touch the stack to trigger a recoverable segfault
@@ -561,8 +563,10 @@ LBL(caml_c_call):
         addq    $32768, %rsp
 #endif
     /* Make the exception handler and alloc ptr available to the C code */
-        STORE_VAR(%r15, caml_young_ptr)
-        STORE_VAR(%r14, caml_exception_pointer)
+    /*  STORE_VAR(%r15, caml_young_ptr)
+        STORE_VAR(%r14, caml_exception_pointer) */
+        movq    %r15, (%r13) 
+        movq    %r14, 104(%r13)
     /* Call the function (address in %rax) */
     /* No need to PREPARE_FOR_C_CALL since the caller already
        reserved the stack space if needed (cf. amd64/proc.ml) */
@@ -621,12 +625,12 @@ LBL(caml_start_program_r):
         CFI_ADJUST(32)
     /* Setup alloc ptr and exception ptr */
     /*  LOAD_VAR(caml_young_ptr, %r15)  */
-        movq    (%r13), %r15
     /*  LOAD_VAR(caml_exception_pointer, %r14)  */ 
         movq    104(%r13), %r14
     /* Build an exception handler */
-        lea     LBL(108)(%rip), %rdi
-        pushq   %rdi
+        lea     LBL(108)(%rip), %r15  /* phc - use r15 temporarily */
+        pushq   %r15
+        movq    (%r13), %r15 /* phc - caml_young_ptr */
         pushq   %r14
         CFI_ADJUST(16)
         movq    %rsp, %r14
@@ -638,8 +642,6 @@ LBL(107):
         popq    %r12    /* dummy register */
         CFI_ADJUST(-16)
 LBL(109):
-    /*  phc - load r13 from stack  */
-        movq    -0xB8(%rsp), %r13
     /* Update alloc ptr and exception ptr */
     /*  STORE_VAR(%r15,caml_young_ptr)  */
         movq    %r15, (%r13)
@@ -829,20 +831,22 @@ FUNCTION(G(caml_callback2_exn_r))
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
     /* Initial loading of arguments */
-        movq    C_ARG_1, %rdi      /* closure -- no op with Unix conventions */
-        movq    C_ARG_2, %rax      /* first argument */
-        movq    C_ARG_3, %rbx      /* second argument */
+        movq    C_ARG_1, %r13     
+        movq    C_ARG_2, %rdi      /* closure -- no op with Unix conventions */
+        movq    C_ARG_3, %rax      /* first argument */
+        movq    C_ARG_4, %rbx      /* second argument */
         leaq    GCALL(caml_apply2)(%rip), %r12  /* code pointer */
-        jmp     LBL(caml_start_program)
+        jmp     LBL(caml_start_program_r)
 
 FUNCTION(G(caml_callback3_exn_r))
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
     /* Initial loading of arguments */
-        movq    C_ARG_2, %rax      /* first argument */
-        movq    C_ARG_3, %rbx      /* second argument */
-        movq    C_ARG_1, %rsi      /* closure */
-        movq    C_ARG_4, %rdi      /* third argument */
+        movq    C_ARG_1, %r13      /* first argument */
+        movq    C_ARG_3, %rax      /* first argument */
+        movq    C_ARG_4, %rbx      /* second argument */
+        movq    C_ARG_2, %rsi      /* closure */
+        movq    C_ARG_5, %rdi      /* third argument */
         leaq    GCALL(caml_apply3)(%rip), %r12  /* code pointer */
         jmp     LBL(caml_start_program)
 

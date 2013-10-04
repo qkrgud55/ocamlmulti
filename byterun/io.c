@@ -787,7 +787,7 @@ static intnat hash_channel(value vchan)
 
 static struct custom_operations channel_operations = {
   "_chan",
-  caml_finalize_channel,
+  caml_finalize_channel_r,
   compare_channel,
   hash_channel,
   custom_serialize_default,

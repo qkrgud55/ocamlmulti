@@ -120,7 +120,7 @@ let comparisons_table = create_hashtable 11 [
        Pbintcomp(Pint64, Cge),
        false);
   "%compare",
-      (Pccall{prim_name = "caml_compare"; prim_arity = 2; prim_alloc = true; prim_ctx = false;
+      (Pccall{prim_name = "caml_compare_r"; prim_arity = 2; prim_alloc = true; prim_ctx = true;
               prim_native_name = ""; prim_native_float = false},
        Pccall{prim_name = "caml_int_compare"; prim_arity = 2;
               prim_alloc = false; prim_ctx = false; prim_native_name = "";

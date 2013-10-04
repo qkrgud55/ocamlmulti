@@ -32,6 +32,11 @@ CAMLprim value caml_static_alloc(value size)
 {
   return (value) caml_stat_alloc((asize_t) Long_val(size));
 }
+CAMLprim value caml_static_alloc_n(pctxt ctx,value size)
+{
+  return (value) caml_stat_alloc((asize_t) Long_val(size));
+}
+
 
 // phc no ctx
 CAMLprim value caml_static_free(value blk)
@@ -66,6 +71,10 @@ CAMLprim value caml_obj_is_block(value arg)
 {
   return Val_bool(Is_block(arg));
 }
+CAMLprim value caml_obj_is_block_n(pctxt ctx, value arg)
+{
+  return Val_bool(Is_block(arg));
+}
 
 // phc no ctx
 CAMLprim value caml_obj_tag(value arg)
@@ -80,6 +89,19 @@ CAMLprim value caml_obj_tag(value arg)
     return Val_int (1001);   /* out_of_heap_tag */
   }
 }
+CAMLprim value caml_obj_tag_n(pctxt ctx, value arg)
+{
+  if (Is_long (arg)){
+    return Val_int (1000);   /* int_tag */
+  }else if ((long) arg & (sizeof (value) - 1)){
+    return Val_int (1002);   /* unaligned_tag */
+  }else if (Is_in_value_area (arg)){
+    return Val_int(Tag_val(arg));
+  }else{
+    return Val_int (1001);   /* out_of_heap_tag */
+  }
+}
+
 
 // phc no ctx
 CAMLprim value caml_obj_set_tag_n (pctxt ctx, value arg, value new_tag)
@@ -251,6 +273,11 @@ CAMLprim value caml_obj_add_offset (value v, value offset)
 {
   return v + (unsigned long) Int32_val (offset);
 }
+CAMLprim value caml_obj_add_offset_n (pctxt ctx, value v, value offset)
+{
+  return v + (unsigned long) Int32_val (offset);
+}
+
 
 /* The following functions are used in stdlib/lazy.ml.
    They are not written in OCaml because they must be atomic with respect

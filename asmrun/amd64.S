@@ -756,6 +756,7 @@ FUNCTION(G(caml_raise_exception_r))
         popq    %r14                  /* Recover previous exception handler */
     /*  LOAD_VAR(caml_young_ptr, %r15) /* Reload alloc ptr */
         movq    (%rdi), %r15
+        movq    %rdi, %r13          /* entry point to ML-side, set context ptr */
         ret
 LBL(211):
         movq    C_ARG_2, %r12            /* Save exception bucket */
@@ -772,6 +773,7 @@ LBL(211):
     /*  LOAD_VAR(caml_young_ptr,%r15) */  /* Reload alloc ptr */
         movq    (%rax), %r15
         movq    %r12, %rax            /* Recover exception bucket */
+        movq    %rdi, %r13
         ret
 
 

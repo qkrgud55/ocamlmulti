@@ -2,14 +2,14 @@
 
 TOPDIR=$(BASEDIR)/..
 
-include $(TOPDIR)/config/Makefile
 
+POCAMLOPT=/home/phc/ocaml_internal/ocamlmulti/ocamlopt -g -cclib '-pthread' -phcr -nostdlib -I /home/phc/ocaml_internal/ocamlmulti/stdlib_r
 DIFF=diff -q
 BOOTDIR=$(TOPDIR)/boot
 OCAMLRUN=$(BOOTDIR)/ocamlrun$(EXE)
 OCAML=$(OCAMLRUN) $(TOPDIR)/ocaml -I $(TOPDIR)/stdlib
 OCAMLC=$(OCAMLRUN) $(TOPDIR)/ocamlc -I $(TOPDIR)/stdlib
-OCAMLOPT=$(TOPDIR)/bin/ocamlopt -cclib '-pthread' -phcr -nostdlib -I $(TOPDIR)/stdlib_r
+OCAMLOPT=$(TOPDIR)/ocamlopt -cclib '-pthread' -phcr -nostdlib -I $(TOPDIR)/stdlib_r
 OCAMLDOC=$(OCAMLRUN) $(TOPDIR)/ocamldoc/ocamldoc
 OCAMLLEX=$(OCAMLRUN) $(TOPDIR)/lex/ocamllex
 OCAMLMKLIB=$(OCAMLRUN) $(TOPDIR)/tools/ocamlmklib
@@ -38,23 +38,23 @@ defaultclean:
 .SUFFIXES: .mli .ml .mly .mll .cmi .cmo .cmx .cmm .cmxa .s .S .o .so
 
 .mli.cmi:
-	@$(OCAMLC) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+	$(POCAMLOPT) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<
 
 .ml.cmi:
-	@$(OCAMLC) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+	$(OCAMLC) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<
 
 .ml.cmo:
 	@if [ -f $<i ]; then $(OCAMLC) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<i; fi
-	@$(OCAMLC) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+	$(OCAMLC) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<
 
 .ml.cmx:
-	@$(OCAMLOPT) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+	$(POCAMLOPT) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<
 
 .cmx.so:
-	@$(OCAMLOPT) -o $@ -shared $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+	$(POCAMLOPT) -o $@ -shared $(COMPFLAGS) $(ADD_COMPFLAGS) $<
 
 .cmxa.so:
-	@$(OCAMLOPT) -o $@ -shared -linkall $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+	$(POCAMLOPT) -o $@ -shared -linkall $(COMPFLAGS) $(ADD_COMPFLAGS) $<
 
 .mly.ml:
 	@$(OCAMLYACC) -q $< 2> /dev/null

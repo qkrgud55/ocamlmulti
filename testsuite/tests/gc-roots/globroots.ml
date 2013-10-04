@@ -8,18 +8,18 @@ end
 
 module Classic : GLOBREF = struct
   type t
-  external register: string -> t = "gb_classic_register"
-  external get: t -> string = "gb_get"
-  external set: t -> string -> unit = "gb_classic_set"
-  external remove: t -> unit = "gb_classic_remove"
+  external register: string -> t = "gb_classic_register" "reentrant"
+  external get: t -> string = "gb_get" "reentrant"
+  external set: t -> string -> unit = "gb_classic_set" "reentrant"
+  external remove: t -> unit = "gb_classic_remove" "reentrant"
 end
 
 module Generational : GLOBREF = struct
   type t
-  external register: string -> t = "gb_generational_register"
-  external get: t -> string = "gb_get"
-  external set: t -> string -> unit = "gb_generational_set"
-  external remove: t -> unit = "gb_generational_remove"
+  external register: string -> t = "gb_generational_register" "reentrant"
+  external get: t -> string = "gb_get" "reentrant"
+  external set: t -> string -> unit = "gb_generational_set" "reentrant"
+  external remove: t -> unit = "gb_generational_remove" "reentrant"
 end
 
 module Test(G: GLOBREF) = struct

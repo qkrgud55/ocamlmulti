@@ -119,7 +119,7 @@ let transl_store_label_init glob size f arg =
      Lsequence(
      Lprim(Psetfield(size, false),
            [Lprim(Pgetglobal glob, []);
-            Lprim (Pccall prim_makearray, [int !method_count; int 0])]),
+            Lprim (Pccall prim_makearray_r, [int !method_count; int 0])]),
      expr))
   in
   (size, transl_label_init expr)

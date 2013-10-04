@@ -132,6 +132,15 @@ CAMLprim value caml_sys_exit(value retcode)
   exit(Int_val(retcode));
   return Val_unit;
 }
+CAMLprim value caml_sys_exit_n(pctxt ctx, value retcode)
+{
+#ifndef NATIVE_CODE
+  caml_debugger(PROGRAM_EXIT);
+#endif
+  exit(Int_val(retcode));
+  return Val_unit;
+}
+
 
 #ifndef O_BINARY
 #define O_BINARY 0

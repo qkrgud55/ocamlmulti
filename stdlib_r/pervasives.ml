@@ -274,7 +274,7 @@ external output_binary_int : out_channel -> int -> unit = "caml_ml_output_int_r"
 
 (* phc todo *)
 external marshal_to_channel : out_channel -> 'a -> unit list -> unit
-     = "caml_output_value"
+     = "caml_output_value_r" "reentrant"
 let output_value chan v = marshal_to_channel chan v []
 
 external seek_out : out_channel -> int -> unit = "caml_ml_seek_out_r" "reentrant"
@@ -355,7 +355,7 @@ let input_line chan =
 external input_byte : in_channel -> int = "caml_ml_input_char_r" "reentrant"
 external input_binary_int : in_channel -> int = "caml_ml_input_int_r" "reentrant"
 (* phc todo *)
-external input_value : in_channel -> 'a = "caml_input_value"
+external input_value : in_channel -> 'a = "caml_input_value_r" "reentrant"
 external seek_in : in_channel -> int -> unit = "caml_ml_seek_in_r" "reentrant"
 external pos_in : in_channel -> int = "caml_ml_pos_in_r" "reentrant"
 external in_channel_length : in_channel -> int = "caml_ml_channel_size_r" "reentrant"
@@ -443,7 +443,7 @@ let string_of_format fmt =
 
 (* Miscellaneous *)
 
-external sys_exit : int -> 'a = "caml_sys_exit"
+external sys_exit : int -> 'a = "caml_sys_exit_n" "reentrant"
 
 let exit_function = ref flush_all
 

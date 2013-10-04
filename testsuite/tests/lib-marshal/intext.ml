@@ -69,7 +69,7 @@ let test_out filename =
 
 
 let test n b =
-  print_string "Test "; print_int n;
+  print_string "Test "; print_int n; flush stdout;
   if b then print_string " passed.\n" else print_string " FAILED.\n";
   flush stderr
 
@@ -317,9 +317,9 @@ let test_size() =
 
 external marshal_to_block
    : string -> int -> 'a -> Marshal.extern_flags list -> unit
-   = "marshal_to_block"
-external marshal_from_block : string -> int -> 'a = "marshal_from_block"
-external static_alloc : int -> string = "caml_static_alloc"
+   = "marshal_to_block_n" "reentrant"
+external marshal_from_block : string -> int -> 'a = "marshal_from_block_n" "reentrant"
+external static_alloc : int -> string = "caml_static_alloc_n" "reentrant"
 
 let test_block () =
   let s = static_alloc 512 in

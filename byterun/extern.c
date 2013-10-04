@@ -15,6 +15,8 @@
 
 /* Structured output */
 
+// phc todo reentrant
+
 /* The interface of this file is "intext.h" */
 
 #include <string.h>
@@ -121,7 +123,6 @@ static void init_extern_trail(void)
 
 /* Replay the trail, undoing the in-place modifications
    performed on objects */
-
 static void extern_replay_trail(void)
 {
   struct trail_block * blk, * prevblk;
@@ -273,7 +274,7 @@ static void extern_failwith(char *msg)
 {
   extern_replay_trail();
   free_extern_output();
-  caml_failwith(msg);
+  caml_failwith_r(get_ctx(), msg);
 }
 
 static void extern_stack_overflow(void)
@@ -640,6 +641,53 @@ CAMLprim value caml_output_value_to_string(value v, value flags)
 }
 
 CAMLprim value caml_output_value_to_buffer(value buf, value ofs, value len,
+                                           value v, value flags)
+{
+  intnat len_res;
+  extern_userprovided_output = &Byte(buf, Long_val(ofs));
+  extern_ptr = extern_userprovided_output;
+  extern_limit = extern_userprovided_output + Long_val(len);
+  len_res = extern_value(v, flags);
+  return Val_long(len_res);
+}
+
+
+CAMLprim value caml_output_value_r(pctxt ctx, value vchan, value v, value flags)
+{
+  CAMLparam3_r (ctx, vchan, v, flags);
+  struct channel * channel = Channel(vchan);
+
+  Lock_r(ctx,channel);
+  caml_output_val(channel, v, flags);
+  Unlock_r(ctx, channel);
+  CAMLreturn_r (ctx, Val_unit);
+}
+
+CAMLprim value caml_output_value_to_string_r(pctxt ctx, value v, value flags)
+{
+  intnat len, ofs;
+  value res;
+  struct output_block * blk, * nextblk;
+
+  init_extern_output();
+  len = extern_value(v, flags);
+  /* PR#4030: it is prudent to save extern_output_first before allocating
+     the result, as in caml_output_val */
+  blk = extern_output_first;
+  res = caml_alloc_string_r(ctx, len);
+  ofs = 0;
+  while (blk != NULL) {
+    int n = blk->end - blk->data;
+    memmove(&Byte(res, ofs), blk->data, n);
+    ofs += n;
+    nextblk = blk->next;
+    free(blk);
+    blk = nextblk;
+  }
+  return res;
+}
+
+CAMLprim value caml_output_value_to_buffer_r(pctxt ctx, value buf, value ofs, value len,
                                            value v, value flags)
 {
   intnat len_res;

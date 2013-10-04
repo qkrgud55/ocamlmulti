@@ -223,8 +223,8 @@ void caml_main(char **argv)
                       heap_chunk_init, percent_free_init, 
                       max_percent_free_init);
       allocate_caml_globals(ctxl[i]);
-      printf("asmrun/startup.c i=%d ctxl[i]=%p num_th=%d\n",
-             i, (void*)ctxl[i], num_th);
+//      printf("asmrun/startup.c i=%d ctxl[i]=%p num_th=%d\n",
+//             i, (void*)ctxl[i], num_th);
     }
   
     init_atoms();

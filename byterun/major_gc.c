@@ -770,9 +770,9 @@ static void sweep_slice_r (pctxt ctx, intnat work)
       switch (Color_hd (hd)){
       case Caml_white:
         if (Tag_hd (hd) == Custom_tag){
-          // phc todo final_fun might require ctx
-          void (*final_fun)(value) = Custom_ops_val(Val_hp(hp))->finalize;
-          if (final_fun != NULL) final_fun(Val_hp(hp));
+          // phc - caml_finalize_channel_r(pctxt, vchan)
+          void (*final_fun)(pctxt, value) = Custom_ops_val(Val_hp(hp))->finalize;
+          if (final_fun != NULL) final_fun(ctx, Val_hp(hp));
         }
         ctx->caml_gc_sweep_hp = caml_fl_merge_block_r (ctx, Bp_hp (hp));
         break;

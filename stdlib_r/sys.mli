@@ -24,7 +24,7 @@ val argv : string array
 val executable_name : string
 (** The name of the file containing the executable currently running. *)
 
-external file_exists : string -> bool = "caml_sys_file_exists_n" "reentrant"
+external file_exists : string -> bool = "caml_sys_file_exists"
 (** Test if a file with the given name exists. *)
 
 external is_directory : string -> bool = "caml_sys_is_directory_r" "reentrant"

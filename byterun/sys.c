@@ -132,14 +132,6 @@ CAMLprim value caml_sys_exit(value retcode)
   exit(Int_val(retcode));
   return Val_unit;
 }
-CAMLprim value caml_sys_exit_n(pctxt ctx, value retcode)
-{
-#ifndef NATIVE_CODE
-  caml_debugger(PROGRAM_EXIT);
-#endif
-  exit(Int_val(retcode));
-  return Val_unit;
-}
 
 
 #ifndef O_BINARY
@@ -211,13 +203,13 @@ CAMLprim value caml_sys_open_r(pctxt ctx, value path, value vflags, value vperm)
   CAMLreturn_r(ctx,Val_long(fd));
 }
 // phc no ctx
-CAMLprim value caml_sys_close_n(pctxt ctx, value fd)
+CAMLprim value caml_sys_close(value fd)
 {
   close(Int_val(fd));
   return Val_unit;
 }
 // phc no ctx
-CAMLprim value caml_sys_file_exists_n(pctxt ctx, value name)
+CAMLprim value caml_sys_file_exists(value name)
 {
   struct stat st;
   return Val_bool(stat(String_val(name), &st) == 0);

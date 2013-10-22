@@ -81,7 +81,7 @@ let concat sep l =
         tl;
       r
 
-external is_printable: char -> bool = "caml_is_printable_n" "reentrant"
+external is_printable: char -> bool = "caml_is_printable"
 external char_code: char -> int = "%identity"
 external char_chr: int -> char = "%identity"
 

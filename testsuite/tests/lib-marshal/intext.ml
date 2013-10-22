@@ -255,7 +255,7 @@ let test_buffer () =
   test 208 (Marshal.from_string s 0 = longstring);
   test 209
     (try marshal_to_buffer s 0 512 verylongstring []; false
-     with Failure "Marshal.to_buffer: buffer overflow" -> true);
+     with Failure "Marshal.to_buffer: buffer overflow" -> let _ = Gc.get_th_num() in true);
   marshal_to_buffer s 0 512 3.141592654 [];
   test 210 (Marshal.from_string s 0 = 3.141592654);
   marshal_to_buffer s 0 512 () [];
@@ -318,8 +318,8 @@ let test_size() =
 external marshal_to_block
    : string -> int -> 'a -> Marshal.extern_flags list -> unit
    = "marshal_to_block_n" "reentrant"
-external marshal_from_block : string -> int -> 'a = "marshal_from_block_n" "reentrant"
-external static_alloc : int -> string = "caml_static_alloc_n" "reentrant"
+external marshal_from_block : string -> int -> 'a = "marshal_from_block"
+external static_alloc : int -> string = "caml_static_alloc"
 
 let test_block () =
   let s = static_alloc 512 in

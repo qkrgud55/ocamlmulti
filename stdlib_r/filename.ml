@@ -208,7 +208,7 @@ let chop_extension name =
   search_dot (String.length name - 1)
 
 external open_desc: string -> open_flag list -> int -> int = "caml_sys_open_r" "reentrant"
-external close_desc: int -> unit = "caml_sys_close_n" "reentrant"
+external close_desc: int -> unit = "caml_sys_close"
 
 let prng = lazy(Random.State.make_self_init ());;
 

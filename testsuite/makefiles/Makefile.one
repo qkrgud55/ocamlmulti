@@ -34,7 +34,7 @@ compile: $(ML_FILES)
 	fi
 
 run:
-	@if [ -z "$(BYTECODE_ONLY)" ]; then \
+	if [ -z "$(BYTECODE_ONLY)" ]; then \
 	  printf " ocamlopt"; \
 	  ./program.native $(EXEC_ARGS) > $(MAIN_MODULE).result || (echo " => failed" && exit 1); \
 	  $(DIFF) $(MAIN_MODULE).reference $(MAIN_MODULE).result > /dev/null || (echo " => failed" && exit 1); \

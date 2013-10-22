@@ -141,7 +141,7 @@ CAMLprim value caml_fill_string(value s, value offset, value len, value init)
 }
 
 // phc no ctx
-CAMLprim value caml_is_printable_n(pctxt ctx, value chr)
+CAMLprim value caml_is_printable(value chr)
 {
   int c;
 

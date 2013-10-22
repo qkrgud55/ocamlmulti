@@ -443,7 +443,7 @@ let string_of_format fmt =
 
 (* Miscellaneous *)
 
-external sys_exit : int -> 'a = "caml_sys_exit_n" "reentrant"
+external sys_exit : int -> 'a = "caml_sys_exit"
 
 let exit_function = ref flush_all
 

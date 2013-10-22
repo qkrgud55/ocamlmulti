@@ -115,6 +115,9 @@ cross-phc:
 	ocamlc -o ocamlopt compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma driver/optmain.cmo
 	cd stdlib_r; make allopt
 	cp asmrun/libasmrun.a ./stdlib_r
+	cp ocamlopt bin/
+	cd stdlib_r; make installopt
+	cp stdlib_r/* $(LIBDIR)
 
 phc:
 	@echo "phc reentrant multi runtime ocamlopt"

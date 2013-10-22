@@ -23,18 +23,18 @@ ADD_CFLAGS+=$(CUSTOM_FLAG)
 default: compile run
 
 compile: $(ML_FILES)
-	for file in $(C_FILES); do \
+	@for file in $(C_FILES); do \
 	  $(NATIVECC) $(NATIVECCCOMPOPTS) -c -I$(TOPDIR)/byterun $$file.c; \
 	done;
 	@rm -f program.byte program.byte.exe
-	if [ -z "$(BYTECODE_ONLY)" ]; then \
+	@if [ -z "$(BYTECODE_ONLY)" ]; then \
 	  rm -f program.native program.native.exe; \
 	  $(MAKE) $(CMX_FILES) $(MAIN_MODULE).cmx; \
 	  $(OCAMLOPT) $(ADD_COMPFLAGS) -o program.native $(O_FILES) $(CMXA_FILES) $(CMX_FILES) $(ADD_CMX_FILES) $(MAIN_MODULE).cmx; \
 	fi
 
 run:
-	if [ -z "$(BYTECODE_ONLY)" ]; then \
+	@if [ -z "$(BYTECODE_ONLY)" ]; then \
 	  printf " ocamlopt"; \
 	  ./program.native $(EXEC_ARGS) > $(MAIN_MODULE).result || (echo " => failed" && exit 1); \
 	  $(DIFF) $(MAIN_MODULE).reference $(MAIN_MODULE).result > /dev/null || (echo " => failed" && exit 1); \

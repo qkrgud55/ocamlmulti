@@ -214,6 +214,11 @@ void caml_main(char **argv)
   caml_top_of_stack = &tos;
   parse_camlrunparam();
 
+// force reentrant mode
+  if (num_th==0)
+    num_th = 1;
+  is_ctx = 1;
+
   if (num_th){
     int i;
     

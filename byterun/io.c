@@ -548,7 +548,7 @@ CAMLexport uint32 caml_getword_r(pctxt ctx, struct channel *channel)
     caml_failwith_r(ctx, "input_binary_int: not a binary channel");
   res = 0;
   for(i = 0; i < 4; i++) {
-    res = (res << 8) + getch(channel);
+    res = (res << 8) + getch_r(ctx, channel);
   }
   return res;
 }
@@ -1248,14 +1248,14 @@ CAMLprim value caml_ml_input_char(value vchannel)
 
 CAMLprim value caml_ml_input_char_r(pctxt ctx, value vchannel)
 {
-  CAMLparam1 (vchannel);
+  CAMLparam1_r (ctx, vchannel);
   struct channel * channel = Channel(vchannel);
   unsigned char c;
 
   Lock_r(ctx, channel);
-  c = getch(channel);
+  c = getch_r(ctx, channel);
   Unlock_r(ctx, channel);
-  CAMLreturn (Val_long(c));
+  CAMLreturn_r (ctx, Val_long(c));
 }
 
 CAMLprim value caml_ml_input_int(value vchannel)

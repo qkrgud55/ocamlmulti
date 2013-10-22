@@ -32,11 +32,11 @@ void init_phc_ctx_key(void){
 }
 
 void caml_phc_io_lock(void){
-  pthread_mutex_lock(&phc_io_lock);
+//  pthread_mutex_lock(&phc_io_lock);
 }
 
 void caml_phc_io_unlock(void){
-  pthread_mutex_unlock(&phc_io_lock);
+//  pthread_mutex_unlock(&phc_io_lock);
 }
 CAMLprim value caml_register_ctx(pctxt ctx, value v){
   int i;

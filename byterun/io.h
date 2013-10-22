@@ -67,6 +67,12 @@ enum {
    ? caml_refill(channel)                                                   \
    : (unsigned char) *((channel)->curr)++)
 
+#define getch_r(ctx, channel)                                                      \
+  ((channel)->curr >= (channel)->max                                        \
+   ? caml_refill_r((ctx),channel)                                                   \
+   : (unsigned char) *((channel)->curr)++)
+
+
 CAMLextern struct channel * caml_open_descriptor_in (int);
 CAMLextern struct channel * caml_open_descriptor_out (int);
 CAMLextern struct channel * caml_open_descriptor_in_r (pctxt, int);

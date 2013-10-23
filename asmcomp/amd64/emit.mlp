@@ -381,8 +381,10 @@ let emit_instr fallthrough i =
         if String.contains s '_' then 
           `	{load_symbol_addr s}, {emit_reg i.res.(0)}\n`
         else begin
-          ` movq    40(%r13), {emit_reg i.res.(0)}\n`;
-          ` movq    {emit_symbol s}({emit_reg i.res.(0)}), {emit_reg i.res.(0)}\n`
+          `  {load_symbol_addr s}, {emit_reg i.res.(0)}\n`;
+          `  movq    ({emit_reg i.res.(0)}), {emit_reg i.res.(0)}\n`;
+          `  addq    40(%r13), {emit_reg i.res.(0)}\n`;
+          `  movq    ({emit_reg i.res.(0)}), {emit_reg i.res.(0)}\n`
         end
     | Lop(Icall_ind) ->
         `	call	*{emit_reg i.arg.(0)}\n`;
@@ -796,6 +798,28 @@ let emit_item = function
 let data l =
   `	.data\n`;
   List.iter emit_item l
+
+let emit_globals_setter _ =
+  let globals = !Cmm.phc_globals in
+  `	.text\n`;
+  emit_align 16;
+  `	.globl	globals_setter\n`;
+  `globals_setter:\n`;
+  ignore(List.fold_left 
+    (fun n m -> 
+      emit_string "  movq "; emit_symbol m; emit_string "@GOTPCREL(%rip),";
+      emit_string (register_name 0);
+      emit_string "\n";
+      emit_string "  movq $"; emit_int (n*8);
+      emit_string ", ("; emit_string (register_name 0); emit_string ")\n";
+      n+1) 0 globals);
+  `  ret\n`;
+  `	.text\n`;
+  emit_align 16;
+  `	.globl	inc_caml_globals_inited\n`;
+  `inc_caml_globals_inited:\n`;
+  `  addq  $1, 56(%r13)\n`;
+  `  ret\n`
 
 (* Beginning / end of an assembly file *)
 

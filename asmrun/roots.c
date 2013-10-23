@@ -516,10 +516,16 @@ void caml_do_roots_r (pctxt ctx, scanning_action_r f)
   link_t *lnk;
 
   /* The global roots */
-  for (i = 0; ctx->caml_globals[i] != 0; i++) {
+//  printf("caml_do_roots_r\n");
+  for (i = 0; i < ctx->caml_globals_inited; i++) {
     glob = ctx->caml_globals[i];
-    for (j = 0; j < Wosize_val(glob); j++)
+//    printf("i *%p = %p %d size %d : \n", &(ctx->caml_globals[i]), 
+//        (void*)glob, i, Wosize_val(glob));
+    for (j = 0; j < Wosize_val(glob); j++){
+//      printf("(j %d) ", j);
       f (ctx, Field (glob, j), &Field (glob, j));
+    }
+//    printf(".\n");
   }
 
   /* Dynamic global roots */

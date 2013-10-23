@@ -2189,10 +2189,7 @@ let generic_functions shared units =
 
 let entry_point namelist =
   let incr_global_inited =
-    Cop(Cstore Word,
-        [Cconst_symbol "caml_globals_inited";
-         Cop(Caddi, [Cop(Cload Word, [Cconst_symbol "caml_globals_inited"]);
-                     Cconst_int 1])]) in
+    Cop(Capply(typ_void, Debuginfo.none), [Cconst_symbol "inc_caml_globals_inited"]) in
   let body =
     List.fold_right
       (fun name next ->
@@ -2201,6 +2198,10 @@ let entry_point namelist =
                          [Cconst_symbol entry_sym]),
                   Csequence(incr_global_inited, next)))
       namelist (Cconst_int 1) in
+  let body = 
+    Csequence(Cop(Capply(typ_void, Debuginfo.none),
+                      [Cconst_symbol "globals_setter"]),
+              body) in
   Cfunction {fun_name = "caml_program";
              fun_args = [];
              fun_body = body;

@@ -356,7 +356,7 @@ static value heap_stats_r (pctxt ctx, int returnstats)
     Store_field (res, 13, Val_long (cpct));
     Store_field (res, 14, Val_long (top_heap_words));
     Store_field (res, 15, Val_long (caml_stack_usage()));
-
+/*
     printf("minor_words: %.0f\n", minwords);
     printf("promoted_words: %.0f\n", prowords);
     printf("major_words: %.0f\n", majwords);
@@ -377,7 +377,7 @@ static value heap_stats_r (pctxt ctx, int returnstats)
     printf("fragments: %d\n", fragments);
     printf("largest_free: %d\n", cpct);
     printf("top_heap_words: %d\n", top_heap_words);
-
+*/
     CAMLreturn_r (ctx, res);
   }else{
     CAMLreturn_r (ctx, Val_unit);

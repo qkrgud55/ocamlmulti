@@ -116,7 +116,6 @@ cross-phc:
 	cd stdlib_r; make allopt
 	cp asmrun/libasmrun.a ./stdlib_r
 	cp ocamlopt bin/
-	cd stdlib_r; make installopt
 
 phc:
 	@echo "phc reentrant multi runtime ocamlopt"

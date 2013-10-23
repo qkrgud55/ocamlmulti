@@ -214,6 +214,7 @@ let make_startup_file ppf filename units_list =
     (fun name -> compile_phrase (Cmmgen.predef_exception name))
     Runtimedef.builtin_exceptions;
   compile_phrase (Cmmgen.global_table name_list);
+  Emit.emit_globals_setter (); 
   compile_phrase
     (Cmmgen.globals_map
        (List.map
@@ -359,11 +360,15 @@ let link ppf objfiles output_name =
   let startup =
     if !Clflags.keep_startup_file then output_name ^ ".startup" ^ ext_asm
     else Filename.temp_file "camlstartup" ext_asm in
-  make_startup_file ppf (startup^".tmp") units_tolink;
+(*  make_startup_file ppf (startup^".tmp") units_tolink;
   let startup_obj = Filename.temp_file "camlstartup" ext_obj in
   update_asmfiles ();
   Proc.exec_pending_cmds ();
   run_sed_caml_globals_inited startup;
+*)
+  make_startup_file ppf startup units_tolink;
+  let startup_obj = Filename.temp_file "camlstartup" ext_obj in
+
   if Proc.assemble_file startup startup_obj <> 0 then
     raise(Error(Assembler_error startup));
   try
